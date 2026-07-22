@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_125B_ForceRelease(MonContext* ctx) {
     /* TODO: Implement ForceRelease (PRLRS) */

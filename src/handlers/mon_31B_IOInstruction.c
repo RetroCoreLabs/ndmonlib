@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_31B_IOInstruction(MonContext* ctx) {
     /* TODO: Implement IOInstruction (EXIOX) */

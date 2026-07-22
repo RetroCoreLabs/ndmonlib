@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_431B_AwaitTransfer(MonContext* ctx) {
     /* TODO: Implement AwaitTransfer (MWAITF) */

@@ -19,7 +19,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_440B_Attach500Segment(MonContext* ctx) {
     /* TODO: Implement Attach500Segment (AT5SGM) */

@@ -17,7 +17,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_273B_GetFileName(MonContext* ctx) {
     /* TODO: Implement GetFileName (MGFIL) */

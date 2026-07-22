@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_7B_ReadBlock(MonContext* ctx) {
     /* TODO: Implement ReadBlock (RPAGE) */

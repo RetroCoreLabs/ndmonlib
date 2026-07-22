@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_44B_GetUserEntry(MonContext* ctx) {
     /* TODO: Implement GetUserEntry (RUSER) */

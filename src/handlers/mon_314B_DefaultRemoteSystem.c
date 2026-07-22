@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_314B_DefaultRemoteSystem(MonContext* ctx) {
     /* TODO: Implement DefaultRemoteSystem (SRUSI) */

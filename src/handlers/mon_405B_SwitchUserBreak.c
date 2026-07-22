@@ -10,7 +10,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_405B_SwitchUserBreak(MonContext* ctx) {
     /* TODO: Implement SwitchUserBreak (USTRK) */

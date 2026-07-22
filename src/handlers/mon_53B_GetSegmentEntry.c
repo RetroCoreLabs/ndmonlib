@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_53B_GetSegmentEntry(MonContext* ctx) {
     /* TODO: Implement GetSegmentEntry (RSEGM) */

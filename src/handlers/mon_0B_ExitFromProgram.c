@@ -10,7 +10,7 @@
  *   Requests CPU halt to stop execution. In emulator context, this ends the program.
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 
 MonResult mon_0B_ExitFromProgram(MonContext* ctx) {

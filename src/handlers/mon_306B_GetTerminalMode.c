@@ -10,7 +10,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_306B_GetTerminalMode(MonContext* ctx) {
     /* TODO: Implement GetTerminalMode (GTMOD) */

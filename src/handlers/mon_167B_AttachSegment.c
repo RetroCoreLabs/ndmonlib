@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_167B_AttachSegment(MonContext* ctx) {
     /* TODO: Implement AttachSegment (REENT) */

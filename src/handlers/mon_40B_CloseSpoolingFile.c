@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_40B_CloseSpoolingFile(MonContext* ctx) {
     /* TODO: Implement CloseSpoolingFile (SPCLO) */

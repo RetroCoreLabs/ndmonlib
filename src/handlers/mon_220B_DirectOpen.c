@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_220B_DirectOpen(MonContext* ctx) {
     /* TODO: Implement DirectOpen (DOPEN) */

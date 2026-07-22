@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_110B_SetRTPriority(MonContext* ctx) {
     /* TODO: Implement SetRTPriority (PRIOR) */

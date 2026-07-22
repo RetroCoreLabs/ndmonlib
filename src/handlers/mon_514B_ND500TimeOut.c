@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_514B_ND500TimeOut(MonContext* ctx) {
     /* TODO: Implement ND500TimeOut (5TMOUT) */

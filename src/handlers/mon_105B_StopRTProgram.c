@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_105B_StopRTProgram(MonContext* ctx) {
     /* TODO: Implement StopRTProgram (ABORT) */

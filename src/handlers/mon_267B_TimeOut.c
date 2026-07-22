@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_267B_TimeOut(MonContext* ctx) {
     /* TODO: Implement TimeOut (TMOUT) */

@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_52B_TerminalMode(MonContext* ctx) {
     /* TODO: Implement TerminalMode (TERMO) */

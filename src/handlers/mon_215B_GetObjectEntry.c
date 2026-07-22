@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_215B_GetObjectEntry(MonContext* ctx) {
     /* TODO: Implement GetObjectEntry (DROBJ) */

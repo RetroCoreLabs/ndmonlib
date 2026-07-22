@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_272B_DeletePage(MonContext* ctx) {
     /* TODO: Implement DeletePage (DELPG) */

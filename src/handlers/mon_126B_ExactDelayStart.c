@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_126B_ExactDelayStart(MonContext* ctx) {
     /* TODO: Implement ExactDelayStart (DSET) */

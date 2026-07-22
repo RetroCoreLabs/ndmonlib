@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_100B_StartRTProgram(MonContext* ctx) {
     /* TODO: Implement StartRTProgram (RT) */

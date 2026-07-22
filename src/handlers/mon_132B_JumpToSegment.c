@@ -10,7 +10,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_132B_JumpToSegment(MonContext* ctx) {
     /* TODO: Implement JumpToSegment (MCALL) */

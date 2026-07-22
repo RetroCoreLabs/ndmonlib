@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 #include "../mon_config.h"
 #include "../mon_errors.h"

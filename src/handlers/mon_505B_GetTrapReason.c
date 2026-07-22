@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_505B_GetTrapReason(MonContext* ctx) {
     /* TODO: Implement GetTrapReason (GERRCOD) */

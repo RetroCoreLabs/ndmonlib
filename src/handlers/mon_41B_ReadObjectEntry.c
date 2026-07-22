@@ -49,7 +49,7 @@
  *            ND-60052-04-EN NORD FILE SYSTEM, Section 3.1.4
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 #include "../mon_errors.h"
 #include "../mon_file_table.h"

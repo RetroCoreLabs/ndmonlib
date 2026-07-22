@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_247B_ReleaseDir(MonContext* ctx) {
     /* TODO: Implement ReleaseDir (RLDIR) */

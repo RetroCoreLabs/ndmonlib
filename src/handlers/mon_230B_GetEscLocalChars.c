@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_230B_GetEscLocalChars(MonContext* ctx) {
     /* TODO: Implement GetEscLocalChars (MGDAE) */

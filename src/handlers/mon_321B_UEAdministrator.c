@@ -67,7 +67,7 @@
  * Reference: SINTRAN III Monitor Calls (ND-860228.2 EN); carve L-VSX-500.
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 #include "../mon_errors.h"
 

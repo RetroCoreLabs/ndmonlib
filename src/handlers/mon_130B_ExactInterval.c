@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_130B_ExactInterval(MonContext* ctx) {
     /* TODO: Implement ExactInterval (DINTV) */

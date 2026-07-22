@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_70B_CallCommand(MonContext* ctx) {
     /* TODO: Implement CallCommand (COMMND) */

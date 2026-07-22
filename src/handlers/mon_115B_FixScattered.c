@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_115B_FixScattered(MonContext* ctx) {
     /* TODO: Implement FixScattered (FIX) */

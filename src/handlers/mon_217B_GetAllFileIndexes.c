@@ -17,7 +17,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_217B_GetAllFileIndexes(MonContext* ctx) {
     /* TODO: Implement GetAllFileIndexes (GUIOI) */

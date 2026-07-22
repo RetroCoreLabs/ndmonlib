@@ -60,7 +60,7 @@
  * background program logical device number 0 means own terminal.
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_errors.h"
 #include "../mon_terminal_state.h"
 

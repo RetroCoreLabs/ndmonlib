@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_231B_ExpandFile(MonContext* ctx) {
     /* TODO: Implement ExpandFile (EXPFI) */

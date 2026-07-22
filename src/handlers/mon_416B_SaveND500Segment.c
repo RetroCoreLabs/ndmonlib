@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_416B_SaveND500Segment(MonContext* ctx) {
     /* TODO: Implement SaveND500Segment (WSEGN) */

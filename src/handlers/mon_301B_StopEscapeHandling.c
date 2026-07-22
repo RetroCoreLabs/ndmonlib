@@ -6,7 +6,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_301B_StopEscapeHandling(MonContext* ctx) {
     /* TODO: Implement StopEscapeHandling (DUSEL) */

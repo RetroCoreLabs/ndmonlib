@@ -10,7 +10,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_104B_SuspendProgram(MonContext* ctx) {
     /* TODO: Implement SuspendProgram (HOLD) */

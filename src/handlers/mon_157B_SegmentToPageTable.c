@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_157B_SegmentToPageTable(MonContext* ctx) {
     /* TODO: Implement SegmentToPageTable (ENTSG) */
