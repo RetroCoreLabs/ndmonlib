@@ -1,0 +1,45 @@
+# Build directories
+build/
+build_wasm/
+build-ubsan/
+build-sanitizer/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.o
+*.a
+*.so
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test outputs
+Testing/
+*.gcda
+*.gcno
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Documentation
+docs/MON_CALLS.md
+
+# Temporary files
+*.tmp
+*.bak
+SCRATCH/
+GUEST/
+SYSTEM/
