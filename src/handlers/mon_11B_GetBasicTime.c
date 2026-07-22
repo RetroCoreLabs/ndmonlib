@@ -20,7 +20,6 @@
 
 #include "mon.h"
 #include "mon_log.h"
-#include "../cpu/cpu_protos.h"
 
 MonResult mon_11B_GetBasicTime(MonContext* ctx) {
     if (!ctx || !ctx->cpu) {
@@ -28,9 +27,13 @@ MonResult mon_11B_GetBasicTime(MonContext* ctx) {
         return MON_ERROR;
     }
 
-    /* Get instruction count from CPU and convert to basic time units */
-    Nd500Cpu* cpu = (Nd500Cpu*)ctx->cpu;
-    uint64_t basic_time = cpu->instruction_count / 40000;
+    /* Get instruction count from CPU via callback and convert to basic time units */
+    /* At ~2 MHz execution, 40000 instructions = 1/50th second = 1 basic time unit */
+    uint64_t instruction_count = 0;
+    if (ctx->get_instruction_count) {
+        instruction_count = ctx->get_instruction_count(ctx->cpu);
+    }
+    uint64_t basic_time = instruction_count / 40000;
     uint32_t time_value = (uint32_t)(basic_time & 0xFFFFFFFF);
 
     /* Return result in W1 register (required for ASSEMBLY-500 callers) */
