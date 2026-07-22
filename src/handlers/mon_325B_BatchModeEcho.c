@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_325B_BatchModeEcho(MonContext* ctx) {
     /* TODO: Implement BatchModeEcho (MBECH) */

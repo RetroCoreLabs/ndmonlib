@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_411B_MemoryUnfix(MonContext* ctx) {
     /* TODO: Implement MemoryUnfix (UNFIXM) */

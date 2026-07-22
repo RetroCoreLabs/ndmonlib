@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_222B_GetAddressArea(MonContext* ctx) {
     /* TODO: Implement GetAddressArea (GBSIZ) */

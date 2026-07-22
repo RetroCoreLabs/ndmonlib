@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_27B_GetRTDescr(MonContext* ctx) {
     /* TODO: Implement GetRTDescr (RTDSC) */

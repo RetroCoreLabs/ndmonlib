@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_21B_InUpTo8Bytes(MonContext* ctx) {
     /* TODO: Implement InUpTo8Bytes (M8INB) */

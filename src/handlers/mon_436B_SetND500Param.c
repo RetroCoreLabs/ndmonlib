@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_436B_SetND500Param(MonContext* ctx) {
     /* TODO: Implement SetND500Param (5PASET) */

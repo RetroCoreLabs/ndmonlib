@@ -6,7 +6,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_277B_DisableLocal(MonContext* ctx) {
     /* TODO: Implement DisableLocal (DLOFU) */

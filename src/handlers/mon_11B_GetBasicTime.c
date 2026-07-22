@@ -18,7 +18,7 @@
  * (for high-level language compatibility).
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 #include "../../cpu/cpu_protos.h"
 

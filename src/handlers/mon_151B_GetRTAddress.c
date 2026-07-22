@@ -10,7 +10,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_151B_GetRTAddress(MonContext* ctx) {
     /* TODO: Implement GetRTAddress (GRTDA) */

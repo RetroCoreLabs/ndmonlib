@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_310B_In8AndFlag(MonContext* ctx) {
     /* TODO: Implement In8AndFlag (TBIN8) */

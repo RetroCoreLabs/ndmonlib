@@ -28,7 +28,7 @@
  * Reference: SINTRAN III Monitor Calls (ND-860228.2 EN)
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_errors.h"
 #include "../mon_terminal_state.h"
 

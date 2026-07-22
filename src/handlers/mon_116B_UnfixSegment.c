@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_116B_UnfixSegment(MonContext* ctx) {
     /* TODO: Implement UnfixSegment (UNFIX) */

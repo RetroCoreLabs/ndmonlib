@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_37B_ReadADChannel(MonContext* ctx) {
     /* TODO: Implement ReadADChannel (AIRDW) */

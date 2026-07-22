@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_334B_GetErrorMessage(MonContext* ctx) {
     /* TODO: Implement GetErrorMessage (GETXM) */

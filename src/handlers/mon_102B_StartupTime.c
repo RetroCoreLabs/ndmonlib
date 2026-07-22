@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_102B_StartupTime(MonContext* ctx) {
     /* TODO: Implement StartupTime (ABSET) */

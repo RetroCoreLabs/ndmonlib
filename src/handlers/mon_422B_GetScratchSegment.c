@@ -15,7 +15,7 @@
  * Reference: ND-860228.2 EN (SINTRAN III Monitor Calls)
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 
 MonResult mon_422B_GetScratchSegment(MonContext* ctx) {

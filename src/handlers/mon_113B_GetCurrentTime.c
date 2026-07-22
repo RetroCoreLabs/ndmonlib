@@ -20,7 +20,7 @@
  * Reference: SINTRAN III Monitor Calls (ND-860228.2 EN)
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 #include "../mon_errors.h"
 #include "../mon_clock.h"

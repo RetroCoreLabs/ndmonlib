@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_141B_DeviceControl(MonContext* ctx) {
     /* TODO: Implement DeviceControl (IOSET) */

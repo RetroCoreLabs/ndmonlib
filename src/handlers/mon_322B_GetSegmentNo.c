@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_322B_GetSegmentNo(MonContext* ctx) {
     /* TODO: Implement GetSegmentNo (GSGNO) */

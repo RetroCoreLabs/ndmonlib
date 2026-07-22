@@ -23,7 +23,7 @@
  *   6 COSMOS remote open file    10B NOTS terminal    11B MTAD device
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_errors.h"
 #include "../mon_file_table.h"
 

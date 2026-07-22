@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_500B_StartProcess(MonContext* ctx) {
     /* TODO: Implement StartProcess (STARTP) */

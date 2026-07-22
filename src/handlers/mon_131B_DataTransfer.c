@@ -18,7 +18,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_131B_DataTransfer(MonContext* ctx) {
     /* TODO: Implement DataTransfer (ABSTR) */

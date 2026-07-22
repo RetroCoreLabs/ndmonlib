@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_146B_PrivInstruction(MonContext* ctx) {
     /* TODO: Implement PrivInstruction (IPRIV) */

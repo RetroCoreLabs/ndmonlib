@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_335B_TransferData(MonContext* ctx) {
     /* TODO: Implement TransferData (EXABS) */

@@ -40,7 +40,7 @@
  * Reference: SINTRAN/OS/02-QUEUE-STRUCTURES-DETAILED.md
  */
 
-#include "../mon.h"
+#include "mon.h"
 #include "../mon_log.h"
 
 /*

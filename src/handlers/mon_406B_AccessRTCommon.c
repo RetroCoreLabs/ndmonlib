@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_406B_AccessRTCommon(MonContext* ctx) {
     /* TODO: Implement AccessRTCommon (RWRTC) */

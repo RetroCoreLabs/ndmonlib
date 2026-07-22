@@ -6,7 +6,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_337B_ChangeSegment(MonContext* ctx) {
     /* TODO: Implement ChangeSegment (SPCHG) */

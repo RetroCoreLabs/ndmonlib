@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_63B_In4x2Bytes(MonContext* ctx) {
     /* TODO: Implement In4x2Bytes (B41NW) */

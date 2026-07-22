@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_332B_TerminalLineInfo(MonContext* ctx) {
     /* TODO: Implement TerminalLineInfo (TREPP) */

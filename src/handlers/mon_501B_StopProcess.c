@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_501B_StopProcess(MonContext* ctx) {
     /* TODO: Implement StopProcess (STOPPR) */

@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_421B_GetActiveSegment(MonContext* ctx) {
     /* TODO: Implement GetActiveSegment (GASGM) */

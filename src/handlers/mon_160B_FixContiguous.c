@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_160B_FixContiguous(MonContext* ctx) {
     /* TODO: Implement FixContiguous (FIXC) */

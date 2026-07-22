@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_66B_InBufferSpace(MonContext* ctx) {
     /* TODO: Implement InBufferSpace (ISIZE) */

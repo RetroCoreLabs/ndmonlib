@@ -10,7 +10,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_5B_ReadScratchFile(MonContext* ctx) {
     /* TODO: Implement ReadScratchFile (RDISK) */

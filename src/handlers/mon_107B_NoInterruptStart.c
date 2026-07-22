@@ -13,7 +13,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_107B_NoInterruptStart(MonContext* ctx) {
     /* TODO: Implement NoInterruptStart (DSCNT) */

@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_270B_ReadDiskPage(MonContext* ctx) {
     /* TODO: Implement ReadDiskPage (RDPAG) */

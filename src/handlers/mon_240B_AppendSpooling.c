@@ -16,7 +16,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_240B_AppendSpooling(MonContext* ctx) {
     /* TODO: Implement AppendSpooling (APSPE) */

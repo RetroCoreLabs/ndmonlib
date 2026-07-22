@@ -12,7 +12,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_507B_SetProcessPriority(MonContext* ctx) {
     /* TODO: Implement SetProcessPriority (SPRIO) */

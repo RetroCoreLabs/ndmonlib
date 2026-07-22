@@ -15,7 +15,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_326B_LogInStart(MonContext* ctx) {
     /* TODO: Implement LogInStart (MLOGI) */

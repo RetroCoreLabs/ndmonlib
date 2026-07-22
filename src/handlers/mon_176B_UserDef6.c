@@ -6,7 +6,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_176B_UserDef6(MonContext* ctx) {
     /* TODO: Implement UserDef6 (US6) */

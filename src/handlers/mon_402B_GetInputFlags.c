@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_402B_GetInputFlags(MonContext* ctx) {
     /* TODO: Implement GetInputFlags (RFLAG) */

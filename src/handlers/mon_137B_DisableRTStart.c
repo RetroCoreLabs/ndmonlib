@@ -11,7 +11,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_137B_DisableRTStart(MonContext* ctx) {
     /* TODO: Implement DisableRTStart (RTOFF) */

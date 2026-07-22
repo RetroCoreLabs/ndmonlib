@@ -9,7 +9,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_56B_SetUserParam(MonContext* ctx) {
     /* TODO: Implement SetUserParam (PASET) */

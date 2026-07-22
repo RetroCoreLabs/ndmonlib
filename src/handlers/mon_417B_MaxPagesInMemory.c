@@ -14,7 +14,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_417B_MaxPagesInMemory(MonContext* ctx) {
     /* TODO: Implement MaxPagesInMemory (MXPISG) */

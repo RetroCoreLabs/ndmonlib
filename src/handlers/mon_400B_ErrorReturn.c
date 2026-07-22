@@ -6,7 +6,7 @@
  * AUTO-GENERATED STUB - Implementation required
  */
 
-#include "../mon.h"
+#include "mon.h"
 
 MonResult mon_400B_ErrorReturn(MonContext* ctx) {
     /* TODO: Implement ErrorReturn (MACROE) */
