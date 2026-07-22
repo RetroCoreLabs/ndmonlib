@@ -24,8 +24,8 @@
  */
 
 #include "mon.h"
-#include "../mon_errors.h"
-#include "../mon_file_table.h"
+#include "mon_errors.h"
+#include "mon_file_table.h"
 
 /* DevType */
 #define GDEVT_UNSPECIFIED   0

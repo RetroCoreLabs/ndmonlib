@@ -18,9 +18,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_file_table.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_file_table.h"
 
 MonResult mon_123B_ReleaseResource(MonContext* ctx) {
     /* Defensive check for argument count */

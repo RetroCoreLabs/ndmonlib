@@ -25,8 +25,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
+#include "mon_log.h"
+#include "mon_errors.h"
 
 MonResult mon_262B_GetSystemInfo(MonContext* ctx) {
     /* Defensive check for argument count */

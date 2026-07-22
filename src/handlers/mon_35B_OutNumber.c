@@ -21,9 +21,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_file_table.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_file_table.h"
 #include <stdio.h>
 #include <string.h>
 

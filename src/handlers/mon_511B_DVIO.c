@@ -92,9 +92,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_device_io.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_device_io.h"
 #include <stdlib.h>
 
 /* Argument indices - see the mapping table above. */

@@ -61,8 +61,8 @@
  */
 
 #include "mon.h"
-#include "../mon_errors.h"
-#include "../mon_terminal_state.h"
+#include "mon_errors.h"
+#include "mon_terminal_state.h"
 
 /* Function codes, written as the raw values the caller passes.
  * The manual numbers them in OCTAL, so 012B == 10 decimal. */

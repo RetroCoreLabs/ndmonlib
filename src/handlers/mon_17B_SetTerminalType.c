@@ -14,9 +14,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_terminal_state.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_terminal_state.h"
 
 MonResult mon_17B_SetTerminalType(MonContext* ctx) {
     /* This is SINTRAN's @SET-TERMINAL-TYPE mechanism at the MON level: MSTTY

@@ -35,8 +35,8 @@
  */
 
 #include "mon.h"
-#include "../mon_errors.h"
-#include "../mon_file_table.h"
+#include "mon_errors.h"
+#include "mon_file_table.h"
 #include <stdlib.h>
 #include <stdio.h>
 

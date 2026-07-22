@@ -12,8 +12,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
+#include "mon_log.h"
+#include "mon_errors.h"
 
 MonResult mon_13B_ClearInBuffer(MonContext* ctx) {
     /* CIBUF discards any UNREAD, type-ahead input pending in a character

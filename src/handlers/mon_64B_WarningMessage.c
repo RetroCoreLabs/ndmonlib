@@ -17,7 +17,7 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
+#include "mon_log.h"
 #include <stdio.h>
 
 MonResult mon_64B_WarningMessage(MonContext* ctx) {

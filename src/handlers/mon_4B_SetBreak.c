@@ -28,8 +28,8 @@
  */
 
 #include "mon.h"
-#include "../mon_errors.h"
-#include "../mon_terminal_state.h"
+#include "mon_errors.h"
+#include "mon_terminal_state.h"
 
 MonResult mon_4B_SetBreak(MonContext* ctx) {
     /* Need at least DeviceNo and BreakStrategy */

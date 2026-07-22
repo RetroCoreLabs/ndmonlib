@@ -11,7 +11,7 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
+#include "mon_log.h"
 
 MonResult mon_0B_ExitFromProgram(MonContext* ctx) {
     mon_log(MON_LOG_INFO, MON_ID_0B ": IN: (none)");

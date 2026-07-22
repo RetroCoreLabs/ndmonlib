@@ -17,9 +17,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_file_table.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_file_table.h"
 
 MonResult mon_413B_FileNotAsSegment(MonContext* ctx) {
     /* LogSegmentNumber is an OPTIONAL parameter, so one argument is legal.

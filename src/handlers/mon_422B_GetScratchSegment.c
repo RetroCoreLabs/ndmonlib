@@ -16,7 +16,7 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
+#include "mon_log.h"
 
 MonResult mon_422B_GetScratchSegment(MonContext* ctx) {
     uint32_t segment_size;

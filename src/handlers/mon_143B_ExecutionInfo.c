@@ -27,7 +27,7 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
+#include "mon_log.h"
 
 /* Default execution environment settings.
  *
