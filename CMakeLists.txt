@@ -30,6 +30,7 @@ add_library(mon STATIC
 
 # Public include directory
 target_include_directories(mon PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ndmon
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
