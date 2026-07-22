@@ -68,8 +68,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
+#include "mon_log.h"
+#include "mon_errors.h"
 
 MonResult mon_321B_UEAdministrator(MonContext* ctx) {
     /* Sub-function selector = param[12] on ND-100, arg[0] on ND-500. The linker

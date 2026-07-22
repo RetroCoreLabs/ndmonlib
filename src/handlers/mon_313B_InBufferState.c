@@ -14,8 +14,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_file_table.h"
+#include "mon_log.h"
+#include "mon_file_table.h"
 
 /*
  * Implemented against the carved contract (mon-analysis/313B-InBufferState):

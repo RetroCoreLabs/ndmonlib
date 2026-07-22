@@ -16,9 +16,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_config.h"
-#include "../mon_errors.h"
+#include "mon_log.h"
+#include "mon_config.h"
+#include "mon_errors.h"
 #include <string.h>
 
 /* Carve-verified contract (006-S3FS:105301B): returns the name of the user

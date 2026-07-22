@@ -12,8 +12,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_terminal_state.h"
+#include "mon_log.h"
+#include "mon_terminal_state.h"
 
 MonResult mon_72B_EnableEscape(MonContext* ctx) {
     /* TODO: Implement EnableEscape (EESCF) */

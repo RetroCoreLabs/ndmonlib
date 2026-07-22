@@ -29,8 +29,8 @@
  */
 
 #include "mon.h"
-#include "../mon_errors.h"
-#include "../mon_terminal_state.h"
+#include "mon_errors.h"
+#include "mon_terminal_state.h"
 
 MonResult mon_3B_SetEcho(MonContext* ctx) {
     /* Need at least DeviceNumber and EchoStrategy */

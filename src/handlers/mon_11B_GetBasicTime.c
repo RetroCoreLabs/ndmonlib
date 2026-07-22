@@ -19,8 +19,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../../cpu/cpu_protos.h"
+#include "mon_log.h"
+#include "../cpu/cpu_protos.h"
 
 MonResult mon_11B_GetBasicTime(MonContext* ctx) {
     if (!ctx || !ctx->cpu) {

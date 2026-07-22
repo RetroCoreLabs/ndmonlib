@@ -21,9 +21,9 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_clock.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_clock.h"
 
 /* Basic time units per second */
 #define BASIC_TIME_UNITS_PER_SEC 50

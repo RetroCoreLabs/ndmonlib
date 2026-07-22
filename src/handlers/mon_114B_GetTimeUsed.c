@@ -14,8 +14,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_clock.h"
+#include "mon_log.h"
+#include "mon_clock.h"
 
 /* Reset session time (can be called from mon_init or debugger).
  * The TUSED baseline now lives in mon_clock; kept as a thin alias so existing

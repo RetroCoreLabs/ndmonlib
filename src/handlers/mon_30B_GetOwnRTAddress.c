@@ -41,7 +41,7 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
+#include "mon_log.h"
 
 /*
  * SINTRAN WINDOW SEGMENT (Segment 31)

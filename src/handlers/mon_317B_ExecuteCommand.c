@@ -18,8 +18,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_errors.h"
+#include "mon_log.h"
+#include "mon_errors.h"
 #include <stdlib.h>
 
 MonResult mon_317B_ExecuteCommand(MonContext* ctx) {

@@ -33,12 +33,12 @@
 
 #include "mon.h"
 #include <stdlib.h>
-#include "../mon_log.h"
-#include "../mon_errors.h"
-#include "../mon_file_table.h"
+#include "mon_log.h"
+#include "mon_errors.h"
+#include "mon_file_table.h"
 #include <stdbool.h>
-#include "../mon_terminal_state.h"
-#include "../mon_device_io.h"
+#include "mon_terminal_state.h"
+#include "mon_device_io.h"
 #include <stdio.h>
 #include <string.h>
 

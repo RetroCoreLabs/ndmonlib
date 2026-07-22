@@ -18,8 +18,8 @@
  */
 
 #include "mon.h"
-#include "../mon_log.h"
-#include "../mon_clock.h"
+#include "mon_log.h"
+#include "mon_clock.h"
 #include <stdio.h>
 
 MonResult mon_142B_ToErrorDevice(MonContext* ctx) {
