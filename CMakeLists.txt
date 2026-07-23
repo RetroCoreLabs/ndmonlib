@@ -28,7 +28,7 @@ add_library(mon STATIC
     ${MON_HANDLER_SOURCES}
 )
 
-# Public include directory
+# Include directories - use same approach as nd500x (add all for both target AND callers)
 target_include_directories(mon PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ndmon
     ${CMAKE_CURRENT_SOURCE_DIR}/include
