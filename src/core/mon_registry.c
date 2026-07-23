@@ -242,6 +242,7 @@ extern MonResult mon_75B_GetStartByte(MonContext* ctx);
 extern MonResult mon_76B_SetBlockSize(MonContext* ctx);
 extern MonResult mon_77B_SetStartBlock(MonContext* ctx);
 extern MonResult mon_7B_ReadBlock(MonContext* ctx);
+extern MonResult mon_600B_NDIX(MonContext* ctx);
 
 /* Register all handlers */
 void mon_register_all_handlers(void) {
@@ -2763,6 +2764,17 @@ void mon_register_all_handlers(void) {
         "[I] FileNumber (INTEGER2): File number. See OpenFile.\\n[I] BlockNo (INTEGER2): Block number.\\n[O] DataDestination (ARRAY): Array for data returned.\\n[O] ErrCode (INTEGER2): Standard Error Code. See appendix A.",  /* Parameter details */
         mon_7B_ReadBlock,  /* Handler */
         MON_STATUS_NOT_IMPLEMENTED,    /* Status */
+        4             /* Param count */
+    );
+    mon_register_ex(
+        384,          /* MON number (decimal) */
+        "600B",       /* Octal string */
+        "FECALL",     /* Short name */
+        "NDIXFrontEndCall",  /* Long name */
+        "NDIX Front-End Call: Inter-CPU communication between ND-500 kernel and ND-100 I/O processor. Handles fecall operations: feinit (initialization), I/O operations, feexit (shutdown). Non-standard SINTRAN extension, ND-500 only.",  /* Description */
+        "[I] CmdPkt (ADDRESS): Command packet address in B.20\\n[O] RespPkt (ADDRESS): Response packet address in B.28",  /* Parameter details */
+        mon_600B_NDIX,  /* Handler */
+        MON_STATUS_IN_PROGRESS,    /* Status */
         4             /* Param count */
     );
 }
