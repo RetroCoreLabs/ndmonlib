@@ -142,6 +142,25 @@
       "parameter_count": 1,
       "test_cases": [],
       "references": ["SINTRAN III Reference Manual ND-60.113.01:650"]
+    },
+    {
+      "mon_number": "600B",
+      "decimal": 384,
+      "name": "NDIX Front-End Call",
+      "class": "NDIX I/O",
+      "description": "Inter-CPU communication between ND-500 kernel and ND-100 I/O processor. Handles fecall operations: feinit (initialization), I/O operations, feexit (shutdown).",
+      "status": "IN_DEVELOPMENT",
+      "source_file": "src/handlers/mon_600B_NDIX.c",
+      "nd100_compat": false,
+      "nd500_compat": true,
+      "parameter_count": 4,
+      "test_cases": ["test_mon_600B_feinit", "test_mon_600B_io", "test_mon_600B_exit"],
+      "references": [
+        "NDIX-C Kernel Specification",
+        "/mnt/e/Dev/Ronny/NDIX-C/verified-docs/BOOT_SEQUENCE_COMPLETE_REFERENCE.md",
+        "/mnt/e/Dev/Ronny/NDIX-C/kernel/MASTER/machine/locore.c:216-239"
+      ],
+      "notes": "NDIX-specific, non-standard SINTRAN extension. ND-500 only. Required for NDIX kernel bootstrap. Phase 1 implements feinit response only. Phase 2 will add I/O operations."
     }
   ],
   "summary": {
