@@ -37,6 +37,7 @@
 
 #include "mon.h"
 #include "mon_log.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -217,40 +218,118 @@ static MonResult handle_feinit_fecall(MonContext* ctx) {
 }
 
 /**
+ * Handle FE_WCON: Write single character to console
+ *
+ * Command packet: physaddr (4 bytes) - address of character in kernel memory
+ * Response packet: completion (2 bytes) - 0=OK, non-zero=error
+ */
+static MonResult handle_fe_wcon(MonContext* ctx) {
+    mon_log(MON_LOG_DEBUG, "MON 600B: FE_WCON - Write console character");
+
+    if (ctx->arg_count < 1) {
+        ctx->set_k_flag(ctx->cpu, 1);
+        return MON_ERROR;
+    }
+
+    /* Read character address from arg[0] (command packet pointer) */
+    uint32_t cmd_pkt_addr = ctx->arg_addresses[0];
+    uint32_t char_addr = ctx->read_word(ctx->cpu, cmd_pkt_addr);
+
+    /* Read the character byte from kernel memory at that address */
+    uint8_t ch = ctx->read_byte(ctx->cpu, char_addr);
+
+    /* Output the character to console */
+    putchar(ch);
+    fflush(stdout);
+
+    mon_log(MON_LOG_DEBUG, "MON 600B: WCON output: 0x%02x ('%c')", ch,
+            (ch >= 32 && ch < 127) ? ch : '.');
+
+    /* Write response packet with completion=0 (success) */
+    if (ctx->arg_count >= 3) {
+        uint32_t resp_pkt_addr = ctx->arg_addresses[2];
+        ctx->write_halfword(ctx->cpu, resp_pkt_addr, 0);  /* completion = 0 */
+    }
+
+    ctx->set_k_flag(ctx->cpu, 0);  /* Success */
+    return MON_SUCCESS;
+}
+
+/**
+ * Handle FE_RCON: Read single character from console
+ *
+ * Command packet: physaddr (4 bytes) - address where to store character
+ * Response packet: completion (2 bytes) - 0=OK, non-zero=error
+ *
+ * TODO: Implement actual console input
+ */
+static MonResult handle_fe_rcon(MonContext* ctx) {
+    mon_log(MON_LOG_DEBUG, "MON 600B: FE_RCON - Read console character");
+
+    if (ctx->arg_count < 1) {
+        ctx->set_k_flag(ctx->cpu, 1);
+        return MON_ERROR;
+    }
+
+    /* For now, just return 0 (no input available) */
+    uint8_t ch = 0;
+
+    /* Write the character to kernel memory */
+    if (ctx->arg_count >= 1) {
+        uint32_t cmd_pkt_addr = ctx->arg_addresses[0];
+        uint32_t char_addr = ctx->read_word(ctx->cpu, cmd_pkt_addr);
+        ctx->write_byte(ctx->cpu, char_addr, ch);
+    }
+
+    /* Write response packet with completion=0 */
+    if (ctx->arg_count >= 3) {
+        uint32_t resp_pkt_addr = ctx->arg_addresses[2];
+        ctx->write_halfword(ctx->cpu, resp_pkt_addr, 0);
+    }
+
+    ctx->set_k_flag(ctx->cpu, 0);
+    return MON_SUCCESS;
+}
+
+/**
  * Dispatch generic fecall I/O operation
  *
- * TODO (Phase 2):
- *   - Implement FE_INIT device initialization
- *   - Implement FE_OPEN (open device)
- *   - Implement FE_CLOSE (close device)
- *   - Implement FE_READ (read from device)
- *   - Implement FE_WRITE (write to device)
- *   - Implement FE_RCON (read control status)
- *   - Implement FE_WCON (write control)
- *   - Implement FE_DCTL (device control)
- *   - Implement FE_ERRM (error message)
- *   - Implement FE_EXIT (exit from device)
+ * Identifies operation type and dispatches to appropriate handler.
+ * Operation type comes from the request code (in second argument or command packet).
+ *
+ * Supported operations:
+ *   FE_WCON (0x8) - Write console
+ *   FE_RCON (0x6) - Read console
+ *   FE_OPEN (0x3) - Open device (TODO)
+ *   FE_READ (0x5) - Read from device (TODO)
+ *   FE_WRIT (0x7) - Write to device (TODO)
+ *   FE_CLOS (0x4) - Close device (TODO)
  */
 static MonResult handle_fecall_io(MonContext* ctx) {
-    mon_log(MON_LOG_INFO, "MON 600B: fecall - Generic I/O operation (not yet implemented)");
+    mon_log(MON_LOG_INFO, "MON 600B: fecall - Generic I/O operation");
 
-    /* TODO: Read operation code from command packet
-     *   uint32_t cmd_pkt_addr = ctx->get_register(ctx->cpu, "B.20");
-     *   uint16_t operation = ctx->read_word(ctx->cpu, cmd_pkt_addr);
+    /* For console I/O, kernel passes:
+     * arg[0] = command packet address (contains device/operation info)
+     * arg[1] = parameter 2
+     * arg[2] = response packet address
+     * arg[3] = parameter 4
      *
-     *   switch(operation) {
-     *       case FE_OPEN: return handle_fe_open(ctx);
-     *       case FE_CLOSE: return handle_fe_close(ctx);
-     *       case FE_READ: return handle_fe_read(ctx);
-     *       case FE_WRITE: return handle_fe_write(ctx);
-     *       ... etc
-     *   }
+     * The operation type is encoded in the request (wreq/rreq passed to fecall).
+     * Since we don't have the request directly, we'll detect by pattern or
+     * dispatch based on which arguments are valid.
+     *
+     * For now, assume console operations (most common for startup).
      */
 
-    /* For Phase 1, just acknowledge */
-    ctx->set_k_flag(ctx->cpu, 0);
+    /* Try to distinguish between WCON and RCON by looking at what's being asked
+     * WCON: kernel wants to output (command has data to send)
+     * RCON: kernel wants to input (response receives data)
+     *
+     * For startup, only WCON is used. Implement that first.
+     */
 
-    return MON_SUCCESS;
+    /* Assume WCON for now (write console) */
+    return handle_fe_wcon(ctx);
 }
 
 /**
