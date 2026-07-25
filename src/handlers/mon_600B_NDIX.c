@@ -217,6 +217,46 @@ static MonResult handle_fe_open(MonContext* ctx) {
     return MON_SUCCESS;
 }
 
+/* --- async I/O completion: post an interrupt to the ND-500 ---------------
+ * The real ND-100 signals async completion by queuing an int_descr on the
+ * shared IPL record's ip_next; the ND-500 kernel's splx() (locore.c:1413)
+ * polls ip_next on every ipl change and, since the idle loop spins on spl0()
+ * (swtch.c:183 `while(_ffs(whichqs)==-1) spl0();`), picks it up almost
+ * immediately: splx4 -> intvec -> dispatch (trap.c:602) -> (*drvtab[gen-1]
+ * .fr_intr)(sub) = diintr(sub) (di.c:494) -> biodone(). diintr reads the
+ * completion from ditab[sub].sd_apkt, which FE_READ already filled.
+ *
+ * We write into the shared segment via the virtual (MMU) accessors, big-endian.
+ * int_descr (icb.h:16, byte-packed 22 bytes) lives in the iplrec slack at
+ * 0x30001010 (iplrec is 0x30001000..~+10, clockrec starts 0x30001040).
+ * ip_next is an ND-100 word address: intvec converts byte = word<<1 - shseg +
+ * sharebase, with shseg=0x30000800, sharebase=0x30000000, so
+ *   word = (byte + 0x800) >> 1. */
+#define IPLREC_VADDR      0x30001000u
+#define INT_DESCR_VADDR   0x30001010u
+#define IPL_DK            4u          /* icb.h:81 */
+#define GEN_DISK          1u          /* drvtab[0] = diintr; dispatch uses drvtab[gen-1] */
+
+static void post_disk_interrupt(MonContext* ctx, uint16_t sub, uint32_t resp_word) {
+    uint32_t d = INT_DESCR_VADDR;
+    ctx->write_word    (ctx->cpu, d +  0, 0xFFFFFFFFu); /* id_next  = -1 (end)   */
+    ctx->write_halfword(ctx->cpu, d +  4, IPL_DK);      /* id_ipl                */
+    ctx->write_halfword(ctx->cpu, d +  6, 0);           /* id_s3add              */
+    ctx->write_halfword(ctx->cpu, d +  8, 0);           /* id_s3dev              */
+    ctx->write_halfword(ctx->cpu, d + 10, GEN_DISK);    /* id_gen_dev = DISK     */
+    ctx->write_halfword(ctx->cpu, d + 12, sub);         /* id_sub_dev            */
+    ctx->write_halfword(ctx->cpu, d + 14, 0);           /* id_flag               */
+    ctx->write_halfword(ctx->cpu, d + 16, 0x5);         /* id_s3func = FE_READ   */
+    ctx->write_word    (ctx->cpu, d + 18, resp_word);   /* id_resp_pkt           */
+
+    /* link it: iplrec.ip_next = ND-100 word address of the int_descr */
+    uint32_t ip_next_word = (INT_DESCR_VADDR + 0x800u) >> 1;  /* = 0x18000C08 */
+    ctx->write_word(ctx->cpu, IPLREC_VADDR + 0, ip_next_word);
+    mon_log(MON_LOG_INFO,
+        "MON 600B: posted disk interrupt (sub=%u ipl=%u ip_next=0x%08x)",
+        sub, IPL_DK, ip_next_word);
+}
+
 /* FE_READ (disk): DMA `nbytes` from the backing image at devaddr*1024 into the
  * guest physical address given by the ND-100-word physaddr in the command. */
 static MonResult handle_fe_read(MonContext* ctx) {
@@ -253,6 +293,14 @@ static MonResult handle_fe_read(MonContext* ctx) {
         "MON 600B: FE_READ(disk) devaddr=%u(off=0x%llx) nbytes=%u -> dma_phys=0x%08x got=%u",
         devaddr, (unsigned long long)((uint64_t)devaddr * NDIX_SECSIZE),
         nbytes, dma_phys, got);
+
+    /* async completion: post the I/O interrupt so diintr()->biodone() wakes the
+     * blocked reader. sub-device = low 16 bits of the device arg (DISK<<16|sub);
+     * resp pkt word address = the arg[2] value. */
+    uint16_t sub = (uint16_t)(ctx->read_word(ctx->cpu, ctx->arg_addresses[0]) & 0xFFFF);
+    uint32_t resp_word = ctx->read_word(ctx->cpu, ctx->arg_addresses[2]);
+    post_disk_interrupt(ctx, sub, resp_word);
+
     ctx->set_k_flag(ctx->cpu, 0);
     return MON_SUCCESS;
 }
