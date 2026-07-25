@@ -50,19 +50,29 @@ MonResult mon_262B_GetSystemInfo(MonContext* ctx) {
     ctx->write_byte(ctx->cpu, buffer_addr + 0, 0);
     ctx->write_byte(ctx->cpu, buffer_addr + 1, 1);  /* System 1 */
 
-    /* Byte 2 - CPU type (not applicable for ND-500, use 0) */
-    ctx->write_byte(ctx->cpu, buffer_addr + 2, 0);
+    /* Bytes 2:3 describe the FRONT-END ND-100-family CPU that runs SINTRAN III,
+     * NOT the ND-500 coprocessor - the L07 oracle (mon-oracle-for-NC/262B-CPUST.md,
+     * sec 5) is explicit that there is no ND-500 encoding for these two bytes and
+     * that a real machine reports the front-end identity here. On an ND-5800 the
+     * front end is an ND-110/CX-class CPU, so per the manual table:
+     *   byte 2 = 4  (ND-110/CX or ND-120/CX, 48-bit FP)
+     *   byte 3 = 3  (ND-110/CX / ND-120/CX, 16-PIT micro-segment administration)
+     * (Previously 0/0, which is not a valid ND-100-family value.) */
+    ctx->write_byte(ctx->cpu, buffer_addr + 2, 4);   /* CPU type: ND-110/CX 48-bit FP */
+    ctx->write_byte(ctx->cpu, buffer_addr + 3, 3);   /* Instruction set: 16-PIT micro-seg admin */
 
-    /* Byte 3 - Instruction set (0 = standard) */
-    ctx->write_byte(ctx->cpu, buffer_addr + 3, 0);
+    /* Bytes 4:5 - Microprogram version. Report the ND-5800 control-store version
+     * 11930 (0x2E9A = MICRO-5800-B30), the same value the sysgen range-check and
+     * the octobus VERSION path expect for an ND-5800. */
+    ctx->write_byte(ctx->cpu, buffer_addr + 4, (11930 >> 8) & 0xFF);
+    ctx->write_byte(ctx->cpu, buffer_addr + 5, 11930 & 0xFF);
 
-    /* Bytes 4:5 - Microprogram version */
-    ctx->write_byte(ctx->cpu, buffer_addr + 4, 0);
-    ctx->write_byte(ctx->cpu, buffer_addr + 5, 0);
-
-    /* Bytes 6:7 - System type (500 = ND-500) */
-    ctx->write_byte(ctx->cpu, buffer_addr + 6, (500 >> 8) & 0xFF);
-    ctx->write_byte(ctx->cpu, buffer_addr + 7, 500 & 0xFF);
+    /* Bytes 6:7 - System type = the machine MODEL number. This machine is an
+     * ND-5800, so report 5800 here (the field that carries 100/500/502/5561/...
+     * per the manual). This is where "CPU type 5800" belongs - not byte 2, which
+     * is the front-end CPU-type enum above. */
+    ctx->write_byte(ctx->cpu, buffer_addr + 6, (5800 >> 8) & 0xFF);
+    ctx->write_byte(ctx->cpu, buffer_addr + 7, 5800 & 0xFF);
 
     /* Byte 8 - Operating system (5 = SINTRAN III VSX-500) */
     ctx->write_byte(ctx->cpu, buffer_addr + 8, 5);
@@ -98,7 +108,7 @@ MonResult mon_262B_GetSystemInfo(MonContext* ctx) {
     ctx->write_byte(ctx->cpu, buffer_addr + 22, (1990 >> 8) & 0xFF);
     ctx->write_byte(ctx->cpu, buffer_addr + 23, 1990 & 0xFF);
 
-    mon_log(MON_LOG_DEBUG, MON_ID_262B ": OUT: SysType=500, OS=VSX-500, Version=L");
+    mon_log(MON_LOG_DEBUG, MON_ID_262B ": OUT: SysType=5800, CPU=ND-110/CX(4/3), MicVer=11930, OS=VSX-500, Version=L");
 
     mon_set_success(ctx);
     return MON_SUCCESS;
