@@ -81,6 +81,13 @@ typedef struct MonContext {
     uint8_t (*read_byte)(void* cpu, uint32_t addr);
     void (*write_byte)(void* cpu, uint32_t addr, uint8_t val);
 
+    /* Physical memory access (bypasses the ND-500 data MMU). Used for fecall
+     * packets, which are addressed by ND-100 WORD address: ND-500 byte address
+     * = (nd100_word << 1) - private. Takes `machine` (ctx->machine), not cpu.
+     * Word access is big-endian, matching ND-500 memory order. */
+    uint32_t (*read_phys_word)(void* machine, uint32_t phys);
+    void (*write_phys_word)(void* machine, uint32_t phys, uint32_t val);
+
     /* Flag manipulation callbacks */
     void (*set_k_flag)(void* cpu, int value);
     void (*set_error_code)(void* cpu, int32_t code);
