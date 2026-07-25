@@ -87,6 +87,8 @@ typedef struct MonContext {
      * Word access is big-endian, matching ND-500 memory order. */
     uint32_t (*read_phys_word)(void* machine, uint32_t phys);
     void (*write_phys_word)(void* machine, uint32_t phys, uint32_t val);
+    uint8_t (*read_phys_byte)(void* machine, uint32_t phys);
+    void (*write_phys_byte)(void* machine, uint32_t phys, uint8_t val);
 
     /* Flag manipulation callbacks */
     void (*set_k_flag)(void* cpu, int value);
