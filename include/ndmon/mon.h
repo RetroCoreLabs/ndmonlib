@@ -172,6 +172,21 @@ int mon_read_sintran_string(MonContext* ctx, int idx, char* buf, int max);
  */
 int mon_read_descriptor_string(MonContext* ctx, int idx, char* buf, int max);
 
+/* =========================================================================
+ * NESTED COMMAND EXECUTION (MON 317B UECOM)
+ *
+ * SINTRAN programs (notably the ND C compiler NC-A06) invoke their code-
+ * generator back-end (CAT-CAT5-B06) as a NESTED command via MON 317B UECOM.
+ * ndmonlib cannot load/run a DOM itself, so the frontend registers a handler
+ * that resolves the command to a program, runs it re-entrantly sharing this
+ * file table, and returns to the caller. Return value contract:
+ *    0  = command was a known program and ran to completion (success)
+ *   <0  = command is not a known program -> handler falls back to benign stub
+ *   >0  = program ran but failed (SINTRAN error code)
+ * ========================================================================= */
+typedef int (*MonExecuteCommandFn)(void* cpu, void* machine, const char* command);
+void mon_set_execute_command(MonExecuteCommandFn fn);
+
 /**
  * Write a string to parameter address.
  *

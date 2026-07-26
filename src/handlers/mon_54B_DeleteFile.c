@@ -34,9 +34,18 @@ MonResult mon_54B_DeleteFile(MonContext* ctx) {
         return MON_ERROR;
     }
 
-    /* Read filename string */
+    /* Read filename string.
+     * ND-500 passes filename args as DESCRIPTORS ([len, ptr]) - the same shape
+     * MON 50B OPEN reads via mon_read_descriptor_string. The old raw-inline
+     * mon_read_sintran_string read the descriptor words as characters and got an
+     * empty string, so NC's scratch cleanup/finalization (its 54B deletes) all
+     * failed silently. Read as a descriptor first; fall back to the raw reader
+     * only if the descriptor is not usable. */
     char filename[65];
-    mon_read_sintran_string(ctx, 0, filename, 65);
+    int dn = mon_read_descriptor_string(ctx, 0, filename, 65);
+    if (dn <= 0 || filename[0] == '\0') {
+        mon_read_sintran_string(ctx, 0, filename, 65);
+    }
 
     mon_log(MON_LOG_DEBUG, MON_ID_54B ": IN: FileName='%s'", filename);
 
