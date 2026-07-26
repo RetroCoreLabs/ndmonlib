@@ -9,6 +9,7 @@
 #include "mon_file_table.h"
 #include "mon.h"
 #include "mon_path.h"
+#include "mon_config.h"  /* mon_config_get_sintran_root for the SYSTEM abbrev fallback */
 #include "mon_clock.h"
 #include "mon_terminal_state.h"  /* mon_is_escape_break for the async user-break poll */
 #include <string.h>
@@ -29,6 +30,14 @@ static uint32_t unix_to_nd_date(time_t t);
 /* Static tables */
 static ReservationEntry reservation_table[MAX_DEVICES];
 static OpenFileEntry open_files[FILE_TABLE_SIZE];
+
+/* Nesting generation for file ownership. A nested program (run via 317B UECOM)
+ * bumps this on entry; files it opens are tagged with the raised value, and its
+ * MON 0B LEAVE closes only files at >= the current generation - leaving the
+ * caller's files open so the caller resumes cleanly. Top level = 0. */
+static int g_file_gen = 0;
+void mon_file_table_push_generation(void) { g_file_gen++; }
+void mon_file_table_pop_generation(void)  { if (g_file_gen > 0) g_file_gen--; }
 static ConsoleIO* console_io = NULL;
 
 /* Helper: Write 16-bit big-endian */
@@ -87,6 +96,55 @@ void mon_file_table_reset(void) {
         }
     }
     mon_file_table_init();
+}
+
+void mon_file_table_close_all_for_exit(MonContext* ctx) {
+    /* Same per-file writeback mon_43B_CloseFile.c does for a single explicit
+     * close, applied to every still-open segment-mapped file. Without this,
+     * a program that builds output by writing through a connected segment
+     * (e.g. the ND LINKER writing a :DOM) loses everything on exit: MON 0B
+     * LEAVE only halted the CPU (SINTRAN: "Background programs close all
+     * files not set permanently open" was a doc comment, not code), and
+     * MON 43B CLOSE's FileNumber=-1/-2 bulk path called mon_file_table_reset()
+     * directly, bypassing the single-file writeback branch below it. */
+    /* Close only files owned by the EXITING program (generation >= the current
+     * one). A nested program (317B UECOM) thus flushes/closes its own output but
+     * leaves the caller's files - notably the shared scratch and the caller's
+     * open sources - intact, so the caller resumes cleanly instead of running on
+     * closed handles (which used to overflow NC's stack right after codegen). */
+    for (int i = 0; i < FILE_TABLE_SIZE; i++) {
+        OpenFileEntry* entry = &open_files[i];
+        if (!entry->in_use || entry->open_gen < g_file_gen) continue;
+
+        /* Segment-mapped output (e.g. a linker :DOM / CAT scratch) is written
+         * back to its host file and released - same as a single 43B CLOSE. */
+        if (entry->mapped_as_segment && ctx && ctx->writeback_file_segment && entry->host_path[0]) {
+            uint32_t seg = entry->mapped_segment_no;
+            int wrc = ctx->writeback_file_segment(ctx->cpu, 0xFF /* CED */, seg,
+                                                  entry->host_path);
+            if (wrc < 0) {
+                mon_log(MON_LOG_WARN,
+                        "mon_file_table_close_all_for_exit: write-back of segment %o to '%s' FAILED",
+                        seg, entry->host_path);
+            } else if (wrc > 0) {
+                mon_log(MON_LOG_INFO,
+                        "mon_file_table_close_all_for_exit: segment %o written back to '%s'",
+                        seg, entry->host_path);
+            }
+            if (ctx->release_file_segment) {
+                ctx->release_file_segment(0xFF /* CED */, seg);
+            }
+        }
+
+        if (entry->host_file) fclose(entry->host_file);
+        memset(entry, 0, sizeof(*entry));   /* free the slot */
+    }
+
+    /* Only the top-level program's exit clears device reservations (the old
+     * full-reset semantics); a nested exit must not touch the caller's state. */
+    if (g_file_gen == 0) {
+        memset(reservation_table, 0, sizeof(reservation_table));
+    }
 }
 
 /* ============================================================
@@ -624,6 +682,41 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
             mon_log(MON_LOG_WARN, "MON OPEN: Ambiguous file name '%s'", host_path);
             return -47;  /* Error 57B: Ambiguous file name */
         }
+
+        /* SINTRAN own-dir-then-SYSTEM fallback applies to ABBREVIATED names too:
+         * when the abbreviation did not resolve in the caller's own directory,
+         * and no (USER) was named and this is not a scratch name, scan user
+         * SYSTEM the same COMPS way (GFILI @057173B -> GSYSI @055540B ->
+         * GOBJI @056326B, carve 006-S3FS). The exact-name SYSTEM fallback in
+         * mon_translate_path_lookup cannot match a versioned stored name
+         * (e.g. DDBTABLES-G:VTM -> DDBTABLES-G06:VTM), so it is done here, where
+         * the directory scan lives. host_path was left as the own-dir path on a
+         * total miss, so its basename is the requested NAME.TYPE to match. */
+        if (!fp && parsed_user[0] == '\0' && !is_scratch
+            && strncmp(parsed_name, "SCRATCH-", 8) != 0) {
+            const char* root = mon_config_get_sintran_root();
+            if (!root || !root[0]) root = ".";
+            const char* slash = strrchr(host_path, '/');
+            const char* base = slash ? slash + 1 : host_path;
+            char sys_host[512];
+            if ((size_t)snprintf(sys_host, sizeof(sys_host), "%s/SYSTEM/%s", root, base)
+                    < sizeof(sys_host)) {
+                int src = sintran_resolve_abbrev(sys_host, resolved, sizeof(resolved));
+                if (src == 0) {
+                    fp = fopen(resolved, fmode);
+                    if (fp) {
+                        mon_log(MON_LOG_INFO,
+                                "MON OPEN: SYSTEM abbrev fallback '%s' -> '%s'",
+                                sys_host, resolved);
+                        snprintf(host_path, sizeof(host_path), "%s", resolved);
+                    }
+                } else if (src == -47) {
+                    mon_log(MON_LOG_WARN,
+                            "MON OPEN: Ambiguous file name in SYSTEM '%s'", sys_host);
+                    return -47;  /* Error 57B: Ambiguous file name */
+                }
+            }
+        }
     }
 
     if (!fp) {
@@ -664,6 +757,7 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
     entry->current_position = 0;
     entry->block_size = 512;  /* Default block size */
     entry->host_file = fp;
+    entry->open_gen = g_file_gen;  /* owned by the program running at this depth */
     strncpy(entry->host_path, host_path, sizeof(entry->host_path) - 1);
 
     /* Initialize ObjectEntry - use parsed name if available */
@@ -929,7 +1023,15 @@ int mon_console_poll_user_break(void) {
  * built-in queued console handlers will be installed automatically.
  * ============================================================ */
 
-#define QUEUED_CONSOLE_MAX 4096
+/* 4096 was too small for a full interactive session against a full-screen
+ * VT100 program (the ND LINKER): its per-keystroke cursor-position/redraw
+ * escape sequences blow past 4KB within the first few commands, and writes
+ * past the cap were DROPPED SILENTLY (no truncation marker), so callers of
+ * mon_get_console_output() were debugging blind past that point without any
+ * indication the log was incomplete. Bumped to 1MB (comfortably covers a
+ * full multi-command linker session) and a one-time stderr warning was added
+ * below so a future overflow is visible instead of silent. */
+#define QUEUED_CONSOLE_MAX (1024 * 1024)
 
 static struct {
     char input_buffer[QUEUED_CONSOLE_MAX];
@@ -967,6 +1069,15 @@ static void queued_console_write_char(void* ctx, int ch) {
     if (g_queued_console.output_len < QUEUED_CONSOLE_MAX - 1) {
         g_queued_console.output_buffer[g_queued_console.output_len++] = (char)ch;
         g_queued_console.output_buffer[g_queued_console.output_len] = '\0';
+    } else {
+        static int warned = 0;
+        if (!warned) {
+            fprintf(stderr, "[mon_file_table] WARNING: queued console output buffer "
+                             "full (%d bytes) - further output is being DROPPED, not "
+                             "captured. mon_get_console_output() is now INCOMPLETE.\n",
+                    QUEUED_CONSOLE_MAX);
+            warned = 1;
+        }
     }
 }
 
@@ -1099,11 +1210,24 @@ static int stdio_wait_for_input(void* ctx) {
     (void)ctx;
     /* Block until stdin has data (real interactive terminal wait). A NULL
      * timeout makes select() wait indefinitely. Returns 0 on error/EOF. */
+    if (g_stdio_pushback >= 0) return 1;   /* already hold a peeked byte */
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(STDIN_FILENO, &fds);
     int r = select(STDIN_FILENO + 1, &fds, NULL, NULL, NULL);
-    return (r > 0) ? 1 : 0;
+    if (r <= 0) return 0;
+    /* select() reports a CLOSED pipe (EOF) as "readable" too - returning 1 here
+     * would make a batch caller resume, re-read EOF, suspend, and spin forever
+     * (the measured NC/linker hang at end-of-input). PEEK one byte to tell real
+     * data from EOF: read()==0 is genuine EOF -> return 0 so the run loop breaks
+     * and the program terminates. A real byte is stashed in the one-byte
+     * pushback (LF->CR translated, matching stdio_read_char) so it is not lost. */
+    unsigned char ch;
+    ssize_t n = read(STDIN_FILENO, &ch, 1);
+    if (n <= 0) return 0;                  /* EOF or error - stop the run */
+    if (ch == '\n') ch = '\r';
+    g_stdio_pushback = (int)ch;
+    return 1;
 }
 
 static int stdio_read_char(void* ctx) {

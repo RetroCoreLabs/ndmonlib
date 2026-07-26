@@ -39,10 +39,12 @@ MonResult mon_43B_CloseFile(MonContext* ctx) {
 
     mon_log(MON_LOG_DEBUG, MON_ID_43B ": IN: FileNumber=%d", file_number);
 
-    /* Handle special case: -1 means close all files not permanently open */
+    /* Handle special case: -1 means close all files not permanently open.
+     * Must write back any still connected as a segment first - same reason
+     * as the single-file path below, just applied to every open file. */
     if (file_number == -1) {
         mon_log(MON_LOG_INFO, MON_ID_43B ": Closing all files (FileNumber=-1)");
-        mon_file_table_reset();
+        mon_file_table_close_all_for_exit(ctx);
         mon_set_success(ctx);
         return MON_SUCCESS;
     }
@@ -50,7 +52,7 @@ MonResult mon_43B_CloseFile(MonContext* ctx) {
     /* Handle special case: -2 means close all including scratch and permanently open */
     if (file_number == -2) {
         mon_log(MON_LOG_INFO, MON_ID_43B ": Closing all files including scratch (FileNumber=-2)");
-        mon_file_table_reset();
+        mon_file_table_close_all_for_exit(ctx);
         mon_set_success(ctx);
         return MON_SUCCESS;
     }
