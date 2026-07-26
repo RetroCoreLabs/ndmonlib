@@ -65,9 +65,14 @@ MonResult mon_256B_FullFileName(MonContext* ctx) {
     /* Split the abbreviated name into user/name/type so we can resolve it to a
      * host file and check existence. If the name carries no type, fall back to
      * the (ND-100) default file type when one was supplied. */
-    char user[SINTRAN_MAX_USER];
-    char name[SINTRAN_MAX_NAME];
-    char ext[SINTRAN_MAX_TYPE];
+    /* +1 for the null terminator (matching mon_path.c). Without it a full-length
+     * 16-char SINTRAN name like "LINKER-AUTO-FORT" is truncated to 15 chars
+     * ("LINKER-AUTO-FOR"), so DEABF then reports NO SUCH FILE NAME and the ND
+     * LINKER's CLOSE auto-job (which resolves LINKER-AUTO-<lang>:JOB through
+     * DEABF) fails - breaking every link. */
+    char user[SINTRAN_MAX_USER + 1];
+    char name[SINTRAN_MAX_NAME + 1];
+    char ext[SINTRAN_MAX_TYPE + 1];
     if (mon_parse_sintran_name(abbrev_name, user, sizeof(user),
                                name, sizeof(name), ext, sizeof(ext)) != 0) {
         mon_log(MON_LOG_DEBUG, MON_ID_256B ": unparseable name '%s' -> NO SUCH FILE NAME",

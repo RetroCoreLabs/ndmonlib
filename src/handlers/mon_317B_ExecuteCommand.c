@@ -22,6 +22,15 @@
 #include "mon_errors.h"
 #include <stdlib.h>
 
+/* Frontend-registered nested-command runner (loads+runs a DOM re-entrantly).
+ * NULL until the --monitor shell registers one; then UECOM actually executes
+ * the named program (e.g. NC's CAT-CAT5-B06 code-generator back-end). */
+static MonExecuteCommandFn g_exec_cmd = NULL;
+
+void mon_set_execute_command(MonExecuteCommandFn fn) {
+    g_exec_cmd = fn;
+}
+
 MonResult mon_317B_ExecuteCommand(MonContext* ctx) {
     /* Defensive check for argument count */
     if (ctx->arg_count < 1) {
@@ -73,9 +82,25 @@ MonResult mon_317B_ExecuteCommand(MonContext* ctx) {
 
     mon_log(MON_LOG_INFO, MON_ID_317B ": IN: Command='%s'", command);
 
-    /* Command execution (nested subsystem invocation, e.g. the CAT-500 back-end
-     * "CAT-CAT5-B") is not yet performed here; see the CAT-500 route work. The
-     * command is now decoded correctly so callers see a valid name. */
+    /* Nested subsystem invocation (e.g. NC's CAT-500 back-end "CAT-CAT5-B"):
+     * if the frontend registered a runner, let it resolve+run the named program
+     * re-entrantly (sharing this file table) so the back-end actually produces
+     * its output. Contract: 0=ran ok, <0=not a known program (fall back to the
+     * benign stub), >0=program ran but failed. */
+    if (g_exec_cmd) {
+        int r = g_exec_cmd(ctx->cpu, ctx->machine, command);
+        if (r == 0) {
+            mon_log(MON_LOG_INFO, MON_ID_317B ": nested '%s' completed", command);
+            mon_set_success(ctx);
+            return MON_SUCCESS;
+        }
+        if (r > 0) {
+            mon_log(MON_LOG_WARN, MON_ID_317B ": nested '%s' failed (%d)", command, r);
+            mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B */
+            return MON_ERROR;
+        }
+        /* r < 0: not a known program - fall through to benign stub success. */
+    }
 
     mon_set_success(ctx);
     return MON_SUCCESS;

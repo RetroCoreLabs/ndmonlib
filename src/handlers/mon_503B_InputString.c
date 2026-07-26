@@ -348,6 +348,24 @@ MonResult mon_dvinst_read(MonContext* ctx, uint32_t device_no,
             }
         }
 
+        /* Genuine EOF from an INSTALLED console (read_char returned EOF with
+         * nothing buffered) = batch stdin exhausted. Do NOT return "0 bytes +
+         * success": the caller then re-reads forever (measured: NC 515k+ /
+         * linker 123k zero-byte reads - a silent spin). Instead SUSPEND, exactly
+         * like the empty-console case: the shell run loop calls
+         * mon_console_wait_for_input(), which returns false at EOF and BREAKS the
+         * run, so the program (and any nested UECOM sub-program) terminates
+         * cleanly. An interactive terminal never hits this - its read_char blocks
+         * and only yields EOF when the terminal is actually closed (session end),
+         * where suspend-then-EOF-break is likewise correct. */
+        if (bytes_read == 0 && ch == EOF && console && console->read_char) {
+            mon_log(MON_LOG_DEBUG, MON_ID_503B ": console EOF on device %u - suspend (batch end)",
+                    device_no);
+            ctx->wait_requested = 1;
+            ctx->wait_device = device_no;
+            return MON_SUCCESS;  /* not committed; shell detects EOF and stops the run */
+        }
+
         if (!console || !console->write_char) {
             fflush(stdout);
         }
