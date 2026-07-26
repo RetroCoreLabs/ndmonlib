@@ -116,11 +116,23 @@ typedef struct {
     uint8_t segment_access_type;  /* 0=read, 1=write, 2=read/write */
     char host_path[256];          /* Path to host file */
     FILE* host_file;              /* Host file handle */
+    int open_gen;                 /* Nesting generation that opened this file, so a
+                                   * nested program's LEAVE closes only its OWN files
+                                   * (>= current generation) and leaves the caller's
+                                   * open. Set from the file-table generation on open. */
 } OpenFileEntry;
 
 /* Initialization */
 void mon_file_table_init(void);
 void mon_file_table_reset(void);
+
+/* Close every open file, writing back any still connected as a segment first
+ * (mon_43B_CloseFile does this per-file; this covers the "close all" paths:
+ * MON 0B LEAVE for background programs, and MON 43B CLOSE with FileNumber
+ * -1/-2). ctx may be NULL (no writeback context available); segment-mapped
+ * files are then just discarded, matching the old behavior. */
+struct MonContext;
+void mon_file_table_close_all_for_exit(struct MonContext* ctx);
 
 /* Reservation API (MON 122/123) */
 int mon_reserve_device(uint32_t device_no, uint8_t io_flag, bool wait);
@@ -138,6 +150,13 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
 int mon_file_open(const char* filename, const char* filetype, uint8_t access_mode);
 int mon_file_close(int file_number);
 OpenFileEntry* mon_file_table_get(int file_number);
+
+/* File-ownership generation for nested (317B UECOM) program runs. Push before
+ * running a nested program and pop after: files it opens are tagged at the
+ * raised generation, and its MON 0B LEAVE closes only files at >= the current
+ * generation, leaving the caller's files (scratch, sources) open. */
+void mon_file_table_push_generation(void);
+void mon_file_table_pop_generation(void);
 bool mon_file_table_is_valid_file_number(int file_number);
 
 /* ObjectEntry serialization */
