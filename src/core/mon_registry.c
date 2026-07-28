@@ -2772,7 +2772,7 @@ void mon_register_all_handlers(void) {
         "FECALL",     /* Short name */
         "NDIXFrontEndCall",  /* Long name */
         "NDIX Front-End Call: Inter-CPU communication between ND-500 kernel and ND-100 I/O processor. Handles fecall operations: feinit (initialization), I/O operations, feexit (shutdown). Non-standard SINTRAN extension, ND-500 only.",  /* Description */
-        "[I] CmdPkt (ADDRESS): Command packet address in B.20\\n[O] RespPkt (ADDRESS): Response packet address in B.28",  /* Parameter details */
+        "[I] Device (WORD): B.20 = generic<<16 | subdevice (if.h FAULT..SIINTR).\\n[I] Request (WORD): B.24 = FE_code | qualifier<<16 (FE_INIT..FE_ERRM).\\n[O] RespPkt (ADDRESS): B.28 = response packet (rpk).\\n[I] CmdPkt (ADDRESS): B.32 = command packet (cpk). feinit passes rpk/cpk as ND-500 KVA; all others as ND-100 word = (phys+private)/2.",  /* Parameter details */
         mon_600B_NDIX,  /* Handler */
         MON_STATUS_IN_PROGRESS,    /* Status */
         4             /* Param count */
