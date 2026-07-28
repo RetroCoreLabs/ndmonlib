@@ -1,6 +1,17 @@
 /*
  * MON 600B [NDIX Front-End Call] — NDIX front-end (fecall) support
  *
+ * Services the ND-100 side of the NDIX front-end gateway: the kernel issues
+ * callg $0xf8000180 (0x180 = 600 octal = MON 600B = decimal 384; see kernel
+ * locore.c _fecall/_feinit_fecall/_feexit_fecall). The FE function code in
+ * arg[1] selects the operation. The full per-code contract (packets, field
+ * offsets, sync vs async, valid devices) is documented in the manual
+ * Reference-Manuals/"List of special commands for communicating with SINTRAN
+ * III.md" (feinit p.12-13, feidev p.9-11, feopen p.14-15, feread p.17-18,
+ * fewcon p.19, feexit p.7-8). Arg order fexxx(dev, req, rpk, cpk):
+ * arg0=device (gen<<16|sub), arg1=request (FE_code|qual<<16), arg2=response
+ * packet, arg3=command packet.
+ *
  * Address models (verified from kernel machine/locore.c + if.h):
  *  - FE_INIT via _feinit_fecall: `go fe2` skips translation, so the packet
  *    pointers are RAW VIRTUAL BYTE addresses -> use the MMU callbacks directly.
@@ -57,6 +68,13 @@ static void put32(uint8_t* b, int off, uint32_t v) {
 static MonResult handle_feinit_fecall(MonContext* ctx) {
     mon_log(MON_LOG_INFO, "MON 600B: FE_INIT (feinit)");
 
+    /* NOTE: this deliberately IGNORES the feinit COMMAND packet (arg[3]) inputs
+     * the manual (p.13) defines - the interrupt vector / error vector fields.
+     * The async I/O path (post_disk_interrupt) instead uses the FIXED shared-
+     * segment addresses IPLREC_VADDR / INT_DESCR_VADDR, which only works because
+     * the NDIX shared-segment layout is constant. If a build ever relocates that
+     * layout, read intvec/errvec from the command packet here instead. */
+
     if (!ctx->read_word || !ctx->write_byte) {
         mon_log(MON_LOG_INFO, "MON 600B: ERROR - missing callbacks");
         ctx->set_k_flag(ctx->cpu, 1);
@@ -93,8 +111,8 @@ static MonResult handle_feinit_fecall(MonContext* ctx) {
         ctx->write_byte(ctx->cpu, resp_addr + i, buf[i]);
 
     mon_log(MON_LOG_INFO,
-            "MON 600B: feinit response -> 0x%08x (realmem=%u pages, 16MB, private=0)",
-            resp_addr, (MEM_BYTES) / 2048);
+            "MON 600B: feinit response -> 0x%08x (realmem=%u pages, 16MB, private=0x%08x)",
+            resp_addr, (MEM_BYTES) / 2048, PRIVATE_BASE);
 
     ctx->set_k_flag(ctx->cpu, 0);
     return MON_SUCCESS;
@@ -123,7 +141,9 @@ static MonResult handle_fe_wcon(MonContext* ctx) {
  * _fecall converts each packet pointer to an ND-100 WORD address:
  *   b.28 = (phyladr(*resp) + _private) / 2 ;  b.32 = (phyladr(*cmd) + _private)/2
  * So the ND-500 physical byte address of a packet = (word<<1) - _private.
- * feinit reports _private = 0 (see handle_feinit_fecall), so phys = word<<1.
+ * feinit reports _private = PRIVATE_BASE (non-zero; see lines 26-38), so a
+ * packet phys byte = (word<<1) - PRIVATE_BASE (== FE_PRIVATE below). Manual
+ * (feinit p.12): all calls EXCEPT feinit relocate ND-500 phys by 'private'.
  * All packet fields are byte-packed big-endian (ND-500 PCC does not pad).
  * ------------------------------------------------------------------------- */
 #define FE_PRIVATE PRIVATE_BASE   /* must match the `private` reported by feinit above */
@@ -284,7 +304,10 @@ static MonResult handle_fe_read(MonContext* ctx) {
             ctx->write_phys_byte(ctx->machine, dma_phys + i, 0);
     }
 
-    /* read_rpk_xxxx: completion@0(2) status@2(2) nbytes@4(4) */
+    /* read_rpk_xxxx per if.h 3.7: completion@0(2) status@2(2) nbytes@4(4).
+     * NOTE: the manual (feread p.18) shows status as 4 bytes with nbytes@6 - it
+     * DISAGREES with if.h. Match if.h (the ABI the NDIX kernel actually reads
+     * back), NOT the manual. */
     pput16(ctx, resp_phys + 0, 0);        /* completion = OK   */
     pput16(ctx, resp_phys + 2, 0);        /* status            */
     pput32(ctx, resp_phys + 4, nbytes);   /* bytes transferred */
@@ -379,8 +402,21 @@ MonResult mon_600B_NDIX(MonContext* ctx) {
         return handle_fe_read(ctx);
     }
 
-    /* Unimplemented (FE_IDEV/CLOS/... ) - leave completion as-is for now.
-     * Return success so the guest keeps running and we can see the next call. */
+    /* Unimplemented FE codes fall through here (Phase C). Per the SINTRAN comms
+     * manual, the still-missing ones and their required behaviour are:
+     *   FE_CLOS(0x4): close a sub-device.
+     *   FE_RCON(0x6): sync read of 1 console byte (INBT-like).
+     *   FE_WRIT(0x7): ND-500 phys mem -> device, async + completion interrupt.
+     *   FE_DCTL(0x9): non-I/O control (baud rate / tape spacing / xmsg kick).
+     *   FE_EXIT(0xb): shutdown/reboot NDIX - manual says it NEVER returns and
+     *                 prints its message on both consoles. We currently return
+     *                 success, so the guest runs past the callg (benign at boot,
+     *                 wrong at real shutdown).
+     *   FE_ERRM(0xe): send an NDIX error code to the ND-100.
+     * (FE_IDEV(0x2) is handled above, but its CLOCK sub-device (dev 5) case only
+     * writes completion=0; the manual, p.11, requires returning s3_date and
+     * starting the 40ms interrupt tick - not yet done.)
+     * Returning success keeps the guest running so the next call is visible. */
     ctx->set_k_flag(ctx->cpu, 0);
     return MON_SUCCESS;
 }
