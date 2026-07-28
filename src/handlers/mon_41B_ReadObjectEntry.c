@@ -152,7 +152,8 @@ static MonResult handle_mass_storage_file(MonContext* ctx, uint32_t file_number,
     object_entry_to_buffer(&entry->object_entry, buffer);
     write_object_entry_to_memory(ctx, buff_addr, buffer);
 
-    mon_log(MON_LOG_INFO, MON_ID_41B ": OUT: File %o -> '%s.%s'",
+    /* Fixed fields: up to 16/4 chars, possibly with no terminator - never %s. */
+    mon_log(MON_LOG_INFO, MON_ID_41B ": OUT: File %o -> '%.16s.%.4s'",
             file_number, entry->object_entry.object_name, entry->object_entry.type);
 
     mon_set_success(ctx);

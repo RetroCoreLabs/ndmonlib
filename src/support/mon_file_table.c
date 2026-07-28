@@ -65,10 +65,18 @@ static uint32_t read_be32(const uint8_t* buf) {
            ((uint32_t)buf[2] << 8) | buf[3];
 }
 
-/* Helper: Write SINTRAN string (0x27 terminated) */
+/* Helper: Write SINTRAN string (0x27 terminated).
+ * The source may be a FIXED field with no terminator when it fills the whole
+ * field (16-char name / 4-char type per the SINTRAN object-entry layout), so
+ * scan bounded by max_len and stop at either NUL or 0x27 - never strlen(). */
 static void write_sintran_string(uint8_t* buf, const char* str, size_t max_len) {
-    size_t len = str ? strlen(str) : 0;
-    if (len > max_len) len = max_len;
+    size_t len = 0;
+    if (str) {
+        while (len < max_len && str[len] != '\0' &&
+               str[len] != (char)SINTRAN_STRING_END) {
+            len++;
+        }
+    }
     if (len > 0) {
         memcpy(buf, str, len);
     }
@@ -954,8 +962,14 @@ void object_entry_from_buffer(ObjectEntry* entry, const uint8_t buffer[64]) {
 void object_entry_init_terminal(ObjectEntry* entry, const char* name, uint16_t device_number) {
     memset(entry, 0, sizeof(ObjectEntry));
     entry->header = HEADER_USED;
-    strncpy(entry->object_name, name, 15);
-    entry->object_name[15] = '\0';  /* Ensure null termination */
+    /* 16-byte fixed field: full 16 chars allowed, 0x27 terminator only when
+     * shorter (SINTRAN object-entry layout - do NOT NUL-cap at 15). */
+    {
+        size_t n = name ? strlen(name) : 0;
+        if (n > 16) n = 16;
+        memcpy(entry->object_name, name, n);
+        if (n < 16) entry->object_name[n] = SINTRAN_STRING_END;
+    }
     entry->file_type = FILETYPE_TERMINAL;
     entry->device_number = device_number;
     entry->access_bits = 0x1F;  /* Full access */
@@ -968,13 +982,19 @@ void object_entry_init_file(ObjectEntry* entry, const char* name, const char* ty
     memset(entry, 0, sizeof(ObjectEntry));
     entry->header = HEADER_USED;
 
+    /* Fixed fields per SINTRAN object-entry layout: 16-char name / 4-char
+     * type, 0x27 terminator only when shorter than the field. */
     if (name) {
-        strncpy(entry->object_name, name, 15);
-        entry->object_name[15] = '\0';  /* Ensure null termination */
+        size_t n = strlen(name);
+        if (n > 16) n = 16;
+        memcpy(entry->object_name, name, n);
+        if (n < 16) entry->object_name[n] = SINTRAN_STRING_END;
     }
     if (type) {
-        strncpy(entry->type, type, 3);
-        entry->type[3] = '\0';  /* Ensure null termination */
+        size_t n = strlen(type);
+        if (n > 4) n = 4;
+        memcpy(entry->type, type, n);
+        if (n < 4) entry->type[n] = SINTRAN_STRING_END;
     }
 
     entry->file_type = file_type_flags;
@@ -1480,20 +1500,25 @@ int mon_populate_object_entry_from_host(ObjectEntry* entry,
     /* Set header - mark as used */
     entry->header = HEADER_USED;
 
-    /* Set filename */
+    /* Set filename. The 16-byte field holds up to 16 chars; the 0x27
+     * terminator is present only when the name is SHORTER than the field
+     * (SINTRAN object-entry layout). Capping at 15 truncated full-length
+     * names like DESCRIPTION-FILE to DESCRIPTION-FIL, which broke
+     * CONVERT-DOMAIN's old-format (:PSEG/:DSEG/:LINK/:DESC) lookups. */
     if (sintran_name) {
         size_t name_len = strlen(sintran_name);
-        if (name_len > 15) name_len = 15;
+        if (name_len > 16) name_len = 16;
         memcpy(entry->object_name, sintran_name, name_len);
-        entry->object_name[name_len] = SINTRAN_STRING_END;
+        if (name_len < 16) entry->object_name[name_len] = SINTRAN_STRING_END;
     }
 
-    /* Set type/extension */
+    /* Set type/extension: 4-byte field, up to 4 chars, terminator only when
+     * shorter. Capping at 3 truncated DESC/PSEG/DSEG/LINK to 3 chars. */
     if (sintran_type) {
         size_t type_len = strlen(sintran_type);
-        if (type_len > 3) type_len = 3;
+        if (type_len > 4) type_len = 4;
         memcpy(entry->type, sintran_type, type_len);
-        entry->type[type_len] = SINTRAN_STRING_END;
+        if (type_len < 4) entry->type[type_len] = SINTRAN_STRING_END;
     }
 
     /* Set access bits - full read/write for owner and public */
