@@ -140,7 +140,7 @@ void mon_file_table_close_all_for_exit(MonContext* ctx) {
                         seg, entry->host_path);
             }
             if (ctx->release_file_segment) {
-                ctx->release_file_segment(0xFF /* CED */, seg);
+                ctx->release_file_segment(ctx->cpu, 0xFF /* CED */, seg);
             }
         }
 

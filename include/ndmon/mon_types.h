@@ -123,7 +123,7 @@ typedef struct MonContext {
      * domain 0xFF means "the current executing domain (CED)". */
     int (*writeback_file_segment)(void* cpu, uint8_t domain, uint32_t segment,
         const char* host_path);
-    void (*release_file_segment)(uint8_t domain, uint32_t segment);
+    void (*release_file_segment)(void* cpu, uint8_t domain, uint32_t segment);
 
     /* Control flow signals (set by handler or dispatcher) */
     int halt_requested;         /* Request CPU halt (MON 0B LEAVE) */

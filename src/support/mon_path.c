@@ -120,12 +120,19 @@ int mon_parse_sintran_name(const char* full_name,
             return -1;  /* Missing closing parenthesis */
         }
 
-        /* Extract user */
+        /* Extract user. SINTRAN allows a directory-qualified form
+         * "(DIR:USER)" (e.g. "(PACK-ONE:P-HANSEN)", see MON 214B parameter
+         * docs); our host mapping has no directory level, so keep only the
+         * USER part after the last ':' inside the parentheses. */
         if (user && user_max > 0) {
-            size_t user_len = p - user_start;
+            const char* u = user_start;
+            for (const char* q = user_start; q < p; q++) {
+                if (*q == ':') u = q + 1;
+            }
+            size_t user_len = p - u;
             if (user_len >= user_max) user_len = user_max - 1;
             for (size_t i = 0; i < user_len; i++) {
-                user[i] = to_upper(user_start[i]);
+                user[i] = to_upper(u[i]);
             }
             user[user_len] = '\0';
         }
@@ -133,9 +140,12 @@ int mon_parse_sintran_name(const char* full_name,
         p++;  /* Skip ')' */
     }
 
-    /* Find filename (up to ':' or end) */
+    /* Find filename (up to ':', ';' or end). A trailing ";VERSION" (as in the
+     * canonical DEABF form "(DIR:USER)NAME:TYPE;VERSION") is not part of the
+     * name or type - our host files carry a single version, so it is parsed
+     * off and ignored. */
     const char* name_start = p;
-    while (p < end && *p != ':') {
+    while (p < end && *p != ':' && *p != ';') {
         p++;
     }
 
@@ -150,11 +160,15 @@ int mon_parse_sintran_name(const char* full_name,
     }
     name[name_len] = '\0';
 
-    /* Check for :EXT */
+    /* Check for :EXT (stops at ';VERSION' if present) */
     if (p < end && *p == ':') {
         p++;  /* Skip ':' */
         if (ext && ext_max > 0 && p < end) {
-            size_t ext_len = end - p;
+            const char* ext_end = p;
+            while (ext_end < end && *ext_end != ';') {
+                ext_end++;
+            }
+            size_t ext_len = ext_end - p;
             if (ext_len >= ext_max) ext_len = ext_max - 1;
             for (size_t i = 0; i < ext_len; i++) {
                 ext[i] = to_upper(p[i]);

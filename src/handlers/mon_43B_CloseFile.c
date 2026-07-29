@@ -86,7 +86,7 @@ MonResult mon_43B_CloseFile(MonContext* ctx) {
                         ": segment %o written back to '%s'", seg, seg_entry->host_path);
             }   /* wrc == 0: read-only mapping, nothing to write - say nothing */
             if (ctx->release_file_segment) {
-                ctx->release_file_segment(0xFF /* CED */, seg);
+                ctx->release_file_segment(ctx->cpu, 0xFF /* CED */, seg);
             }
         }
     }
