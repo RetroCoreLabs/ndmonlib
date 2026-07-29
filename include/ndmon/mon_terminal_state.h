@@ -90,6 +90,11 @@ typedef struct {
                                  * 336B function 101B). 0 = NOT SET: programs
                                  * needing VTM then ASK the user. Set on a real
                                  * system with @SET-TERMINAL-TYPE. */
+    int32_t terminal_mode;      /* TERMO mode bits (52B): bit 0 = capital
+                                 * letters, bit 1 = delay after CR, bit 2 =
+                                 * stop on full page, bit 3 = auto-logout on
+                                 * line break. Stored for round-trip; the
+                                 * emulated console applies none of them. */
     BitTable128 user_break_table;  /* User-defined break table (strategy 7 AND 8) */
     BitTable128 user_echo_table;   /* User-defined echo table (strategy 7 AND 8) */
 
@@ -159,6 +164,11 @@ const BitTable128* mon_get_user_echo_table(uint32_t device_no);
 /* 8-bit I/O mode (TerminalFunction 112) */
 void mon_set_eight_bit_io(uint32_t device_no, bool enabled);
 bool mon_get_eight_bit_io(uint32_t device_no);
+
+/* TERMO terminal mode bits (52B): stored per device so a later read-back sees
+ * what was set; the emulated console applies none of the modes. */
+void mon_set_terminal_mode(uint32_t device_no, int32_t mode);
+int32_t mon_get_terminal_mode(uint32_t device_no);
 
 /* SINTRAN terminal type for a device (16B MGTTY reads, 17B MSTTY and 336B
  * function 101B write). 0 means "not set" - programs that need VTM ask the user,

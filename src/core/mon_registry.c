@@ -2510,7 +2510,7 @@ void mon_register_all_handlers(void) {
         "Selects various terminal functions. You may stop output on full page. Input may be converted to uppe",  /* Description */
         "[I] DeviceNumber (INTEGER): Logical device number of the terminal. See appendix B. Use 1 for your own terminal.\\n[I] Mode (INTEGER): Terminal mode (0-15):\nBit 0: Capital letters (1=yes)\nBit 1: Delay after return (1=yes)\nBit 2: Stop on full page (1=yes)\nBit 3: Auto-logout on line break (1=yes for modes 8-15)",  /* Parameter details */
         mon_52B_TerminalMode,  /* Handler */
-        MON_STATUS_NOT_IMPLEMENTED,    /* Status */
+        MON_STATUS_VALIDATED,    /* Status */
         2             /* Param count */
     );
     mon_register_ex(

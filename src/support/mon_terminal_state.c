@@ -426,6 +426,26 @@ int32_t mon_get_terminal_type(uint32_t device_no) {
     return terminal_states[device_no].terminal_type;
 }
 
+/* TERMO (52B) terminal mode bits. Stored for round-trip only - the emulated
+ * console does not implement page-stop, uppercase conversion, CR delay or
+ * auto-logout. */
+void mon_set_terminal_mode(uint32_t device_no, int32_t mode) {
+    if (device_no >= MAX_TERMINAL_DEVICES) {
+        return;
+    }
+    TerminalState* state = &terminal_states[device_no];
+    state->initialized = true;
+    state->terminal_mode = mode;
+    mon_log(MON_LOG_DEBUG, "Terminal mode set to %d for device %u", mode, device_no);
+}
+
+int32_t mon_get_terminal_mode(uint32_t device_no) {
+    if (device_no >= MAX_TERMINAL_DEVICES) {
+        return 0;
+    }
+    return terminal_states[device_no].terminal_mode;
+}
+
 /* ESCAPE control (SINTRAN DFLAG.5IESC). escape_inhibited == !enabled. */
 void mon_set_escape_enabled(uint32_t device_no, bool enabled) {
     if (device_no >= MAX_TERMINAL_DEVICES) {

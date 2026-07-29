@@ -55,6 +55,7 @@ typedef enum {
 #define MON_ID_41B    MON_ID("41B", "ROBJE", "ReadObjectEntry")
 #define MON_ID_43B    MON_ID("43B", "CLOSE", "CloseFile")
 #define MON_ID_50B    MON_ID("50B", "OPEN", "OpenFile")
+#define MON_ID_52B    MON_ID("52B", "TERMO", "TerminalMode")
 #define MON_ID_54B    MON_ID("54B", "MDLFI", "DeleteFile")
 #define MON_ID_62B    MON_ID("62B", "RMAX", "GetBytesInFile")
 #define MON_ID_64B    MON_ID("64B", "ERMSG", "WarningMessage")
