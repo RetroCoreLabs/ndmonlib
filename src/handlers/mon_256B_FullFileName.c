@@ -129,13 +129,41 @@ MonResult mon_256B_FullFileName(MonContext* ctx) {
      * yields. So append ";1" UNLESS the resolved name already carries an explicit
      * version (defensive; the linker never sends one). Only FOUND files get a version;
      * a not-yet-created name still returns not-found so NC's create path is unchanged. */
+    /* The canonical name is ALWAYS fully qualified "(DIR:USER)NAME:TYPE" -
+     * DEABF "returns the directory, the user, ..." even when the caller gave
+     * an unqualified abbreviation. CONVERT-DOM-A03 asserts on this: it scans
+     * the expanded name for the "(DIR:USER)" prefix (check at 0x080025B6..D1,
+     * EASSERT at 0x080025D3) to learn where the old domain's files live, and
+     * an unqualified reply is a hard EASSERT VIOLATION. Report the USER the
+     * lookup actually resolved to (own dir or the SYSTEM fallback), derived
+     * from the host path "<root>/<USER>/<NAME>.<TYPE>"; the directory level
+     * does not exist in the host mapping, so use the fixed main-directory
+     * name PACK-ONE (the name ND's own manuals use in examples). */
+    char owner[SINTRAN_MAX_USER + 1];
+    owner[0] = '\0';
+    {
+        const char* last = strrchr(host_path, '/');
+        if (last && last > host_path) {
+            const char* prev = last - 1;
+            while (prev > host_path && *prev != '/') prev--;
+            if (*prev == '/') prev++;
+            size_t n = (size_t)(last - prev);
+            if (n >= sizeof(owner)) n = sizeof(owner) - 1;
+            memcpy(owner, prev, n);
+            owner[n] = '\0';
+        }
+    }
+    if (!owner[0]) {
+        /* Fallback: the user the parse gave, or the current user. */
+        const char* cu = user[0] ? user : mon_config_get_current_user();
+        snprintf(owner, sizeof(owner), "%s", cu ? cu : "SYSTEM");
+    }
+
     char base_name[128];
     if (use_type) {
-        if (user[0]) snprintf(base_name, sizeof(base_name), "(%s)%s:%s", user, name, use_type);
-        else         snprintf(base_name, sizeof(base_name), "%s:%s", name, use_type);
+        snprintf(base_name, sizeof(base_name), "(PACK-ONE:%s)%s:%s", owner, name, use_type);
     } else {
-        if (user[0]) snprintf(base_name, sizeof(base_name), "(%s)%s", user, name);
-        else         snprintf(base_name, sizeof(base_name), "%s", name);
+        snprintf(base_name, sizeof(base_name), "(PACK-ONE:%s)%s", owner, name);
     }
     char full_name[160];
     if (strchr(base_name, ';')) {

@@ -98,7 +98,7 @@ MonResult mon_413B_FileNotAsSegment(MonContext* ctx) {
         }   /* wrc == 0: read-only mapping, nothing to write - say nothing */
     }
     if (ctx->release_file_segment) {
-        ctx->release_file_segment(0xFF /* CED */, disconnected_from);
+        ctx->release_file_segment(ctx->cpu, 0xFF /* CED */, disconnected_from);
     }
 
     /* Clear segment mapping state. The file itself stays open. */
