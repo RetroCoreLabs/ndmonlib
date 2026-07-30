@@ -645,8 +645,18 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
             break;
     }
 
-    /* Try to open the host file */
-    FILE* fp = fopen(host_path, fmode);
+    /* Try to open the host file. For a QUOTED CREATE the existence probe must
+     * NOT be the access-mode fopen: write modes ("wb"/"ab" for access 0/5)
+     * CREATE the host file as a side effect, so the probe always "found" a
+     * file and every quoted create with write access self-defeated with 076B
+     * (PLANC's OPEN(f,'W','"NAME"','TYPE') - access code 0 = sequential write
+     * - could never create a file). Probe with "rb", which never creates. */
+    FILE* fp;
+    if (quoted_create) {
+        fp = fopen(host_path, "rb");
+    } else {
+        fp = fopen(host_path, fmode);
+    }
 
     /* CREATE semantics, byte-verified against the SINTRAN GCFIL/CROBJ/GFILI
      * resolver (carve 006-S3FS: GCFIL @064670B, CROBJ @063726B, GFILI @057173B;
