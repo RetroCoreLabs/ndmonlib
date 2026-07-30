@@ -2184,7 +2184,7 @@ void mon_register_all_handlers(void) {
         "Writes all modified pages of a segment back to the disk.\n\n- Not allowed when fixed in memory.",  /* Description */
         "[I] LogSegmentNo (INTEGER2): Logical segment number in the domain. If 0, the segment number is retrieved from the parameter address.\\n[I] FirstPage (INTEGER2): First logical page in the segment.\\n[I] LastPage (INTEGER2): Last logical page in the segment.",  /* Parameter details */
         mon_416B_SaveND500Segment,  /* Handler */
-        MON_STATUS_NOT_IMPLEMENTED,    /* Status */
+        MON_STATUS_VALIDATED,    /* Status */
         3             /* Param count */
     );
     mon_register_ex(
