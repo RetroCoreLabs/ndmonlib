@@ -208,6 +208,9 @@ extern MonResult mon_43B_CloseFile(MonContext* ctx);
 extern MonResult mon_440B_Attach500Segment(MonContext* ctx);
 extern MonResult mon_44B_GetUserEntry(MonContext* ctx);
 extern MonResult mon_4B_SetBreak(MonContext* ctx);
+extern MonResult mon_45B_GetTypeRing(MonContext* ctx);         /* 37 dec  = 45B  */
+extern MonResult mon_320B_UELogin(MonContext* ctx);            /* 208 dec = 320B */
+extern MonResult mon_327B_FileSystemFunction(MonContext* ctx); /* 215 dec = 327B */
 extern MonResult mon_500B_StartProcess(MonContext* ctx);
 extern MonResult mon_501B_StopProcess(MonContext* ctx);
 extern MonResult mon_502B_SwitchProcess(MonContext* ctx);
@@ -2392,6 +2395,41 @@ void mon_register_all_handlers(void) {
         mon_4B_SetBreak,  /* Handler */
         MON_STATUS_VALIDATED,    /* Status */
         4             /* Param count */
+    );
+    /* ND-500 tool support (FraTor DOMs). GTYPR/UELOG/FSMTY - see
+     * Developer/MON/calls/{45B_GetTypeRing,320B_UELogin,327B_FileSystemFunction}.yaml */
+    mon_register_ex(
+        37,          /* MON number (decimal) = 45B octal */
+        "45B",        /* Octal string */
+        "GTYPR",    /* Short name */
+        "GetTypeRing",          /* Long name */
+        "Return file/device info for a unit: TYPING word, status, and the SINTRAN III open file number (the number DVINST needs). = FSMTY 327B function 4.",
+        "[I] Unit (INTEGER): open file number or device number.\\n[O] Typing (INTEGER): TYPING word (flag bits + open file number).\\n[O] Status (INTEGER): bit 0 = open for write, bit 1 = terminal/TAD.\\n[O] SintranFileNumber (INTEGER): SINTRAN III open file number.",
+        mon_45B_GetTypeRing,  /* Handler */
+        MON_STATUS_VALIDATED,    /* Status */
+        4             /* Param count */
+    );
+    mon_register_ex(
+        208,         /* MON number (decimal) = 320B octal */
+        "320B",       /* Octal string */
+        "UELOG",    /* Short name */
+        "UELogin",          /* Long name */
+        "User Environment login. Non-load-bearing in the ND-500 tools (callers discard the result); benign success stub.",
+        "[I] Param (INTEGER): single word, meaning UNVERIFIED (result discarded by callers).",
+        mon_320B_UELogin,  /* Handler */
+        MON_STATUS_VALIDATED,    /* Status */
+        1             /* Param count */
+    );
+    mon_register_ex(
+        215,         /* MON number (decimal) = 327B octal */
+        "327B",       /* Octal string */
+        "FSMTY",    /* Short name */
+        "FileSystemFunction",          /* Long name */
+        "File-system multifunction; function selected by the first argument. fn 1=WRBIX, 2=block size, 3=get file name, 4=file/device info (=GTYPR).",
+        "[I] Function (INTEGER): function code.\\n[I] FileNo (INTEGER): open file number.\\n[I/O] Param2..: function-dependent parameters.",
+        mon_327B_FileSystemFunction,  /* Handler */
+        MON_STATUS_VALIDATED,    /* Status */
+        5             /* Param count */
     );
     mon_register_ex(
         320,           /* MON number (decimal) */
