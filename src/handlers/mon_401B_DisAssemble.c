@@ -1,5 +1,5 @@
 /*
- * MON 401B (257 decimal): DisAssemble (DIASS)
+ * MON 401B (257 decimal): DisAssemble (DISASS)
  *
  * Disassembles one machine instruction on the ND-500. Output is the instruction in ASSEMBLY-500 language. See the manual ND-500 ASSEMBLER Reference Manual (ND-860113).
  *
@@ -14,7 +14,7 @@
 #include "mon.h"
 
 MonResult mon_401B_DisAssemble(MonContext* ctx) {
-    /* TODO: Implement DisAssemble (DIASS) */
+    /* TODO: Implement DisAssemble (DISASS) */
 
     /* Log input parameters */
     MON_LOG_IN_WORD(ctx, 0, "ProgPointer");

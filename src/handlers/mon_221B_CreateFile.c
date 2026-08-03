@@ -54,7 +54,7 @@ MonResult mon_221B_CreateFile(MonContext* ctx) {
     /* Validate filename */
     if (filename[0] == '\0') {
         mon_log(MON_LOG_WARN, MON_ID_221B ": Empty filename");
-        mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+        mon_set_error(ctx, MON_ERR_NO_SUCH_FILE_NAME);  /* 056B No such file name */
         return MON_ERROR;
     }
 
@@ -95,7 +95,7 @@ MonResult mon_221B_CreateFile(MonContext* ctx) {
     FILE* fp = fopen(host_path, "wb");
     if (!fp) {
         mon_log(MON_LOG_WARN, MON_ID_221B ": Failed to create file '%s'", host_path);
-        mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+        mon_set_error(ctx, MON_ERR_TRANSFER_ERROR);  /* 141B Transfer error */
         return MON_ERROR;
     }
 

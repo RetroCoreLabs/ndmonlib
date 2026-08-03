@@ -1,5 +1,5 @@
 /*
- * MON 57B (47 decimal): GetUserParam (PAGEI)
+ * MON 57B (47 decimal): GetUserParam (PAGET)
  *
  * Gets information about why the last program terminated. There are 5 parameters for each background user. These can be set by SINTRAN III or your background program.
  * 
@@ -15,7 +15,7 @@
 #include "mon.h"
 
 MonResult mon_57B_GetUserParam(MonContext* ctx) {
-    /* TODO: Implement GetUserParam (PAGEI) */
+    /* TODO: Implement GetUserParam (PAGET) */
 
     /* Log input parameters */
 

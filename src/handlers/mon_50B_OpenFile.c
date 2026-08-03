@@ -77,7 +77,7 @@ MonResult mon_50B_OpenFile(MonContext* ctx) {
     /* Validate access code */
     if (access_code > 9) {
         mon_log(MON_LOG_WARN, MON_ID_50B ": Invalid access code %o", access_code);
-        mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+        mon_set_error(ctx, MON_ERR_NO_SUCH_ACCESS_CODE);  /* 104B No such access code */
         return MON_ERROR;
     }
 
@@ -99,7 +99,7 @@ MonResult mon_50B_OpenFile(MonContext* ctx) {
         switch (file_number) {
             case -52: mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER); break;  /* 174B Illegal parameter */
             case -54: mon_set_error(ctx, MON_ERR_FILE_ALREADY_OPEN); break;  /* File already open */
-            case -55: mon_set_error(ctx, MON_ERR_TOO_MANY_FILES_OPEN); break;  /* No free file slots */
+            case -55: mon_set_error(ctx, MON_ERR_TOO_MANY_MASS_STORAGE); break;  /* 121B Attempt to open too many mass storage files */
             default:  mon_set_error(ctx, MON_ERR_NO_SUCH_FILE_NAME);  /* 056B No such file name */
         }
         return MON_ERROR;
