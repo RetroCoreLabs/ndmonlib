@@ -50,6 +50,7 @@
 #define MON_ERR_NOT_OPEN_RAND_READ    86    /* 126B Not open for random read */
 
 /* --- File-number table state -------------------------------------------- */
+#define MON_ERR_TOO_MANY_MASS_STORAGE 81    /* 121B Attempt to open too many mass storage files */
 #define MON_ERR_FILE_NUMBER_RANGE     87    /* 127B File number out of range */
 #define MON_ERR_FILE_NUMBER_IN_USE    88    /* 130B File number already used */
 #define MON_ERR_FILE_NOT_OPEN         90    /* 132B No file opened with this number */

@@ -67,14 +67,14 @@ MonResult mon_2B_OutByte(MonContext* ctx) {
         /* Check access mode allows writing */
         if (entry->access_mode == ACCESS_SEQ_READ || entry->access_mode == ACCESS_RAND_READ) {
             mon_log(MON_LOG_WARN, MON_ID_2B ": File %o not open for writing", device_no);
-            mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+            mon_set_error(ctx, MON_ERR_NOT_OPEN_SEQ_WRITE);  /* 123B Not open for sequential write */
             return MON_ERROR;
         }
 
         if (entry->host_file) {
             if (fputc(byte_out, entry->host_file) == EOF) {
                 mon_log(MON_LOG_WARN, MON_ID_2B ": Write error on file %o", device_no);
-                mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+                mon_set_error(ctx, MON_ERR_TRANSFER_ERROR);  /* 141B Transfer error */
                 return MON_ERROR;
             }
             entry->current_position++;

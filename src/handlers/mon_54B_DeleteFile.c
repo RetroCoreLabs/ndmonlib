@@ -52,7 +52,7 @@ MonResult mon_54B_DeleteFile(MonContext* ctx) {
     /* Validate filename */
     if (filename[0] == '\0') {
         mon_log(MON_LOG_WARN, MON_ID_54B ": Empty filename");
-        mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+        mon_set_error(ctx, MON_ERR_NO_SUCH_FILE_NAME);  /* 056B No such file name */
         return MON_ERROR;
     }
 
@@ -72,7 +72,7 @@ MonResult mon_54B_DeleteFile(MonContext* ctx) {
     /* Delete the file */
     if (remove(host_path) != 0) {
         mon_log(MON_LOG_WARN, MON_ID_54B ": Failed to delete file '%s'", host_path);
-        mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER);  /* 174B Illegal parameter */
+        mon_set_error(ctx, MON_ERR_TRANSFER_ERROR);  /* 141B Transfer error */
         return MON_ERROR;
     }
 

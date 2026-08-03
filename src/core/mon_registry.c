@@ -2036,7 +2036,7 @@ void mon_register_all_handlers(void) {
     mon_register_ex(
         257,           /* MON number (decimal) */
         "401B",         /* Octal string */
-        "DIASS",    /* Short name */
+        "DISASS",    /* Short name */
         "DisAssemble",          /* Long name */
         "Disassembles one machine instruction on the ND-500. Output is the instruction in ASSEMBLY-500 langua",  /* Description */
         "[I] ProgPointer (INTEGER2): Program address.\\n[O] ReturnString (STRING): The assembly instruction as text.\\n[I] MaxNoOfChar (INTEGER2): Maximum number of characters in the assembly instruction.",  /* Parameter details */
@@ -2598,7 +2598,7 @@ void mon_register_all_handlers(void) {
     mon_register_ex(
         47,           /* MON number (decimal) */
         "57B",         /* Octal string */
-        "PAGEI",    /* Short name */
+        "PAGET",    /* Short name */
         "GetUserParam",          /* Long name */
         "Gets information about why the last program terminated. There are 5 parameters for each background u",  /* Description */
         "[O] Buff (INTEGER2[5]): 5-word buffer for user parameters. [0]=dir/user index, [1]=terminal LDN, [2]=error number (-1 if escape), [3-4]=user defined.",  /* Parameter details */
