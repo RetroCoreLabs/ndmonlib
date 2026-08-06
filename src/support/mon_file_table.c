@@ -1303,17 +1303,32 @@ static bool stdio_char_available(void* ctx) {
         case FILE_TYPE_CHAR: {
             /* A console. The queue also holds key-UP and focus records, which
              * produce no byte - counting those as "available" would send the
-             * caller into a read() that blocks. Only a key-down carrying a
-             * character counts. */
+             * caller into a read() that blocks.
+             *
+             * Any key-down counts EXCEPT a bare modifier. Testing
+             * uChar.AsciiChar != 0 instead looks right and is not: in
+             * virtual-terminal input mode the function and cursor keys carry no
+             * character in the record but DO produce an ANSI escape sequence
+             * for the following read, so that test rejected exactly the keys
+             * that need to get through. */
             INPUT_RECORD recs[32];
             DWORD got = 0, i;
             if (!PeekConsoleInput(h, recs, (DWORD)(sizeof recs / sizeof recs[0]), &got))
                 return false;
-            for (i = 0; i < got; i++)
-                if (recs[i].EventType == KEY_EVENT
-                    && recs[i].Event.KeyEvent.bKeyDown
-                    && recs[i].Event.KeyEvent.uChar.AsciiChar != 0)
-                    return true;
+            for (i = 0; i < got; i++) {
+                if (recs[i].EventType != KEY_EVENT) continue;
+                if (!recs[i].Event.KeyEvent.bKeyDown) continue;
+                switch (recs[i].Event.KeyEvent.wVirtualKeyCode) {
+                    case VK_SHIFT: case VK_LSHIFT: case VK_RSHIFT:
+                    case VK_CONTROL: case VK_LCONTROL: case VK_RCONTROL:
+                    case VK_MENU: case VK_LMENU: case VK_RMENU:
+                    case VK_LWIN: case VK_RWIN: case VK_APPS:
+                    case VK_CAPITAL: case VK_NUMLOCK: case VK_SCROLL:
+                        continue;           /* produces no bytes on its own */
+                    default:
+                        return true;
+                }
+            }
             return false;
         }
         case FILE_TYPE_PIPE:
