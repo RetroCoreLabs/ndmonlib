@@ -45,7 +45,18 @@
  * (confirmed by trap.c:1232). Response seg/phys fields are ND-100 WORD addresses
  * (kernel htob = <<1); `private` itself is stored in BYTES (machdep.c:827, no htob). */
 #define MEM_BYTES        0x01000000u   /* 16 MB */
-#define SFREE_BYTE       0x00100000u   /* first free ND-500-relative phys byte (1 MB) */
+/* First free ND-500-relative physical byte, i.e. where NDIX's own free page pool
+ * begins. MUST track sfree_phys in nd500x's src/cpu/nd500_fecall.c (fe_init):
+ * that is the LIVE path, because src/cpu/nd500_indirect.c intercepts MON 600 and
+ * calls nd500_fecall() directly, so this handler does not run under --ndix.
+ *
+ * It was 0x00100000 (1 MB), which sat UNDER the emulator's own demand-grown
+ * segments (measured up to a 0x001E3000 high-water). NDIX, told it owned that
+ * range, recycled and zeroed those pages under memory pressure and destroyed the
+ * segment-8 page table. The live path moved the base to 0x00280000 and now
+ * enforces it via nd500_phys_set_guest_pool_base(); this copy is updated to
+ * match so the two cannot disagree if this handler is ever made live again. */
+#define SFREE_BYTE       0x00280000u   /* first free ND-500-relative phys byte */
 #define PRIVATE_BASE     0x00010000u   /* ND-100 byte base of ND-500 phys 0 (non-zero) */
 #define W(x)             ((x) >> 1)     /* byte -> ND-100 word address */
 

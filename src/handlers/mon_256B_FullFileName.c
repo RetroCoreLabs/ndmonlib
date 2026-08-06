@@ -23,6 +23,7 @@
 #include "mon_log.h"
 #include "mon_errors.h"
 #include "mon_path.h"
+#include "mon_config.h"   /* mon_config_get_current_user - called at line ~158 */
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
