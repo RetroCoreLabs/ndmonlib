@@ -1176,17 +1176,56 @@ size_t mon_get_console_input_until_break(void) {
  * Sets terminal to raw mode for proper character-by-character I/O.
  * ============================================================ */
 
-#include <unistd.h>
-#include <sys/select.h>
-#include <termios.h>
 #include <signal.h>
 
+/* Raw-mode console handling is the one part of this file that has no portable
+ * spelling: <termios.h>, <sys/select.h> and STDIN_FILENO simply do not exist in
+ * the Win32 headers. Everything below is written twice - termios + select() for
+ * POSIX, GetConsoleMode + the console input queue for Windows - behind the same
+ * handful of helpers, so the ConsoleIO callbacks further down stay single. */
+#ifdef _WIN32
+#  include <windows.h>
+#  include <io.h>          /* _read, _write, _isatty */
+   /* Win32 has no fd constants; the CRT fd numbers are fixed and universal. */
+#  define TTY_IN_FD  0
+#  define TTY_OUT_FD 1
+   /* Windows 10 (1511) and later. Defined here so an older MinGW still builds;
+    * the value is fixed by the API. Without VT input, function keys arrive as
+    * key records carrying no character and a plain read() never sees them. */
+#  ifndef ENABLE_VIRTUAL_TERMINAL_INPUT
+#    define ENABLE_VIRTUAL_TERMINAL_INPUT 0x0200
+#  endif
+static DWORD g_orig_console_mode;
+#else
+#  include <unistd.h>
+#  include <sys/select.h>
+#  include <termios.h>
+#  define TTY_IN_FD  STDIN_FILENO
+#  define TTY_OUT_FD STDOUT_FILENO
 static struct termios g_orig_termios;
+#endif
+
 static bool g_termios_saved = false;
+
+/* Read/write raw bytes on the standard streams. Deliberately not stdio: a FILE*
+ * would re-introduce the line buffering raw mode has just removed. */
+#ifdef _WIN32
+#  define tty_read(fd, buf, n)  _read((fd), (buf), (unsigned int)(n))
+#  define tty_write(fd, buf, n) _write((fd), (buf), (unsigned int)(n))
+#  define tty_isatty(fd)        _isatty(fd)
+#else
+#  define tty_read(fd, buf, n)  read((fd), (buf), (size_t)(n))
+#  define tty_write(fd, buf, n) write((fd), (buf), (size_t)(n))
+#  define tty_isatty(fd)        isatty(fd)
+#endif
 
 static void stdio_restore_terminal(void) {
     if (g_termios_saved) {
+#ifdef _WIN32
+        SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), g_orig_console_mode);
+#else
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_orig_termios);
+#endif
         g_termios_saved = false;
     }
 }
@@ -1198,10 +1237,33 @@ static void stdio_signal_handler(int sig) {
 }
 
 static void stdio_setup_terminal(void) {
-    if (!isatty(STDIN_FILENO)) {
+    if (!tty_isatty(TTY_IN_FD)) {
         return;  /* Not a terminal, skip raw mode */
     }
 
+#ifdef _WIN32
+    {
+        HANDLE h = GetStdHandle(STD_INPUT_HANDLE);
+        DWORD mode;
+        if (!GetConsoleMode(h, &mode)) return;   /* redirected, not a console */
+        g_orig_console_mode = mode;
+        g_termios_saved = true;
+        atexit(stdio_restore_terminal);
+
+        /* Handle Ctrl+C gracefully */
+        signal(SIGINT, stdio_signal_handler);
+        signal(SIGTERM, stdio_signal_handler);
+
+        /* ENABLE_LINE_INPUT is the console's own line editor - with it set,
+         * nothing arrives until Enter. ENABLE_ECHO_INPUT is the local echo the
+         * emulated system is responsible for. Clearing both is exactly what
+         * clearing ICANON and ECHO does on POSIX. VT input on top so function
+         * and cursor keys turn into the escape sequences a terminal sends. */
+        mode &= ~(DWORD)(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+        mode |=  (DWORD)ENABLE_VIRTUAL_TERMINAL_INPUT;
+        SetConsoleMode(h, mode);
+    }
+#else
     if (tcgetattr(STDIN_FILENO, &g_orig_termios) == 0) {
         g_termios_saved = true;
         atexit(stdio_restore_terminal);
@@ -1218,6 +1280,7 @@ static void stdio_setup_terminal(void) {
         raw.c_cc[VTIME] = 0;
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
     }
+#endif
 }
 
 /* One-byte pushback for stdio, so peek_char can look ahead one byte (for async
@@ -1228,12 +1291,51 @@ static int g_stdio_pushback = -1;
 static bool stdio_char_available(void* ctx) {
     (void)ctx;
     if (g_stdio_pushback >= 0) return true;
+#ifdef _WIN32
+    {
+        /* No select() for non-sockets on Windows, so ask each kind of handle
+         * the way it can actually be asked. */
+        HANDLE h = (HANDLE)_get_osfhandle(TTY_IN_FD);
+        DWORD  n = 0;
+        if (h == INVALID_HANDLE_VALUE) return false;
+
+        switch (GetFileType(h)) {
+        case FILE_TYPE_CHAR: {
+            /* A console. The queue also holds key-UP and focus records, which
+             * produce no byte - counting those as "available" would send the
+             * caller into a read() that blocks. Only a key-down carrying a
+             * character counts. */
+            INPUT_RECORD recs[32];
+            DWORD got = 0, i;
+            if (!PeekConsoleInput(h, recs, (DWORD)(sizeof recs / sizeof recs[0]), &got))
+                return false;
+            for (i = 0; i < got; i++)
+                if (recs[i].EventType == KEY_EVENT
+                    && recs[i].Event.KeyEvent.bKeyDown
+                    && recs[i].Event.KeyEvent.uChar.AsciiChar != 0)
+                    return true;
+            return false;
+        }
+        case FILE_TYPE_PIPE:
+            /* PeekNamedPipe works on anonymous pipes too. It fails once the
+             * write end is closed, which is EOF - report "available" so the
+             * caller reads, gets 0 bytes and handles the EOF itself. */
+            if (!PeekNamedPipe(h, NULL, 0, NULL, &n, NULL)) return true;
+            return n > 0;
+        default:
+            /* A regular file is always readable until it hits EOF, exactly
+             * what select() reports for one. */
+            return true;
+        }
+    }
+#else
     /* Use select() to check if stdin has data available */
     fd_set fds;
     struct timeval tv = {0, 0};  /* No wait */
     FD_ZERO(&fds);
     FD_SET(STDIN_FILENO, &fds);
     return select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0;
+#endif
 }
 
 static int stdio_wait_for_input(void* ctx) {
@@ -1241,11 +1343,17 @@ static int stdio_wait_for_input(void* ctx) {
     /* Block until stdin has data (real interactive terminal wait). A NULL
      * timeout makes select() wait indefinitely. Returns 0 on error/EOF. */
     if (g_stdio_pushback >= 0) return 1;   /* already hold a peeked byte */
+#ifndef _WIN32
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(STDIN_FILENO, &fds);
     int r = select(STDIN_FILENO + 1, &fds, NULL, NULL, NULL);
     if (r <= 0) return 0;
+#endif
+    /* On Windows the select() above is skipped entirely: a blocking read of one
+     * byte IS the wait, and it collapses into the same peek-one-byte step the
+     * POSIX path takes next anyway. The EOF reasoning below applies identically
+     * - a read of 0 bytes is the end of input, not a readable byte. */
     /* select() reports a CLOSED pipe (EOF) as "readable" too - returning 1 here
      * would make a batch caller resume, re-read EOF, suspend, and spin forever
      * (the measured NC/linker hang at end-of-input). PEEK one byte to tell real
@@ -1253,7 +1361,7 @@ static int stdio_wait_for_input(void* ctx) {
      * and the program terminates. A real byte is stashed in the one-byte
      * pushback (LF->CR translated, matching stdio_read_char) so it is not lost. */
     unsigned char ch;
-    ssize_t n = read(STDIN_FILENO, &ch, 1);
+    int n = (int)tty_read(TTY_IN_FD, &ch, 1);
     if (n <= 0) return 0;                  /* EOF or error - stop the run */
     if (ch == '\n') ch = '\r';
     g_stdio_pushback = (int)ch;
@@ -1270,7 +1378,7 @@ static int stdio_read_char(void* ctx) {
         return c;
     }
     unsigned char ch;
-    if (read(STDIN_FILENO, &ch, 1) == 1) {
+    if (tty_read(TTY_IN_FD, &ch, 1) == 1) {
         /* Translate Unix LF (Enter key) to CR for SINTRAN */
         if (ch == '\n') {
             ch = '\r';
@@ -1285,7 +1393,7 @@ static int stdio_peek_char(void* ctx) {
     if (g_stdio_pushback >= 0) return g_stdio_pushback;
     if (!stdio_char_available(ctx)) return -1;
     unsigned char ch;
-    if (read(STDIN_FILENO, &ch, 1) == 1) {
+    if (tty_read(TTY_IN_FD, &ch, 1) == 1) {
         if (ch == '\n') ch = '\r';   /* same translation read_char applies */
         g_stdio_pushback = ch;
         return ch;
@@ -1314,8 +1422,12 @@ static void stdio_write_char(void* ctx, int ch) {
      * program (LINKER, CONVERT-DOMAIN) sends a bare CR to return to column 1
      * of the SAME line and positions rows with absolute ESC[r;cH. Injecting an
      * LF after CR scrolled the screen and corrupted those cursor-addressed
-     * forms - the "odd characters" symptom. Emulate the driver: pass through. */
-    write(STDOUT_FILENO, &c, 1);
+     * forms - the "odd characters" symptom. Emulate the driver: pass through.
+     *
+     * The return value is deliberately discarded (and cast to void to say so):
+     * there is nothing useful to do about a failed write to the console, and
+     * glibc marks write() warn_unused_result. */
+    (void)!tty_write(TTY_OUT_FD, &c, 1);
 }
 
 static ConsoleIO g_stdio_console = {
