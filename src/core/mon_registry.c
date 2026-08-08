@@ -245,7 +245,6 @@ extern MonResult mon_75B_GetStartByte(MonContext* ctx);
 extern MonResult mon_76B_SetBlockSize(MonContext* ctx);
 extern MonResult mon_77B_SetStartBlock(MonContext* ctx);
 extern MonResult mon_7B_ReadBlock(MonContext* ctx);
-extern MonResult mon_600B_NDIX(MonContext* ctx);
 
 /* Register all handlers */
 void mon_register_all_handlers(void) {
@@ -2804,15 +2803,11 @@ void mon_register_all_handlers(void) {
         MON_STATUS_NOT_IMPLEMENTED,    /* Status */
         4             /* Param count */
     );
-    mon_register_ex(
-        384,          /* MON number (decimal) */
-        "600B",       /* Octal string */
-        "FECALL",     /* Short name */
-        "NDIXFrontEndCall",  /* Long name */
-        "NDIX Front-End Call: Inter-CPU communication between ND-500 kernel and ND-100 I/O processor. Handles fecall operations: feinit (initialization), I/O operations, feexit (shutdown). Non-standard SINTRAN extension, ND-500 only.",  /* Description */
-        "[I] Device (WORD): B.20 = generic<<16 | subdevice (if.h FAULT..SIINTR).\\n[I] Request (WORD): B.24 = FE_code | qualifier<<16 (FE_INIT..FE_ERRM).\\n[O] RespPkt (ADDRESS): B.28 = response packet (rpk).\\n[I] CmdPkt (ADDRESS): B.32 = command packet (cpk). feinit passes rpk/cpk as ND-500 KVA; all others as ND-100 word = (phys+private)/2.",  /* Parameter details */
-        mon_600B_NDIX,  /* Handler */
-        MON_STATUS_IN_PROGRESS,    /* Status */
-        4             /* Param count */
-    );
+    /* MON 600B (FECALL, NDIX front-end call) deliberately has NO entry here.
+     * It is served by nd500x itself - src/cpu/nd500_fecall.c, reached from
+     * src/cpu/nd500_indirect.c which intercepts CALLG offset 0x180 before the
+     * registry is consulted, because the front-end call needs full cpu/machine/
+     * DMA access. The duplicate handler that used to live in
+     * src/handlers/mon_600B_NDIX.c was dead code and had already drifted from
+     * the live path, so it was removed 2026-08-08. */
 }
