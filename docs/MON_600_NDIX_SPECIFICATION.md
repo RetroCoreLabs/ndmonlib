@@ -1,3 +1,15 @@
+> **MON 600 IS NOT IMPLEMENTED IN THIS LIBRARY (since 2026-08-08).**
+>
+> The NDIX front-end call (fecall) lives in nd500x - `src/cpu/nd500_fecall.c` -
+> and is reached from `src/cpu/nd500_indirect.c`, which intercepts CALLG offset
+> `0x180` before the MON registry is consulted. It needs full cpu/machine/DMA
+> access, which the generic registry does not provide. The handler that used to
+> sit in `src/handlers/mon_600B_NDIX.c` never ran and had already drifted from
+> the live code, so it was deleted.
+>
+> Keep reading this document as the **worked example for writing a handler** -
+> just do not re-add MON 600.
+
 # MON 600 — NDIX LLM Support Specification
 
 > Implementation guidelines for MON 600, a custom non-SINTRAN MON call for running NDIX (LLM system) on ND-500 CPU.
