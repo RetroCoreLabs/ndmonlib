@@ -15,9 +15,12 @@
  *       [3] Hours (0-23)
  *       [4] Day (1-31)
  *       [5] Month (1-12)
- *       [6] Year (last two digits, e.g., 85 for 1985)
+ *       [6] Year, written as the full year (e.g. 1985). INFERRED, not proven -
+ *           see the note at the write below before relying on or changing it
  *
- * Reference: SINTRAN III Monitor Calls (ND-860228.2 EN)
+ * Reference: SINTRAN III Monitor Calls (ND-860228.2 EN). It lists the seventh
+ * word only as "%Year." and never states a width, so the manual settles
+ * nothing here either way.
  */
 
 #include "mon.h"
@@ -77,13 +80,53 @@ MonResult mon_113B_GetCurrentTime(MonContext* ctx) {
     /* [5] Month (1-12) - tm_mon is 0-11 */
     ctx->write_word(ctx->cpu, buffer_addr + 20, (uint32_t)(tm_now->tm_mon + 1));
 
-    /* [6] Year (last two digits) - tm_year is years since 1900 */
-    ctx->write_word(ctx->cpu, buffer_addr + 24, (uint32_t)(tm_now->tm_year % 100));
+    /* [6] Year, written as the full year (e.g. 1985).
+     *
+     * INFERRED, NOT PROVEN. Read the whole note before changing this either
+     * way. This returned tm_year % 100 until 2026-08-08.
+     *
+     * What is settled:
+     *   - This buffer is seven separate words, not the packed 32-bit ND date
+     *     word used for file-system dates (that one crams year/month/day/
+     *     hour/minute/second into one word, year as a 6-bit offset from 1950).
+     *     The MON 113B manual page lists the seven words individually, and
+     *     MP-P2-N500.NPL from line 1310 copies all seven resident clock words
+     *     verbatim to the ND-500, widening each to 32 bits and converting
+     *     nothing. So the packed format does not apply here.
+     *
+     * What is NOT settled - the width of this word:
+     *   - The manual never states it. The MON 113B page gives the seventh word
+     *     only as "%Year.", and MON 111B SetClock likewise says only "Year.".
+     *   - The one piece of evidence either way is a single line of SINTRAN.
+     *     RP-P2-ACCRT.NPL packs an accounting record right after the call:
+     *         "TPARA+ACBASE"; *MON 2CLOC     % GET TIME OF DUMP    (line 184)
+     *         D:=0; A:=YEAR-3554/\77; ...                          (line 186)
+     *     TPARA is this same seven-word buffer (declared above it as BUNI,
+     *     SEC, MINUT, HOUR, DAY, MNTH, YEAR). The radix there is octal - the
+     *     mask 77 is 63, six contiguous bits, whereas 77 decimal would be the
+     *     nonsense mask 1001101 - so 3554 is 1900. Subtracting 1900 from the
+     *     returned value only makes sense if it is a full year: on 85 it goes
+     *     negative. That is the whole argument.
+     *   - Against it: that line uses a base of 1900, while the file-date
+     *     format uses 1950, so the two are not one consistent convention.
+     *   - Do not cite the MON YAML corpus. Its "last two digits (tm_year %
+     *     100)" note quotes this C file, so it was written from the emulator.
+     *
+     * No observation distinguishes the two. For any 1980s date, a caller that
+     * prefixes "19" to the low two digits prints the same thing whichever it
+     * received. The ND LINKER does exactly that, which is why its banner still
+     * reads 1926 with this fix in place.
+     *
+     * What would settle it: a capture from a real SINTRAN III system showing a
+     * date rendered from this call, or the resident clock's own year cell read
+     * out of a live system or a memory image.
+     */
+    ctx->write_word(ctx->cpu, buffer_addr + 24, (uint32_t)(tm_now->tm_year + 1900));
 
     mon_log(MON_LOG_DEBUG, MON_ID_113B ": IN: (none)");
-    mon_log(MON_LOG_DEBUG, MON_ID_113B ": OUT: Time=%02d:%02d:%02d Date=%02d/%02d/%02d BasicUnits=%o",
+    mon_log(MON_LOG_DEBUG, MON_ID_113B ": OUT: Time=%02d:%02d:%02d Date=%02d/%02d/%04d BasicUnits=%o",
             tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec,
-            tm_now->tm_mday, tm_now->tm_mon + 1, (tm_now->tm_year % 100),
+            tm_now->tm_mday, tm_now->tm_mon + 1, (tm_now->tm_year + 1900),
             basic_units);
 
     mon_set_success(ctx);
