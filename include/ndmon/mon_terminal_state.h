@@ -106,6 +106,18 @@ typedef struct {
     bool escape_inhibited;      /* 5IESC: true => ESCAPE key does NOT user-break */
     bool escape_set;            /* escape_char has been explicitly configured */
     uint8_t escape_char;        /* VESCAPE: escape character (SINTRAN default 033B = 0x1B) */
+
+    /* USER-DEFINED escape handling - MON 405B USTRK, 300B EUSEL (on), 301B DUSEL
+     * (off). When enabled, pressing ESCAPE is meant to transfer control to
+     * user_escape_address in the program instead of aborting it (ND-500
+     * USER-ESCAPE, ND-60158 Symbolic Debugger p.82). The flag + address are
+     * RECORDED so the call succeeds and a read-back agrees; the asynchronous
+     * ESCAPE->transfer is NOT delivered here (a headless run never presses
+     * ESCAPE, and there is no console->PC-jump path). Default off == memset 0 =
+     * ESCAPE aborts, the SINTRAN default. Distinct from escape_inhibited (5IESC). */
+    bool user_escape_enabled;     /* user-defined escape handling switched ON */
+    uint32_t user_escape_address; /* program address to continue at on ESCAPE */
+    bool user_escape_set;         /* a handler address has been configured */
 } TerminalState;
 
 /* SINTRAN default escape character (VESCAPE): ASCII ESC, octal 033. */
@@ -187,5 +199,12 @@ uint8_t mon_get_escape_char(uint32_t device_no);
 /* True if ch is the device's escape char AND escape is currently enabled
  * (i.e. this character should trigger a user break on that terminal). */
 bool mon_is_escape_break(uint32_t device_no, uint8_t ch);
+
+/* USER-DEFINED escape handler - MON 405B USTRK, 300B EUSEL / 301B DUSEL.
+ * Records whether ESCAPE transfers to a program address (and which). The
+ * asynchronous transfer itself is not delivered by the emulation. */
+void mon_set_user_escape_handler(uint32_t device_no, bool enabled, uint32_t address);
+bool mon_get_user_escape_enabled(uint32_t device_no);
+uint32_t mon_get_user_escape_address(uint32_t device_no);
 
 #endif /* MON_TERMINAL_STATE_H */

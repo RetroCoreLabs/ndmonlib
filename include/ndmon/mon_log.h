@@ -62,6 +62,7 @@ typedef enum {
 #define MON_ID_67B    MON_ID("67B", "OSIZE", "OutBufferSpace")
 #define MON_ID_71B    MON_ID("71B", "DESCF", "DisableEscape")
 #define MON_ID_72B    MON_ID("72B", "EESCF", "EnableEscape")
+#define MON_ID_405B   MON_ID("405B", "USTRK", "SwitchUserBreak")
 #define MON_ID_73B    MON_ID("73B", "SMAX", "SetMaxBytes")
 #define MON_ID_74B    MON_ID("74B", "SETBT", "SetStartByte")
 #define MON_ID_76B    MON_ID("76B", "SETBS", "SetBlockSize")

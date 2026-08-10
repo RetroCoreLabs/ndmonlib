@@ -489,3 +489,36 @@ bool mon_is_escape_break(uint32_t device_no, uint8_t ch) {
     return mon_get_escape_enabled(device_no) &&
            ch == mon_get_escape_char(device_no);
 }
+
+/* USER-DEFINED escape handler (MON 405B USTRK / 300B EUSEL / 301B DUSEL).
+ * enabled + address are recorded; the async ESCAPE->transfer is not delivered. */
+void mon_set_user_escape_handler(uint32_t device_no, bool enabled, uint32_t address) {
+    if (device_no >= MAX_TERMINAL_DEVICES) {
+        return;
+    }
+    TerminalState* state = &terminal_states[device_no];
+    state->initialized = true;
+    state->user_escape_enabled = enabled;
+    /* Keep the address when disabling too, so a re-enable without a fresh
+     * address behaves like SINTRAN's last handler. */
+    if (enabled || address != 0) {
+        state->user_escape_address = address;
+        state->user_escape_set = true;
+    }
+    mon_log(MON_LOG_DEBUG, "user escape %s, handler 0%o for device %u",
+            enabled ? "ON" : "OFF", address, device_no);
+}
+
+bool mon_get_user_escape_enabled(uint32_t device_no) {
+    if (device_no >= MAX_TERMINAL_DEVICES) {
+        return false;
+    }
+    return terminal_states[device_no].user_escape_enabled;
+}
+
+uint32_t mon_get_user_escape_address(uint32_t device_no) {
+    if (device_no >= MAX_TERMINAL_DEVICES) {
+        return 0;
+    }
+    return terminal_states[device_no].user_escape_address;
+}
