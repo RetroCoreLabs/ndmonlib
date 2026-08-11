@@ -2084,7 +2084,7 @@ void mon_register_all_handlers(void) {
         "Switches user-defined escape handling on and off. The user-defined escape handling transfers control",  /* Description */
         "[I] OnOffFlag (INTEGER2): On/off flag. Use 1 for on and 0 for off.\\n[I] Address (INTEGER2): Program address to start at when you press the ESCAPE key.",  /* Parameter details */
         mon_405B_SwitchUserBreak,  /* Handler */
-        MON_STATUS_NOT_IMPLEMENTED,    /* Status */
+        MON_STATUS_IN_PROGRESS,    /* Status - handler records on/off+address; async ESCAPE->transfer not delivered */
         2             /* Param count */
     );
     mon_register_ex(
