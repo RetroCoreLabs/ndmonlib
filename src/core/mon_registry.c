@@ -1617,7 +1617,7 @@ void mon_register_all_handlers(void) {
         "Enables user-defined escape handling. When the ESCAPE key is pressed, execution continues at the spe",  /* Description */
         "[I] EscapeHandler (INTEGER): Contents of first location of escape-handler routine. See PLANC example.",  /* Parameter details */
         mon_300B_SetEscapeHandling,  /* Handler */
-        MON_STATUS_NOT_IMPLEMENTED,    /* Status */
+        MON_STATUS_IN_PROGRESS,    /* Status - handler records on+address; async ESCAPE->transfer not delivered */
         1             /* Param count */
     );
     mon_register(
@@ -1627,7 +1627,7 @@ void mon_register_all_handlers(void) {
         "StopEscapeHandling",          /* Long name */
         "Disables user-defined escape handling. The ESCAPE key terminates the program as normal. StartEscapeH",  /* Description */
         mon_301B_StopEscapeHandling,  /* Handler */
-        MON_STATUS_NOT_IMPLEMENTED,    /* Status */
+        MON_STATUS_IN_PROGRESS,    /* Status - handler records off; async ESCAPE->transfer not delivered */
         0             /* Param count */
     );
     mon_register(
