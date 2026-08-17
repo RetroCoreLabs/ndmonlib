@@ -625,7 +625,24 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
             fmode = "rb";
             break;
         case ACCESS_SEQ_WRITE:     /* 0 */
-            fmode = "wb";
+            /* "r+b", NOT "wb". "wb" truncates an existing file to zero the
+             * moment it is opened, before the guest has written a single
+             * byte, so a program that opens its output and then aborts - or
+             * never writes - destroys whatever was there. That is how a valid
+             * 2,316,049-byte :DOM was found at 0 bytes: the ND linker opens an
+             * EXISTING domain with an unquoted name (carved 50B_OpenFile.yaml,
+             * linker_note), which lands exactly here.
+             *
+             * Writes still begin at byte 0, so a program that rewrites the file
+             * produces the same bytes as before. The one difference is a
+             * program that writes FEWER bytes than the file already held: it
+             * now leaves the old tail in place. Whether real SINTRAN truncates
+             * on write-open is NOT established - the carve shows GFILI is
+             * lookup-only and says nothing about truncation, so the old
+             * behaviour was destroying data on an unverified assumption.
+             * Settling it needs the OPENF worker carved: does it clear the
+             * object entry's byte count? Until then, do not destroy data. */
+            fmode = "r+b";
             allows_write = true;
             break;
         case ACCESS_RAND_RDWR:     /* 2 */
