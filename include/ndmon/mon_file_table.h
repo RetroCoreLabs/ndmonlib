@@ -111,6 +111,12 @@ typedef struct {
     uint32_t block_size;          /* Block size for RFILE/WFILE (default 512) */
     bool max_bytes_set;           /* True if MON 73B SMAX recorded a logical length
                                    * in object_entry.bytes_in_file to apply at CLOSE */
+    bool seq_write_length;        /* True when object_entry.bytes_in_file is tracking this
+                                   * session's MAX BYTE POINTER for a sequential-write
+                                   * (access 0) open - SINTRAN's in-core datafield word 21B,
+                                   * which such an open resets to -1. Starts at 0, is raised
+                                   * by every write through mon_file_note_write(), and CLOSE
+                                   * truncates the host file to it. */
     bool mapped_as_segment;       /* True if connected as segment (MON 412B) */
     uint32_t mapped_segment_no;   /* Logical segment number if mapped */
     uint8_t segment_access_type;  /* 0=read, 1=write, 2=read/write */
@@ -150,6 +156,14 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
 int mon_file_open(const char* filename, const char* filetype, uint8_t access_mode);
 int mon_file_close(int file_number);
 OpenFileEntry* mon_file_table_get(int file_number);
+
+/* Call after a successful write, once entry->current_position has been advanced
+ * past the written bytes. Raises the session max byte pointer
+ * (object_entry.bytes_in_file) if the write extended the file - what SINTRAN's
+ * write paths do to datafield word 21B. Every MON call that writes to a file
+ * must call this, or an access-0 file will be truncated back at CLOSE to
+ * whatever the last caller that did remember reached. */
+void mon_file_note_write(OpenFileEntry* entry);
 
 /* File-ownership generation for nested (317B UECOM) program runs. Push before
  * running a nested program and pop after: files it opens are tagged at the

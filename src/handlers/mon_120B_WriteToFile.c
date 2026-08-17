@@ -184,10 +184,8 @@ MonResult mon_120B_WriteToFile(MonContext* ctx) {
     /* Update file position */
     entry->current_position = (uint32_t)ftell(entry->host_file);
 
-    /* Update bytes_in_file if we extended the file */
-    if (entry->current_position > entry->object_entry.bytes_in_file) {
-        entry->object_entry.bytes_in_file = entry->current_position;
-    }
+    /* Raise the session max byte pointer if this write extended the file */
+    mon_file_note_write(entry);
 
     mon_log(MON_LOG_DEBUG, MON_ID_120B ": OUT: Wrote %zu bytes to file %o block %o, pos=%o",
             bytes_written, file_no, block_no, entry->current_position);

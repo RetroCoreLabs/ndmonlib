@@ -156,6 +156,7 @@ MonResult mon_dvouts_write(MonContext* ctx, uint32_t device_no,
             /* Flush to ensure data is written to disk */
             fflush(entry->host_file);
             entry->current_position += num_bytes;
+            mon_file_note_write(entry);
             mon_log(MON_LOG_DEBUG, MON_ID_504B ": OUT: Wrote %o bytes to file %o, pos=%o",
                     num_bytes, device_no, entry->current_position);
         } else {

@@ -91,6 +91,7 @@ MonResult mon_24B_Out8Bytes(MonContext* ctx) {
             }
             fflush(entry->host_file);
             entry->current_position += 8;
+            mon_file_note_write(entry);
             mon_log(MON_LOG_DEBUG, MON_ID_24B ": OUT: Wrote 8 bytes to file %o, pos=%o",
                     device_no, entry->current_position);
         } else {
