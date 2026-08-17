@@ -1557,6 +1557,26 @@ void mon_install_stdio_console(void) {
     console_io = &g_stdio_console;
 }
 
+int mon_console_take_pushback(void) {
+    /* Only the stdio console holds a pushback byte: its peek has to read from the
+     * OS to see the next byte, so a peeked byte lives here until someone reads
+     * it. Every other console (mode script, queued, telnet) peeks without
+     * consuming from its own buffer, so there is nothing to hand back.
+     *
+     * Why this exists: mon_console_poll_user_break() peeks on every run-loop
+     * tick to spot an asynchronous ESCAPE. When the byte is NOT an escape it is
+     * deliberately left "for the program" - but if the program never reads it
+     * and then exits, the byte is stranded in here, and a host front-end that
+     * reads its next command line straight from stdin (readline/fgets) starts
+     * one byte late. That is exactly how @CPU-STAT followed by FILES executed
+     * "ILES": CPU-STAT issues no input call at all, so the F sat here. */
+    if (console_io != &g_stdio_console) return -1;
+    if (g_stdio_pushback < 0) return -1;
+    int c = g_stdio_pushback;
+    g_stdio_pushback = -1;
+    return c;
+}
+
 /* ============================================================
  * Host Path Utilities
  * ============================================================ */
