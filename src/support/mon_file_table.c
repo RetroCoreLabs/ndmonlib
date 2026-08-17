@@ -628,10 +628,16 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
             /* "r+b", NOT "wb". "wb" truncates an existing file to zero the
              * moment it is opened, before the guest has written a single
              * byte, so a program that opens its output and then aborts - or
-             * never writes - destroys whatever was there. That is how a valid
-             * 2,316,049-byte :DOM was found at 0 bytes: the ND linker opens an
-             * EXISTING domain with an unquoted name (carved 50B_OpenFile.yaml,
-             * linker_note), which lands exactly here.
+             * never writes - destroys whatever was there.
+             *
+             * CORRECTION 2026-08-17: this was first written claiming it
+             * explained the 2,316,049-byte :DOM found at 0 bytes, via the ND
+             * linker opening an existing domain here. A traced linker run
+             * disproves that - the linker uses access codes 1, 2 and 3 only,
+             * and OPEN-DOMAIN uses access 2, which maps to "r+b" and never
+             * truncated. So THE :DOM 0-BYTE CAUSE IS STILL UNKNOWN; do not
+             * treat it as explained by this. The truncate-at-open behaviour
+             * below was nonetheless real and worth removing on its own.
              *
              * Writes still begin at byte 0, so a program that rewrites the file
              * produces the same bytes as before. The one difference is a
