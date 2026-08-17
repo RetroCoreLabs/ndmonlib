@@ -630,24 +630,38 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
              * byte, so a program that opens its output and then aborts - or
              * never writes - destroys whatever was there.
              *
-             * CORRECTION 2026-08-17: this was first written claiming it
-             * explained the 2,316,049-byte :DOM found at 0 bytes, via the ND
-             * linker opening an existing domain here. A traced linker run
-             * disproves that - the linker uses access codes 1, 2 and 3 only,
-             * and OPEN-DOMAIN uses access 2, which maps to "r+b" and never
-             * truncated. So THE :DOM 0-BYTE CAUSE IS STILL UNKNOWN; do not
-             * treat it as explained by this. The truncate-at-open behaviour
-             * below was nonetheless real and worth removing on its own.
+             * SETTLED 2026-08-17 by carving the SINTRAN L file system segment
+             * (FILSYS symbols; write-up in NDInsight
+             * SINTRAN/ND500/nd-500-mon/CARVE-ANSWER-FOUR-OPEN-QUESTIONS-2026-08-17.md,
+             * question 4). Real SINTRAN splits the two halves:
              *
-             * Writes still begin at byte 0, so a program that rewrites the file
-             * produces the same bytes as before. The one difference is a
-             * program that writes FEWER bytes than the file already held: it
-             * now leaves the old tail in place. Whether real SINTRAN truncates
-             * on write-open is NOT established - the carve shows GFILI is
-             * lookup-only and says nothing about truncation, so the old
-             * behaviour was destroying data on an unverified assumption.
-             * Settling it needs the OPENF worker carved: does it clear the
-             * object entry's byte count? Until then, do not destroy data. */
+             *   - OPEN does NOT touch the object entry on disk. SOFT@066123B
+             *     copies the stored max byte pointer (object entry word 62B)
+             *     into the in-core datafield word 21B, and for access code 0
+             *     alone then OVERWRITES that datafield word with -1
+             *     (066360B-066374B). The file on disk still holds its old byte
+             *     count and pages at this point.
+             *   - CLOSE writes it back. FCL2@070132B stores datafield word 21B
+             *     into object entry word 62B (071311B-071314B), so a program
+             *     that opens access 0, writes nothing and closes leaves the
+             *     file at byte count 0.
+             *
+             * So "r+b" here is CORRECT and must stay: SINTRAN does not destroy
+             * data at open either. What is still MISSING is the close-time half
+             * - for an access-0 file the session's highest written byte should
+             * be tracked from 0 (not from the old size) and the host file
+             * truncated to that length at CLOSE, and reads through an access-0
+             * file number should see an empty file before then. Neither is
+             * implemented; a program that rewrites an access-0 file with FEWER
+             * bytes than it held keeps the old tail, which real SINTRAN would
+             * have dropped.
+             *
+             * Note this is NOT the explanation for the 2,316,049-byte :DOM
+             * found at 0 bytes. That was traced separately the same day: a
+             * quoted destination is created empty at open and filled only by
+             * segment writeback at close, so any interrupted run leaves 0
+             * bytes. The linker never opens with access code 0 at all - it uses
+             * 1, 2 and 3, and OPEN-DOMAIN uses 2. */
             fmode = "r+b";
             allows_write = true;
             break;
