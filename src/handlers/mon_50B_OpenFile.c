@@ -95,12 +95,35 @@ MonResult mon_50B_OpenFile(MonContext* ctx) {
                     filename, filetype, file_number);
         }
 
-        /* Map internal error codes to SINTRAN error codes */
+        /* Map internal error codes to SINTRAN error codes.
+         *
+         * EVERY code mon_file_open_ex can return must appear here. Anything
+         * that falls through to the default is reported to the guest as 056B
+         * "No such file name", which is a lie about what happened and sends
+         * whoever is debugging it looking for a missing file. That is exactly
+         * what happened with -62: a quoted create over an existing file is
+         * detected correctly in mon_file_table.c (returns -62 "file already
+         * exists"), but with no case for it here the guest saw 056B, and
+         * CONVERT-DOMAIN's failure to create its destination read as a
+         * name-resolution problem instead of the destination simply being
+         * there already. -47 had the same defect.
+         *
+         * Note the return codes are NOT uniformly negated SINTRAN codes:
+         * -46/-47/-62 happen to be, but -52/-54/-55 are internal numbers that
+         * map to unrelated SINTRAN values. Do not "simplify" this to a
+         * negation. */
         switch (file_number) {
-            case -52: mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER); break;  /* 174B Illegal parameter */
-            case -54: mon_set_error(ctx, MON_ERR_FILE_ALREADY_OPEN); break;  /* File already open */
-            case -55: mon_set_error(ctx, MON_ERR_TOO_MANY_MASS_STORAGE); break;  /* 121B Attempt to open too many mass storage files */
-            default:  mon_set_error(ctx, MON_ERR_NO_SUCH_FILE_NAME);  /* 056B No such file name */
+            case -46: mon_set_error(ctx, MON_ERR_NO_SUCH_FILE_NAME); break;     /* 056B No such file name */
+            case -47: mon_set_error(ctx, MON_ERR_AMBIGUOUS_FILE_NAME); break;   /* 057B Ambiguous file name */
+            case -52: mon_set_error(ctx, MON_ERR_ILLEGAL_PARAMETER); break;     /* 174B Illegal parameter */
+            case -54: mon_set_error(ctx, MON_ERR_FILE_ALREADY_OPEN); break;     /* 105B File already open */
+            case -55: mon_set_error(ctx, MON_ERR_TOO_MANY_MASS_STORAGE); break; /* 121B Attempt to open too many mass storage files */
+            case -62: mon_set_error(ctx, MON_ERR_FILE_ALREADY_EXISTS); break;   /* 076B File already exists */
+            default:
+                mon_log(MON_LOG_WARN, MON_ID_50B
+                        ": unmapped open error %d - reporting 056B, which is probably wrong."
+                        " Add a case for it.", file_number);
+                mon_set_error(ctx, MON_ERR_NO_SUCH_FILE_NAME);  /* 056B No such file name */
         }
         return MON_ERROR;
     }
