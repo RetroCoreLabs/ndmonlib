@@ -223,6 +223,14 @@ typedef struct {
  * console to implement peek_char; returns 0 otherwise. */
 int mon_console_poll_user_break(void);
 
+/* Reclaim a byte that the ESCAPE poll above peeked and nobody read: returns it
+ * (already LF->CR translated) and clears it, or -1 if there is none. A host that
+ * reads its own command lines directly from stdin - rather than through this
+ * ConsoleIO - must call this FIRST and treat the result as the first character
+ * of the line, or that byte is silently lost. Only the stdio console can hold
+ * one; every other console peeks without consuming. */
+int mon_console_take_pushback(void);
+
 /* Match a host filename (e.g. "LINKER.DOM") against a SINTRAN NAME:TYPE file-spec
  * pattern (e.g. ":DOM", "LI:DOM", "LINK*") using the carved COMPS comparator - an
  * empty name or type matches any, '*' matches one char. NULL/empty pattern -> 1.
