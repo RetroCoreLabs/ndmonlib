@@ -78,6 +78,7 @@ MonResult mon_2B_OutByte(MonContext* ctx) {
                 return MON_ERROR;
             }
             entry->current_position++;
+            mon_file_note_write(entry);
             mon_log(MON_LOG_DEBUG, MON_ID_2B ": OUT: Wrote byte 0x%02X to file %o, pos=%o",
                     byte_out, device_no, entry->current_position);
         } else {

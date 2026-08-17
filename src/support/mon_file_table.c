@@ -106,6 +106,48 @@ void mon_file_table_reset(void) {
     mon_file_table_init();
 }
 
+/* End-of-session length, applied by EVERY close path - the explicit MON 43B
+ * CLOSE below and the exit close-all above alike, because SINTRAN closes a
+ * terminating program's files and the vendor programs that matter (the ND
+ * linker, NC) exit without ever closing by number.
+ *
+ * Two independent reasons the host file may need shortening, both of which are
+ * SINTRAN's in-core datafield word 21B reaching disk at close:
+ *   - MON 73B SMAX recorded an explicit logical length.
+ *   - The file was opened access 0 (sequential write), which resets the session
+ *     max byte pointer, so the file ends up as long as this session wrote.
+ * Real SINTRAN does the same store in FCL2@070132B at 071311B-071314B.
+ *
+ * Never applied to a scratch file (about to be unlinked) or a segment-mapped
+ * one: segment bytes reach the host path through the writeback, which never
+ * touches current_position, so bytes_in_file would be a stale count and
+ * truncating to it would throw the whole output away. */
+static void apply_close_length(OpenFileEntry* entry) {
+    bool apply_seq_length = entry->seq_write_length && !entry->mapped_as_segment;
+
+    if (!(entry->max_bytes_set || apply_seq_length)) {
+        if (entry->seq_write_length && entry->mapped_as_segment) {
+            mon_log(MON_LOG_DEBUG, "MON CLOSE: '%s' was opened for sequential write but is"
+                    " segment-mapped - leaving its length alone", entry->host_path);
+        }
+        return;
+    }
+    if (!entry->host_file || entry->is_scratch) return;
+
+    int fd = fileno(entry->host_file);
+    if (fd < 0) return;
+
+    fflush(entry->host_file);
+    if (ftruncate(fd, (off_t)entry->object_entry.bytes_in_file) != 0) {
+        mon_log(MON_LOG_WARN, "MON CLOSE: ftruncate('%s', %u) failed",
+                entry->host_path, entry->object_entry.bytes_in_file);
+    } else {
+        mon_log(MON_LOG_DEBUG, "MON CLOSE: applied %s length %u to '%s'",
+                entry->max_bytes_set ? "SMAX" : "sequential-write",
+                entry->object_entry.bytes_in_file, entry->host_path);
+    }
+}
+
 void mon_file_table_close_all_for_exit(MonContext* ctx) {
     /* Same per-file writeback mon_43B_CloseFile.c does for a single explicit
      * close, applied to every still-open segment-mapped file. Without this,
@@ -144,6 +186,7 @@ void mon_file_table_close_all_for_exit(MonContext* ctx) {
             }
         }
 
+        apply_close_length(entry);
         if (entry->host_file) fclose(entry->host_file);
         memset(entry, 0, sizeof(*entry));   /* free the slot */
     }
@@ -828,6 +871,31 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
         entry->object_entry.header |= HEADER_WRITE_OPEN;
     }
 
+    /* A sequential-write open starts this session's length at ZERO, and CLOSE
+     * applies it - so a program that opens access 0 and writes 100 bytes over a
+     * 5000-byte file leaves a 100-byte file, and one that writes nothing leaves
+     * an empty file.
+     *
+     * This is SINTRAN's own behaviour, carved from the L file system segment
+     * (write-up in NDInsight
+     * SINTRAN/ND500/nd-500-mon/CARVE-ANSWER-FOUR-OPEN-QUESTIONS-2026-08-17.md,
+     * question 4): SOFT@066123B copies the object entry's stored max byte
+     * pointer into datafield word 21B for every access code, then for access 0
+     * ALONE overwrites that word with -1 at 066374B. Nothing is written to disk
+     * yet - FCL2@070132B stores datafield 21B back into object entry word 62B
+     * at close (071311B-071314B). Access codes 1 and 4 leave the stored count
+     * alone; 5 and 11B set both pointers from it (append). So the truncation
+     * belongs HERE at open as an intent, and at CLOSE as the write - never at
+     * open as an ftruncate, which is why fmode above is "r+b" and not "wb".
+     *
+     * Scratch files are excluded: they are created empty here and unlinked at
+     * close anyway, and the NC/CAT-500 pipeline hands one on between programs
+     * via ND500X_KEEP_SCRATCH - nothing to gain, a working path to break. */
+    if (access_mode == ACCESS_SEQ_WRITE && !is_scratch) {
+        entry->object_entry.bytes_in_file = 0;
+        entry->seq_write_length = true;
+    }
+
     /* Set dates from host file stats */
     struct stat st;
     if (stat(host_path, &st) == 0) {
@@ -840,6 +908,13 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
               host_path, file_number, access_mode, is_scratch ? ", scratch" : "");
 
     return file_number;
+}
+
+void mon_file_note_write(OpenFileEntry* entry) {
+    if (!entry || !entry->in_use) return;
+    if (entry->current_position > entry->object_entry.bytes_in_file) {
+        entry->object_entry.bytes_in_file = entry->current_position;
+    }
 }
 
 /* Wrapper for backwards compatibility - allocates file number automatically */
@@ -872,23 +947,9 @@ int mon_file_close(int file_number) {
     host_path[sizeof(host_path) - 1] = '\0';
     bool is_scratch = entry->is_scratch;
 
-    /* Apply a deferred MON 73B SMAX length: SMAX only RECORDS the logical
-     * max-byte count; the physical truncation happens here at CLOSE. Only touch
-     * files where SMAX actually ran (max_bytes_set), and never a scratch file
-     * that is about to be unlinked. */
-    if (entry->max_bytes_set && entry->host_file && !entry->is_scratch) {
-        int fd = fileno(entry->host_file);
-        if (fd >= 0) {
-            fflush(entry->host_file);
-            if (ftruncate(fd, (off_t)entry->object_entry.bytes_in_file) != 0) {
-                mon_log(MON_LOG_WARN, "MON CLOSE: ftruncate('%s', %u) failed",
-                        host_path, entry->object_entry.bytes_in_file);
-            } else {
-                mon_log(MON_LOG_DEBUG, "MON CLOSE: applied SMAX length %u to '%s'",
-                        entry->object_entry.bytes_in_file, host_path);
-            }
-        }
-    }
+    /* Deferred SMAX length and sequential-write session length - see
+     * apply_close_length() above; the exit close-all path applies the same. */
+    apply_close_length(entry);
 
     /* Close host file */
     if (entry->host_file) {
