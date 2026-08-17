@@ -156,6 +156,47 @@ static void test_segment_mapped_is_left_alone(void) {
           "a segment-mapped file is NOT truncated by the session length");
 }
 
+/* The ESCAPE poll peeks stdin on every run-loop tick. On the stdio console a
+ * peek has to READ from the OS, so a byte that is not an escape is parked in an
+ * internal one-byte pushback and left "for the program". A program that never
+ * reads input then exits with that byte still parked, and a host that reads its
+ * next command line straight from stdin starts one byte late - which is how
+ * @CPU-STAT followed by USER came to execute SER.
+ *
+ * mon_console_take_pushback() is what lets the host reclaim it. The test drives
+ * the real thing: a pipe on stdin, a real peek through the poll, then the
+ * reclaim.
+ */
+static void test_console_pushback_is_reclaimable(void) {
+    int fds[2];
+    int saved_stdin;
+    int c;
+
+    printf("== the ESCAPE poll's peeked byte can be reclaimed ==\n");
+
+    if (pipe(fds) != 0) { printf("FAIL: pipe() failed\n"); failures++; return; }
+    if (write(fds[1], "F", 1) != 1) { printf("FAIL: write to pipe failed\n"); failures++; return; }
+
+    saved_stdin = dup(STDIN_FILENO);
+    dup2(fds[0], STDIN_FILENO);
+
+    mon_install_stdio_console();
+
+    /* 'F' is not an escape, so the poll reports "no break" and leaves the byte -
+     * parked in the pushback, invisible to anyone reading stdin directly. */
+    check(mon_console_poll_user_break() == 0, "a plain byte is not reported as a user break");
+
+    c = mon_console_take_pushback();
+    check(c == 'F', "the peeked byte is handed back, so the host can prepend it to its line");
+
+    check(mon_console_take_pushback() == -1, "a second reclaim returns -1: the byte is handed over once");
+
+    dup2(saved_stdin, STDIN_FILENO);
+    close(saved_stdin);
+    close(fds[0]);
+    close(fds[1]);
+}
+
 int main(void) {
     printf("File table tests\n");
     setup();
@@ -164,6 +205,7 @@ int main(void) {
     test_seq_write_nothing_empties();
     test_read_open_never_truncates();
     test_segment_mapped_is_left_alone();
+    test_console_pushback_is_reclaimable();
 
     teardown();
 
