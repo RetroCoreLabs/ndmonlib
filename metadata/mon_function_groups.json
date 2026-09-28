@@ -1,0 +1,528 @@
+{
+  "generator": "tools/generate_mon_status.py --extract-groups",
+  "source": "SINTRAN III Monitor Calls (ND-860228.2 EN), chapter 2",
+  "source_file": "NDInsight repo: Developer/MON/Monitor Calls.md",
+  "groups": [
+    {
+      "section": "2.3",
+      "title": "Commonly-Used Monitor Calls",
+      "line": 2087,
+      "calls": [
+        "43B",
+        "221B",
+        "54B",
+        "65B",
+        "317B",
+        "0B",
+        "113B",
+        "1B",
+        "161B",
+        "50B",
+        "2B",
+        "162B",
+        "117B",
+        "104B",
+        "64B",
+        "120B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.4",
+      "title": "File Operations",
+      "line": 2118,
+      "calls": [
+        "240B",
+        "121B",
+        "431B",
+        "252B",
+        "43B",
+        "221B",
+        "54B",
+        "272B",
+        "220B",
+        "231B",
+        "256B",
+        "62B",
+        "75B",
+        "214B",
+        "310B",
+        "23B",
+        "1B",
+        "161B",
+        "253B",
+        "241B",
+        "242B",
+        "50B",
+        "24B",
+        "2B",
+        "32B",
+        "35B",
+        "504B",
+        "162B",
+        "22B",
+        "7B",
+        "270B",
+        "117B",
+        "5B",
+        "123B",
+        "232B",
+        "122B",
+        "235B",
+        "76B",
+        "237B",
+        "73B",
+        "236B",
+        "77B",
+        "74B",
+        "233B",
+        "10B",
+        "271B",
+        "6B",
+        "120B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.5",
+      "title": "Input and Output Monitor Calls",
+      "line": 2177,
+      "calls": [
+        "240B",
+        "121B",
+        "431B",
+        "325B",
+        "13B",
+        "14B",
+        "43B",
+        "40B",
+        "251B",
+        "131B",
+        "71B",
+        "72B",
+        "65B",
+        "404B",
+        "26B",
+        "55B",
+        "75B",
+        "306B",
+        "155B",
+        "63B",
+        "310B",
+        "23B",
+        "66B",
+        "313B",
+        "1B",
+        "161B",
+        "21B",
+        "36B",
+        "24B",
+        "67B",
+        "2B",
+        "32B",
+        "35B",
+        "504B",
+        "162B",
+        "22B",
+        "37B",
+        "7B",
+        "117B",
+        "5B",
+        "235B",
+        "76B",
+        "4B",
+        "12B",
+        "3B",
+        "227B",
+        "77B",
+        "74B",
+        "307B",
+        "142B",
+        "335B",
+        "64B",
+        "10B",
+        "6B",
+        "120B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.6",
+      "title": "Monitor Calls for Terminal Handling",
+      "line": 2258,
+      "calls": [
+        "325B",
+        "71B",
+        "277B",
+        "72B",
+        "276B",
+        "143B",
+        "254B",
+        "26B",
+        "30B",
+        "306B",
+        "16B",
+        "310B",
+        "23B",
+        "66B",
+        "313B",
+        "21B",
+        "24B",
+        "4B",
+        "12B",
+        "3B",
+        "300B",
+        "227B",
+        "275B",
+        "17B",
+        "301B",
+        "405B",
+        "332B",
+        "52B",
+        "330B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.7",
+      "title": "Monitor Calls for Printer Handling",
+      "line": 2302,
+      "calls": [
+        "240B",
+        "40B",
+        "55B",
+        "234B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.8",
+      "title": "Monitor Calls for Error Handling",
+      "line": 2317,
+      "calls": [
+        "65B",
+        "400B",
+        "254B",
+        "207B",
+        "334B",
+        "437B",
+        "505B",
+        "57B",
+        "436B",
+        "56B",
+        "206B",
+        "142B",
+        "64B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.9",
+      "title": "File System Operations",
+      "line": 2345,
+      "calls": [
+        "412B",
+        "413B",
+        "327B",
+        "256B",
+        "217B",
+        "250B",
+        "244B",
+        "243B",
+        "213B",
+        "274B",
+        "273B",
+        "215B",
+        "55B",
+        "44B",
+        "214B",
+        "241B",
+        "303B",
+        "242B",
+        "302B",
+        "257B",
+        "7B",
+        "117B",
+        "41B",
+        "247B",
+        "246B",
+        "73B",
+        "216B",
+        "234B",
+        "316B",
+        "10B",
+        "311B",
+        "120B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.10",
+      "title": "RT Program Execution",
+      "line": 2388,
+      "calls": [
+        "406B",
+        "337B",
+        "101B",
+        "137B",
+        "136B",
+        "126B",
+        "130B",
+        "127B",
+        "143B",
+        "134B",
+        "125B",
+        "124B",
+        "11B",
+        "30B",
+        "426B",
+        "151B",
+        "27B",
+        "152B",
+        "107B",
+        "146B",
+        "157B",
+        "507B",
+        "110B",
+        "106B",
+        "100B",
+        "103B",
+        "102B",
+        "105B",
+        "104B",
+        "135B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.11",
+      "title": "Device Handling",
+      "line": 2435,
+      "calls": [
+        "154B",
+        "121B",
+        "431B",
+        "325B",
+        "415B",
+        "414B",
+        "147B",
+        "150B",
+        "153B",
+        "13B",
+        "14B",
+        "251B",
+        "131B",
+        "141B",
+        "144B",
+        "71B",
+        "333B",
+        "72B",
+        "125B",
+        "124B",
+        "263B",
+        "243B",
+        "254B",
+        "26B",
+        "245B",
+        "155B",
+        "63B",
+        "66B",
+        "313B",
+        "1B",
+        "161B",
+        "21B",
+        "31B",
+        "107B",
+        "36B",
+        "67B",
+        "2B",
+        "32B",
+        "35B",
+        "504B",
+        "162B",
+        "22B",
+        "37B",
+        "270B",
+        "247B",
+        "123B",
+        "140B",
+        "246B",
+        "122B",
+        "4B",
+        "111B",
+        "234B",
+        "106B",
+        "307B",
+        "335B",
+        "271B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.12",
+      "title": "Segment Administration",
+      "line": 2516,
+      "calls": [
+        "33B",
+        "167B",
+        "337B",
+        "424B",
+        "423B",
+        "133B",
+        "412B",
+        "413B",
+        "160B",
+        "410B",
+        "115B",
+        "421B",
+        "222B",
+        "422B",
+        "53B",
+        "322B",
+        "132B",
+        "315B",
+        "417B",
+        "61B",
+        "411B",
+        "212B",
+        "416B",
+        "164B",
+        "323B",
+        "157B",
+        "116B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.13",
+      "title": "Data Communication",
+      "line": 2557,
+      "calls": [
+        "314B",
+        "277B",
+        "276B",
+        "230B",
+        "201B",
+        "303B",
+        "302B",
+        "300B",
+        "316B",
+        "301B",
+        "200B"
+      ],
+      "unresolved": []
+    },
+    {
+      "section": "2.14",
+      "title": "Monitor Calls for Internal Use",
+      "line": 2582,
+      "calls": [
+        "45B",
+        "321B",
+        "320B"
+      ],
+      "unresolved": [
+        {
+          "line": 2589,
+          "text": "| AnswerSIBAS           | SIBSURV 506B | Handle request to SIBAS on ND-500        |"
+        },
+        {
+          "line": 2590,
+          "text": "| AwaitRequest          | WRQI 163B    | Wait for request via ND-Net              |"
+        },
+        {
+          "line": 2591,
+          "text": "| CallSwapper           | SWAPMC 510B  |                                        |"
+        },
+        {
+          "line": 2592,
+          "text": "| Configuration         | CONFG 343B   |                                        |"
+        },
+        {
+          "line": 2594,
+          "text": "| DiskMirroring         | MSYSU 331B   |                                        |"
+        },
+        {
+          "line": 2595,
+          "text": "| DMACBreakpoint        | DMAC 51B     | Assembly breakpoints                     |"
+        },
+        {
+          "line": 2596,
+          "text": "| GetBreakpointInfo     | GBRK 46B     | Get info. on debug breakpoint            |"
+        },
+        {
+          "line": 2597,
+          "text": "| GetSIBASMessage       | MSIBB 305B   | GetSIBASMessage                          |"
+        },
+        {
+          "line": 2598,
+          "text": "| GetStopInfo           | TPSTRA 407B  | Stop process and return info.            |"
+        },
+        {
+          "line": 2599,
+          "text": "| MTAFunction           | MTAD 345B    |                                        |"
+        },
+        {
+          "line": 2600,
+          "text": "| MultipleDataTransfer  | 5MTRANS 515B | Fast disk transfer for ND-500(0)         |"
+        },
+        {
+          "line": 2601,
+          "text": "| ND500Function         | N500M 60B    | Control the ND-500 from ND-100           |"
+        },
+        {
+          "line": 2602,
+          "text": "| ND500MagTape          | 500MT 266B   |                                        |"
+        },
+        {
+          "line": 2603,
+          "text": "| ND500ReadFile         | 500RF 264B   |                                        |"
+        },
+        {
+          "line": 2604,
+          "text": "| ND500WriteFile        | 500WF 265B   |                                        |"
+        },
+        {
+          "line": 2605,
+          "text": "| NucleusFunction       | NUCL 347B    |                                        |"
+        },
+        {
+          "line": 2606,
+          "text": "| Performance           | PERF 304B    |                                        |"
+        },
+        {
+          "line": 2607,
+          "text": "| SendSIBASMessage      | MAPS1B 304B  | Send request to SIBAS                    |"
+        },
+        {
+          "line": 2608,
+          "text": "| SetBreakpoint         | SBRK 47B     | Start program to be debugged             |"
+        },
+        {
+          "line": 2609,
+          "text": "| SetOutRegisters       | DOLW 166B    | Set device-interface registers           |"
+        },
+        {
+          "line": 2610,
+          "text": "| SIBASFunction         | SIBFU 432B   | Various SIBAS functions                  |"
+        },
+        {
+          "line": 2611,
+          "text": "| SystemControl         | SYNCT 261B   | System control of device                 |"
+        },
+        {
+          "line": 2613,
+          "text": "| UELAMUFunction        | ADP 342B     |                                        |"
+        },
+        {
+          "line": 2615,
+          "text": "| UserControl           | USCNT 260B   | Set user control of a device             |"
+        },
+        {
+          "line": 2616,
+          "text": "|                       | WCI 20B      |                                        |"
+        }
+      ]
+    }
+  ]
+}
