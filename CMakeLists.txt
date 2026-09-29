@@ -47,6 +47,18 @@ list(LENGTH MON_HANDLER_SOURCES MON_HANDLER_COUNT)
 message(STATUS "ndmonlib: Found ${MON_HANDLER_COUNT} MON handlers")
 message(STATUS "ndmonlib: Building as standalone library")
 
-# Enable testing
-enable_testing()
-add_subdirectory(test)
+# Tests are built only when ndmonlib is the top-level project. When a host
+# project (nd500x, nd100x) add_subdirectory()s ndmonlib, the tests are skipped:
+# they use POSIX calls (2-argument mkdir, pipe) that MinGW does not provide.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(NDMONLIB_BUILD_TESTS_DEFAULT ON)
+else()
+    set(NDMONLIB_BUILD_TESTS_DEFAULT OFF)
+endif()
+option(NDMONLIB_BUILD_TESTS "Build the ndmonlib test programs"
+       ${NDMONLIB_BUILD_TESTS_DEFAULT})
+
+if(NDMONLIB_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
