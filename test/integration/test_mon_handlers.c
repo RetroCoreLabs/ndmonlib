@@ -8,6 +8,7 @@
  * that costs more time than a handler that plainly does nothing.
  */
 
+#include "unit/test_utils.h"
 #include "mon.h"
 #include "mon_config.h"
 #include "mon_errors.h"
@@ -16,44 +17,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-static int failures = 0;
-
-static void check(int cond, const char* what) {
-    printf("%s: %s\n", cond ? "PASS" : "FAIL", what);
-    if (!cond) failures++;
-}
-
-/* ---- mock guest memory ------------------------------------------------- */
-
-#define MOCK_MEM_SIZE 4096
-static uint8_t mock_mem[MOCK_MEM_SIZE];
-
-static uint32_t mock_read_word(void* cpu, uint32_t addr) {
-    (void)cpu;
-    if (addr + 3 >= MOCK_MEM_SIZE) return 0;
-    return ((uint32_t)mock_mem[addr] << 24) | ((uint32_t)mock_mem[addr + 1] << 16) |
-           ((uint32_t)mock_mem[addr + 2] << 8) | mock_mem[addr + 3];
-}
-
-static void mock_write_word(void* cpu, uint32_t addr, uint32_t val) {
-    (void)cpu;
-    if (addr + 3 >= MOCK_MEM_SIZE) return;
-    mock_mem[addr]     = (uint8_t)(val >> 24);
-    mock_mem[addr + 1] = (uint8_t)(val >> 16);
-    mock_mem[addr + 2] = (uint8_t)(val >> 8);
-    mock_mem[addr + 3] = (uint8_t)val;
-}
-
-static uint8_t mock_read_byte(void* cpu, uint32_t addr) {
-    (void)cpu;
-    return (addr < MOCK_MEM_SIZE) ? mock_mem[addr] : 0;
-}
-
-static void mock_write_byte(void* cpu, uint32_t addr, uint8_t val) {
-    (void)cpu;
-    if (addr < MOCK_MEM_SIZE) mock_mem[addr] = val;
-}
 
 /* Lay a SINTRAN string down at `addr`: the bytes then the 0x27 terminator. */
 static void put_sintran_string(uint32_t addr, const char* s) {
@@ -119,7 +82,7 @@ static void make_file(const char* name, size_t bytes) {
     size_t i;
     host_path_of(path, sizeof(path), name);
     f = fopen(path, "wb");
-    if (!f) { printf("FAIL: cannot create %s\n", path); failures++; return; }
+    if (!f) { printf("FAIL: cannot create %s\n", path); test_failures++; return; }
     for (i = 0; i < bytes; i++) fputc('x', f);
     fclose(f);
 }
@@ -278,6 +241,6 @@ int main(void) {
 
     teardown();
 
-    printf("\n%s\n", failures == 0 ? "All MON handler tests passed" : "FAILURES PRESENT");
-    return failures == 0 ? 0 : 1;
+    printf("\n%s\n", test_failures == 0 ? "All MON handler tests passed" : "FAILURES PRESENT");
+    return test_failures == 0 ? 0 : 1;
 }
