@@ -111,7 +111,9 @@ def load_calls():
         if octal not in calls:
             calls[octal] = {"octal": octal, "yaml": {}, "reg": e}
     for c in calls.values():
-        c["name"] = c["yaml"].get("name") or c["reg"]["long_name"]
+        # Long name: the registry's for registered calls (the YAML for 511B,
+        # which is not in the manual, repeats the short name DVIO there).
+        c["name"] = (c["reg"]["long_name"] if c["reg"] else "") or c["yaml"].get("name", "")
         shorts = c["yaml"].get("short_names") or ([c["reg"]["short_name"]] if c["reg"] else [])
         c["short"] = ", ".join(s for s in shorts if s)
         c["status"] = c["reg"]["status"] if c["reg"] else None
