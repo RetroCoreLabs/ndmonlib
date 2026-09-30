@@ -1,0 +1,308 @@
+# SINTRAN III Monitor Call: DVIO
+# Octal: 511B
+# Reverse-engineered from SINTRAN III NPL source (MP-P2-N500.NPL).
+# The manual does not document this call; contract below is RE-derived.
+octal: 511B
+name: DVIO
+short_names:
+- DVIO
+description: >-
+  ND-500 device I/O monitor call: outputs a prompt string to a terminal-class
+  device and then reads an input string in a single combined operation. DVIO
+  shares its output body with NOUTSTR (MON 504) and continues into the instring
+  path, i.e. DVIO = combined OutString + InString. Intended for ND subsystems only.
+notes:
+- >-
+    Internal-use ND-500 level-12 monitor call; not intended for user programs.
+- >-
+    Handler SUBR DVIO,NOUTSTR,OSTRS,PT5RST at MP-P2-N500.NPL:1688; the output body
+    is shared with NOUTSTR (MON 504).
+- >-
+    Dispatched via the ND-500 level-12 GOSW table (L12MIN=500..L12MAX=523), slot
+    index = 511B - 500B = 11 (octal 13); entered with X = current ND-500 message
+    (N5MESSAGE) and B = ND-500 CPU datafield.
+- >-
+    UNVERIFIED - the values below are message-field offsets read by the handler, not
+    a confirmed CALLG caller signature. Output datafield TODF, output byte count
+    DNOBY (max 4000B octal = 2048 bytes); input phase reads 11DMA (max input bytes)
+    and 11MXBRK (max chars before break).
+- >-
+    Write-back: AD =: X.11NOCHRET (number of returned bytes), 100000 =: X.NUMPAR
+    (write-back mask) at MP-P2-N500.NPL:1900-1901.
+see_also:
+- OutputString
+- InputString
+parameters:
+- name: OutputByteCount
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - message field DNOBY, number of prompt bytes to output
+    (max 4000B octal = 2048 bytes). Message offset, not a confirmed CALLG parameter.
+- name: MaxInputBytes
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - message field 11DMA, maximum number of input bytes to read.
+    Message offset, not a confirmed CALLG parameter.
+- name: ReturnedBytes
+  type: INTEGER
+  io: O
+  description: >-
+    UNVERIFIED - number of returned input bytes, written back to message field
+    11NOCHRET. Message offset, not a confirmed CALLG parameter.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 511B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source
+  handler: >-
+    MP-P2-N500.NPL:1688 (SUBR DVIO,NOUTSTR,OSTRS,PT5RST); write-back MP-P2-N500.NPL:1900-1901
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_511B_DVIO.c
+  last_updated: '2026-07-17'
+
+  summary: >-
+    THE FUSED PROMPT-THEN-READ CALL: 511B writes a prompt to a device and then reads
+    a line back from it. 511B == 504B DVOUTS followed by 503B DVINST on the same
+    device. nd500x implements it by DELEGATING to the shared DVOUTS and DVINST cores
+    (mon_device_io.h) rather than duplicating them - which mirrors SINTRAN itself,
+    where the output body is shared with NOUTSTR (MON 504) and the input phase is
+    named XNINSTR, literally 503B DVINST's body.
+
+  callg_argument_map:
+    radix: decimal
+    note: >-
+      ESTABLISHED FROM EVIDENCE (2026-07-16), NOT GUESSED - and NOT derivable by
+      arithmetic. The obvious 3 + (14 - 1 shared DeviceNo) = 16 predicts the COUNT but
+      NOT the ORDER: DVINST's MaxNo and returned-count are RELOCATED TO THE END
+      (14, 15) so that indices 1..2 can carry the output phase. A mapping built on
+      that arithmetic would have put MaxNo at arg 1 and CLOBBERED THE OUTPUT BYTE
+      COUNT. This is why it was not guessed.
+    derivation: >-
+      In linker-b01.dom.asm each of 503B/504B/511B has exactly ONE call site, and each
+      is a bare pass-through thunk (ents; call MON; ifkret; ret). Nothing runs between
+      the ents and the call, so the thunk's b.0x14.. slots ARE its incoming arguments.
+      Each thunk has exactly ONE caller, which calls it with ZERO CALLG args after
+      building the argument block at the top of its own frame (a fixed +0x150 from the
+      thunk's view). Laying the 503B caller (@0xB004754F) and the 511B caller
+      (@0xB00474A1..0xB0047535) side by side yields the mapping.
+    call_sites:
+      - 'B004AC8A: ents $0x4C / B004AC90: call $0xF8000143,$0xE  -> 503B DVINST (14 args)'
+      - 'B004ACA7: ents $0x20 / B004ACAD: call $0xF8000144,$0x3  -> 504B DVOUTS (3 args)'
+      - 'B004ACB9: ents $0x54 / B004ACBF: call $0xF8000149,$0x10 -> 511B DVIO  (16 args)'
+    args:
+      - index: 0
+        name: DeviceNo
+        io: I
+        note: '1 = own terminal. Output phase; same as 504B arg 0. All three callers take arg0 from the same b.0x58.'
+      - index: 1
+        name: NoOfBytes
+        io: I
+        note: 'Bytes to write. Output phase; same as 504B arg 1.'
+      - index: 2
+        name: OutputBuffer
+        io: I
+        note: 'Address of the prompt. Output phase; same as 504B arg 2.'
+      - index: 3
+        name: InputBuffer
+        io: O
+        note: 'Address of the input buffer. Input phase; same INDEX as 503B arg 3.'
+      - index: 4
+        name: BreakStrat
+        io: I
+        note: 'Observed 7. Written by "w move $0x7,b.0x100" at B004745C.'
+      - index: 5
+        name: EchoStrat
+        io: I
+        note: 'Observed -1.'
+      - index: '6..9'
+        name: 'break/echo table words or string field'
+        io: I
+        note: 'SEMANTICS UNPROVEN - see unverified. Passed through to the DVINST core unchanged.'
+      - index: '10..13'
+        name: 'table words'
+        io: I
+        note: 'Read from the table at 0xB0052F04; observed -1, 0, 0, 3.'
+      - index: 14
+        name: MaxNo
+        io: I
+        note: 'Maximum bytes to read. Observed 12. NOTE: this is arg 1 in 503B - the lists are NOT a shared prefix.'
+      - index: 15
+        name: ReturnedByteCount
+        io: O
+        note: >-
+          *** OUT PARAMETER - MUST BE WRITTEN. *** Written by NOBODY before the call
+          and read immediately after it (B0047539: w move b.0x1A0,b.0xA8). Exactly the
+          shape of the MON 412B FSCNT bug: if the handler leaves it alone, the caller
+          silently keeps a stale count. This is arg 2 in 503B.
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), thunk @0xB004ACB9, call @0xB004ACBF, caller @0xB00474A1'
+      params:
+        DeviceNo: 1
+        NoOfBytes: 2
+        OutputBuffer: '0xB0049430'
+        MaxNo: 12
+        InputBuffer: '0xB0001C2E'
+      expectation: >-
+        Write the 2-byte prompt, then read a line. Runtime-verified: "504B DVOUTS wrote
+        2 bytes; 503B DVINST read 12 bytes; EXIT -> SUCCESS". MaxNo = 12 arrives via
+        arg[14] exactly as mapped and consumes a 12-byte line.
+      note: 'Commit 2d9b00f.'
+
+  return_contract:
+    success: 'K flag cleared; prompt written, line in InputBuffer, count in arg 15.'
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 16 CALLG args)'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (propagated from the DVOUTS/DVINST cores)'
+      - code: 24
+        octal: 030B
+        meaning: 'No such device name (propagated from the cores)'
+
+  verified:
+    - claim: 'The argument mapping above is real. Three INDEPENDENT confirmations.'
+      evidence: >-
+        (1) 511B args 0..2 are built by an instruction sequence BYTE-IDENTICAL to the
+        504B DVOUTS caller's (same "w move $0xB0053068,b.0x114" / "by2 laddr @b.0x114+"
+        / "w2 =: b.0x16C"), and all three callers take arg0 from the same b.0x58 - so
+        args 0..2 ARE DVOUTS' (DeviceNo, NoOfBytes, @Buffer). (2) arg4 is written
+        "w move $0x7,b.0x100" at B004745C, and the live probe observed arg[4] == 7.
+        (3) args 10..13 are read from the table at 0xB0052F04, whose bytes in the
+        loaded image are FF FF FF FF | 00 00 00 00 | 00 00 00 00 | 00 00 00 03, and the
+        live probe observed arg[10..13] == -1, 0, 0, 3.
+    - claim: 'The MON number decode: 0xF8000149 = 0x149 = 329 decimal = 511 octal, with 16 args.'
+      evidence: >-
+        Matches the emulator's "Unimplemented MON ? (UNKNOWN) with 16 args" report
+        exactly. Commit 5b6bdfd. The originally reported PC B004ACD7 is merely the
+        FOLLOWING ifkret, which made the call look like garbage - a decode trap worth
+        remembering.
+    - claim: 'Implemented and working end to end against the real linker.'
+      evidence: >-
+        Commit 2d9b00f. Tests: 8 new 511B assertions in test_mon_calls.c covering
+        prompt-then-read, the OUT-parameter write (the 412B guard), buffer separation,
+        and suspend-on-empty leaving the count untouched.
+    - claim: >-
+        On an empty device the input phase requests a WAIT: the MON is left
+        UNCOMMITTED, the CPU rewinds to the CALLG and re-dispatches on resume. The
+        PROMPT IS RE-WRITTEN on that retry - which is correct: SINTRAN's DVIO
+        re-prompts when the line is not yet available.
+      evidence: 'mon_511B_DVIO.c; shares the 503B/1B STOP_WAIT_INPUT model (commits 26f665d, 7819a36).'
+
+  unverified:
+    - >-
+      THE PRECISE SEMANTICS OF ARGS 6..9. DO NOT STATE THEM AS FACT. The caller fills
+      b.0x104.. via an "h smove" from a [len][ptr] descriptor at 0xB0052854 /
+      0xB005285C, so they are NOT plainly a 128-bit break table in the linker's usage.
+      nd500x does not need to resolve this: it passes indices 4..13 through to the SAME
+      DVINST core, which is exactly what the linker's own DVINST call site does with
+      the identical values from the identical frame slots.
+    - >-
+      The argument map is derived from ONE program's call sites (the ND linker). It is
+      strong evidence for how 511B is called, not a manual-sourced signature.
+
+  discrepancies:
+    - was: >-
+        This YAML's parameters list gives THREE fields (OutputByteCount / DNOBY,
+        MaxInputBytes / 11DMA, ReturnedBytes / 11NOCHRET), reverse-engineered from
+        SINTRAN III NPL source MP-P2-N500.NPL as ND-500 MESSAGE-BUFFER OFFSETS - each
+        already self-labelled "UNVERIFIED ... Message offset, not a confirmed CALLG
+        parameter".
+      is: >-
+        Real callers pass SIXTEEN CALLG arguments, mapped above from evidence. The two
+        models are NOT in conflict - they describe DIFFERENT LAYERS. The NPL/carve
+        model is the level-12 driver / ND-500 message-buffer view; the map above is the
+        CALLG argument-list view a MON emulator must implement. Take the ARG SHAPE from
+        the call sites and the SEMANTICS from the carve/NPL. The two views corroborate
+        each other: DNOBY's max 4000B octal = 2048 bytes is the same limit the DVOUTS
+        core enforces, and 11NOCHRET (the write-back at MP-P2-N500.NPL:1900-1901) is
+        the same OUT parameter as CALLG arg 15.
+      evidence: >-
+        Call sites in ND-archive/500/nd-linker/linker-b01.dom.asm (B004ACB9/B004ACBF,
+        caller B00474A1); handler header
+        nd500x/src/libmon/handlers/mon_511B_DVIO.c; commits 5b6bdfd
+        and 2d9b00f.
+    - was: >-
+        Recorded for a long time: "the linker's command loop polls an in-memory
+        datafield, no MON call, carver-blocked" - i.e. the linker's interactive input
+        was believed unreachable through MON emulation.
+      is: >-
+        WRONG for the command path. The linker's own disassembly shows it uses three
+        terminal calls: 503B DVINST (input), 504B DVOUTS (output) and 511B DVIO (fused).
+        511B was simply UNIMPLEMENTED, and its "Unimplemented MON ? (UNKNOWN) with 16
+        args" report was not recognised as 511B. (The separate startup CONFIG dialogue
+        - "Batch abortion", "Advanced mode" - IS read by datafield poll; commit 7819a36.
+        Do not merge the two findings.)
+      evidence: 'Commit 5b6bdfd.'
+
+  notes:
+    - >-
+      TWO CHANGES MUST LAND TOGETHER: 511B DVIO and 143B RSIO reporting the TERMINAL as
+      command input. Either alone is useless - RSIO alone merely trades a hang for an
+      unimplemented-MON stop, which is why it was probed and REVERTED TWICE before the
+      pair shipped in commit 2d9b00f.
+    - >-
+      DO NOT REGISTER THIS HANDLER MON_STATUS_NOT_IMPLEMENTED. The dispatcher
+      (nd500x/src/libmon/mon_dispatch.c:173) SHORT-CIRCUITS that
+      status and NEVER CALLS THE HANDLER AT ALL - the handler will look broken while
+      being perfectly correct.
+    - >-
+      A DEBUG PROBE REMAINS IN THE HANDLER, gated behind ND500X_DVIO_DUMP; it dumps
+      each argument's effective address and value.
+    - >-
+      511B DVIO makes the linker TALK, but it does not by itself make the linker LINK.
+
+  sources:
+    - doc: nd500x/src/libmon/handlers/mon_511B_DVIO.c
+      note: 'The full derivation of the argument map, with the side-by-side caller frames.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/511B-DVIO/
+      note: >-
+        Carve folder. NB it documents 511B at the level-12 driver / ND-500
+        message-buffer level, NOT the CALLG arg-list model - see the discrepancy above.

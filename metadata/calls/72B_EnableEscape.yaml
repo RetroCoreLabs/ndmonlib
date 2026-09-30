@@ -1,0 +1,155 @@
+octal: 72B
+name: EnableEscape
+short_names:
+- EESCF
+description: 'Enables the ESCAPE key on the terminal. The ESCAPE key normally terminates a program. This
+  is called user break. You can disable this key with DisableEscape. To enable it again you should use
+  EnableEscape.
+
+
+  - The escape function is enabled when you log out.'
+see_also:
+- DisableEscape
+- SetEscapeHandling
+- and @ENABLE-ESCAPE-FUNCTION
+parameters:
+- name: DeviceNumber
+  type: INTEGER2
+  io: I
+  description: The terminal's logical device number. Ignored for background programs (own terminal selected).
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNumber : INTEGER2;
+
+      ...
+
+      EscapeEnable(DeviceNumber); [Note routine name.]'
+  cobol:
+    available: true
+    code: '01 DeviceNumber COMP.
+
+      ...
+
+      MONITOR-CALL "EnableEscape" USING DeviceNumber.'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNumber
+
+      ...
+
+      Monitor_Call(''EnableEscape'', DeviceNumber)'
+  planc:
+    available: true
+    code: 'INTEGER : DeviceNumber
+
+      ...
+
+      Monitor_Call(''EnableEscape'', DeviceNumber)'
+  assembly_500:
+    available: true
+    code: 'DeviceNumber : W BLOCK 1
+
+      EnableEscape : EQU 37B9 + 72B
+
+      ...
+
+      CALLG EnableEscape, 1, DeviceNumber
+
+      IF K GO Error
+
+      ...
+
+      Error,'
+    octal_definition: 37B9 + 72B
+  mac:
+    available: true
+    code: '| LDT | DEVNO | %Logical device number. |
+
+      | MON | 72    | %Monitor call EnableEscape. |
+
+      | ... |       |                             |
+
+      | DEVNO, ...  |                             |
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: null
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 165
+  line: 7184
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_72B_EnableEscape.c
+  last_updated: '2026-07-17'
+
+  summary: >-
+    THE EXACT INVERSE OF 71B DESCF: it clears the terminal datafield's 5IESC
+    (inhibit-escape) bit so ESCAPE resumes user-breaking. Escape is ENABLED BY
+    DEFAULT in nd500x (TerminalState.escape_inhibited defaults to escape enabled), so
+    72B is only meaningful after a 71B. The evidence, the datafield structure and the
+    caveats are shared with 71B - see 71B_DISABLEESCAPE.yaml for the full record
+    rather than a divergent copy.
+
+  parameter_notes:
+    - name: DeviceNumber
+      note: >-
+        Read as a 32-bit word (ND-500 INTEGER = W) despite the manual typing it
+        INTEGER2. Device 0 is normalised to 1 ("own terminal"), same as 71B.
+      verified: false
+
+  return_contract:
+    success: 'K flag cleared.'
+    errors: []
+
+  verified:
+    - claim: >-
+        72B drives real per-device state: mon_set_escape_enabled(device, true), which
+        clears DFLAG.5IESC in the inherited SINTRAN terminal input datafield structure
+        (5TTIFIELD). The state is consumed by 1B InByte via mon_is_escape_break().
+      evidence: >-
+        Commit 68e290d; nd500x/src/libmon/mon_terminal_state.h and
+        nd500x/src/libmon/handlers/mon_1B_InByte.c.
+    - claim: 'The default escape character is VESCAPE = 033B (0x1B).'
+      evidence: 'TerminalState.escape_char default, commit 68e290d.'
+
+  unverified:
+    - >-
+      "The escape function is enabled when you log out" (the manual) IS NOT MODELLED -
+      there is no logout event in the emulator. Escape state persists for the life of
+      the run unless a 71B/72B changes it.
+    - >-
+      nd500x's EESCF never fails and validates nothing - not even that the device is a
+      terminal. Real EESCF's error returns are unknown. Do not guess a code.
+    - >-
+      NO OBSERVED CALLER. No traced program is recorded issuing 72B.
+    - >-
+      The 72B worker body is no better carved than 71B's - see the 71B entry's
+      unverified section: the escape model rests on the manual plus the 5TTIFIELD
+      datafield structure, NOT on a carved worker.
+    - >-
+      The handler still carries a stale "TODO: Implement" comment and is registered
+      MON_STATUS_IN_PROGRESS despite being implemented. The behaviour is real; the
+      labels lag.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'
+    - doc: NDInsight/Developer/MON/calls/71B_DISABLEESCAPE.yaml
+      note: 'The full escape-model record (datafield structure, dispatch carve, caveats). 72B is its inverse.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/72B-EnableEscape/
+      note: 'Carve folder for this call - NOT mined into this block.'

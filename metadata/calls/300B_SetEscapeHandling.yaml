@@ -1,0 +1,92 @@
+# SINTRAN III Monitor Call: SetEscapeHandling
+# Octal: 300B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 300B
+name: SetEscapeHandling
+short_names:
+- EUSEL
+description: Enables user-defined escape handling. When the ESCAPE key is pressed, execution continues at the specified address in your program.
+notes:
+- Disable the user-defined escape handling with StopEscapeHandling.
+- The normal escape handling is reset when the program aborts.
+see_also:
+- EnableEscape
+- OffEscLocalFunction
+parameters:
+- name: EscapeHandler
+  type: INTEGER
+  io: I
+  description: Contents of first location of escape-handler routine. See PLANC example.
+examples:
+  pascal:
+    available: true
+    code: |-
+      EscapeHandler : INTEGER2;
+      ...
+      SetEscapeHandling (EscapeHandler);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 EscapeHandler COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "SetEscapeHandling" USING EscapeHandler.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER EscapeHandler
+      ...
+      Monitor_Call('SetEscapeHandling', EscapeHandler)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      TYPE rvv=ROUTINE VOID,VOID
+      INTEGER POINTER: ip
+      rvv POINTER: rp=ip
+      ROUTINE VOID,VOID : EscHandling
+      ...
+      ENDROUTINE
+      ON ROUTINEERROR DO
+      IF ErrCode <> 0 THEN ...
+      ENDON
+      ...
+      Addr EscHandling =:rp
+      Monitor_Call('SetEscapeHandling', Ind(ip))
+  assembly_500:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  mac:
+    available: true
+    code: |-
+      LDA PROG                 %Address of user escape handler routine.
+      MON 300                  %Monitor call SetEscapeHandling.
+      JMP ERROR                %Error return from monitor call.
+      ...                      %Normal return.
+      ERROR, ...               %Error number in register A.
+      PROG, ...
+    mon_number: 300
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: true
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 20157
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

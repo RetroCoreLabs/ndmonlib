@@ -1,0 +1,83 @@
+# SINTRAN III Monitor Call: UELAMUFunction
+# Octal: 342B
+# Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17).
+octal: 342B
+name: UELAMUFunction
+short_names:
+- ADP
+description: >-
+  User-Environment LAMU (Logical Address Mapping Unit) function (manual sections
+  2.14 and 2.17, short name ADP). Provides 15 LAMU-segment functions. Internal-use
+  call; contract is RE-derived from the labelled handler body.
+notes:
+- >-
+    Version history: L-version added function 15B (T-register = 15B): get ADP
+    segment number
+    (ND-860230-6-EN Sintran III - Release Information - L-Version.md:1293-1298).
+- >-
+    Internal-use monitor call (manual sections 2.14 / 2.17); not intended for user
+    programs.
+- >-
+    Handler MNADP at RP-P2-MON-ADP.NPL:59 - 15 LAMU-segment functions. VERIFIED
+    (labelled handler body read).
+- >-
+    Sub-functions are selected by an index; the exact caller convention
+    (register/CALLG mapping) is not confirmed from the available source.
+see_also:
+- LAMUFunction
+parameters:
+- name: SubFunction
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - LAMU-segment sub-function index (one of 15). Exact caller
+    convention not confirmed from the available source.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 342B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17)
+  handler: >-
+    RP-P2-MON-ADP.NPL:59 (MNADP)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

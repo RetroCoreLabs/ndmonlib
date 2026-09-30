@@ -1,0 +1,76 @@
+# SINTRAN III Monitor Call: MTAFunction
+# Octal: 345B
+# Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17).
+octal: 345B
+name: MTAFunction
+short_names:
+- MTAD
+description: >-
+  MTA (multi-terminal access / terminal-line) function (manual sections 2.14 and
+  2.17, short name MTAD; the 2.17 table also prints it as MTADFunction). Connects
+  or disconnects a terminal line to a datafield. Internal-use call; contract is
+  RE-derived from the labelled handler body.
+notes:
+- >-
+    Internal-use monitor call (manual sections 2.14 / 2.17); not intended for user
+    programs.
+- >-
+    Handler MTSTART at MP-P2-TERM-DRIV.NPL:2151 - connect/disconnect a terminal line
+    to a datafield. VERIFIED (labelled handler body read).
+- >-
+    Manual name variants: MTAFunction (2.14) and MTADFunction (2.17); short name
+    MTAD.
+- >-
+    Caller convention (register/CALLG mapping) is not confirmed from the available
+    source.
+see_also: []
+parameters: []
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 345B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17)
+  handler: >-
+    MP-P2-TERM-DRIV.NPL:2151 (MTSTART)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

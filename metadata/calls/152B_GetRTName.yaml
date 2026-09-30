@@ -1,0 +1,108 @@
+# SINTRAN III Monitor Call: GetRTName
+# Octal: 152B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 152B
+name: GetRTName
+short_names:
+- GRTNA
+description: |-
+  Gets the name of an RT program. You specify the RT description address.
+
+  - This monitor call is only available to background programs in SINTRAN III VSX, version K.
+see_also:
+- GetOwnRTAddress
+- GetRTAddress
+- GetRTDescr
+- '@GET-RT-NAME'
+- and @LIST-RT-Programs
+parameters:
+- name: RTProgram
+  type: INTEGER
+  io: I
+  description: The address of the RT description. Use 0 for the calling program.
+- name: RTProgramName
+  type: STRING
+  io: O
+  description: Name of the RT program (7 bytes). Returned with terminal apostrophe if less than 7 characters.
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTProgram : INTEGER2;
+      RTProgramName : PACKED ARRAY [0..6] OF CHAR;
+      ...
+      GetRTName(RTProgram, RTProgramName);
+  cobol:
+    available: true
+    code: |-
+      01 RTProgram COMP.
+      01 RTProgramName PIC X(7).
+      ...
+      MONITOR-CALL "GetRTName" USING RTProgram, RTProgramName.
+      IF RTProgramName = "'"
+      ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER RTProgram
+      CHARACTER RTProgramName*6
+      ...
+      Monitor_Call1('GetRTName', RTProgram, RTProgramName(1:7))
+      IF RTProgramName(1) = '
+      ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : RTProgram
+      BYTES : RTProgramName(0:6)
+      ...
+      Monitor_Call('GetRTName', RTProgram, RTProgramName)
+      IF RTProgramName(0)=#1 THEN
+      ...
+  assembly_500:
+    available: true
+    code: |-
+      RTProgram : W BLOCK 1
+      RTProgramName : BY BLOCK 7
+      GetRTName : EQU 37B9 + 152B
+      ...
+      CALLG GetRTName, 2, RTProgram, RTProgramName
+    octal_definition: 37B9 + 152B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR  %Load register A with address of parameter list.
+      MON 152   %Monitor call GetRTName.
+      SKP IF DD UEQ 0
+      JMP ERR
+      STT RTNAM   %Store 1st word of packed RT name.
+      STD RTNAM+1 %Store 2nd two words of packed RT name.
+      ...
+      ERR, ...
+      PAR, RTPRO %Address of RT description.
+      ...
+      RTPRO, ...
+      RTNAM, 0
+      *+4/      %Make a string of 7 bytes.
+
+
+      | ND-100 and ND-500 | All programs |
+    mon_number: 152
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 273
+  line: 12055
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

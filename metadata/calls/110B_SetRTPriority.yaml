@@ -1,0 +1,104 @@
+# SINTRAN III Monitor Call: SetRTPriority
+# Octal: 110B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 110B
+name: SetRTPriority
+short_names:
+- PRIOR
+description: |-
+  Sets the priority of an RT program. RT programs may be given priorities from 0 to 255. SINTRAN III executes the RT program with the highest priority.
+
+  - The priority of background programs vary between 20 and 60.
+  - Programs with priority 0 will never start. You may use this to suspend programs.
+see_also:
+- SetND500Priority
+- '@PRIOR'
+parameters:
+- name: RTProgram
+  type: INTEGER
+  io: I
+  description: Address of the RT description. You may use 0 for your own program.
+- name: PriorityLevel
+  type: INTEGER
+  io: I
+  description: Priority (0-255).
+- name: OldPriority
+  type: INTEGER
+  io: O
+  description: The previous priority returned in W1.
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTProgram, PriorityLevel, OldPriority : INTEGER2;
+      ...
+      SetRTPriority(RTProgram, PriorityLevel, OldPriority);
+  cobol:
+    available: true
+    code: |-
+      01 RTProgram COMP.
+      01 PriorLevel COMP.
+      01 OldPriority COMP.
+      ...
+      MONITOR-CALL "SetRTPriority" USING RTProgram, PriorLevel, OldPriority.
+  fortran:
+    available: true
+    code: |-
+      INTEGER RTProgram, PriorityLevel, OldPriority
+      ...
+      Monitor_Call('SetRTPriority', RTProgram, PriorityLevel, OldPriority)
+  planc:
+    available: true
+    code: |-
+      INTEGER : RTProgram, PriorityLevel, OldPriority
+      ...
+      Monitor_Call('SetRTPriority', RTProgram, PriorityLevel, OldPriority)
+  assembly_500:
+    available: true
+    code: |-
+      RTProgram : W BLOCK 1
+      PriorityLevel : W BLOCK 1
+      OldPriority : W BLOCK 1
+      SetRTPriority : EQU 37B9 + 110B
+
+
+
+      CALLG SetRTPriority, 2, RTProgram, PriorityLevel
+      Wl =: OldPriority %Result is returned in Wl register.
+    octal_definition: 37B9 + 110B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR %Load register A with address of parameter list.
+      MON 110 %Monitor call SetRTPriority.
+      STA OLDP %Store old priority returned.
+      ...
+      OLDP, 0
+      PAR, RTPRO %Address of RT description.
+      PRIOR %New priority.
+      ...
+      RTPRO, ...
+      PRIOR, ...
+
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+    mon_number: 110
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 467
+  line: 21278
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

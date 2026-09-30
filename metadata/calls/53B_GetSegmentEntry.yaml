@@ -1,0 +1,109 @@
+# SINTRAN III Monitor Call: GetSegmentEntry
+# Octal: 53B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 53B
+name: GetSegmentEntry
+short_names:
+- RSEGM
+description: |-
+  Gets information about a segment in the ND-100. The monitor call returns the segment entry. You specify the segment number. See the SINTRAN III Real Time Guide (ND-860133) for further information.
+
+  - Use GetSegmentNo to get a segment number from a segment name.
+see_also:
+- '@LIST-SEGMENT'
+- the SINTRAN-SERVICE-PROGRAM command DUMP-SEGMENT-TABLE-ENTRY
+parameters:
+- name: SegmentNumber
+  type: INTEGER
+  io: I
+  description: Segment number. Use 0 for RT common.
+- name: Buffer
+  type: ARRAY
+  io: O
+  description: Buffer to receive segment entry (5 words / 10 bytes).
+examples:
+  pascal:
+    available: true
+    code: |-
+      SegmentNumber : INTEGER2;
+      Buffer : RECORD...END;
+      ...
+      ReadSegmentEntry(SegmentNumber, Buffer); [Note routine name.]
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 SegmentNumber COMP.
+      01 Buffer.
+         02 array COMP OCCURS 5 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetSegmentEntry" USING SegmentNumber, Buffer.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER SegmentNumber
+      INTEGER Buffer(5)
+      ...
+      Monitor_Call1('GetSegmentEntry', SegmentNumber, Buffer(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : SegmentNumber
+      BYTES : Buffer(0:9)
+      ON ROUTINEERROR DO
+      IF ErrCode > 0 THEN ...
+      ENDON
+      ...
+      Monitor_Call('GetSegmentEntry', SegmentNumber, Buffer(0))
+  assembly_500:
+    available: true
+    code: |-
+      SegmentNumber : W BLOCK 1
+      Buffer : W BLOCK 5
+      GetSegmentEntry : EQU 37B9 + 53B
+      ...
+      CALLG GetSegmentEntry, 2, SegmentNumber, Buffer
+    octal_definition: 37B9 + 53B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR %Load register A with address of parameter list.
+      MON 53 %Monitor call GetSegmentEntry.
+      JMP ERROR %Handle error.
+      ... %Normal return.
+      ERROR, ...
+      ...
+
+      PAR, SEGNO %Segment number.
+      BUFF %Buffer for receiving a segment entry.
+      ...
+
+      SEGNO, ...
+      BUFF, 0
+      *+6/ %Make a 6 word buffer.
+      ...
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | All programs |
+    mon_number: 53
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 277
+  line: 12250
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

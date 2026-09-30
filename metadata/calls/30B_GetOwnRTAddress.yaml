@@ -1,0 +1,193 @@
+# SINTRAN III Monitor Call: GetOwnRTAddress
+# Octal: 30B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 30B
+name: GetOwnRTAddress
+short_names:
+- GETRT
+description: Gets the address of the calling program's RT description. Background programs get the RT
+  description address of the RT program which controls the terminal.
+see_also:
+- GetRTAddress
+- GetRTDescr
+- GetRTName
+- and @LIST-RT-PROGRAMS
+parameters:
+- name: RTDescrAddress
+  type: INTEGER
+  io: O
+  description: The RT description address returned in W1.
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTDescrAddress : INTEGER2;
+      ...
+      GetOwnRTAddress(RTDescrAddress);
+  cobol:
+    available: true
+    code: |-
+      01 RTDescrAddress COMP.
+      ...
+      MONITOR-CALL "GetOwnRTAddress" USING RTDescrAddress.
+  fortran:
+    available: true
+    code: |-
+      INTEGER RTDescrAddress
+      ...
+      Monitor_Call('GetOwnRTAddress', RTDescrAddress)
+  planc:
+    available: true
+    code: |-
+      INTEGER : RTDescrAddress
+      ...
+      Monitor_Call('GetOwnRTAddress', RTDescrAddress)
+  assembly_500:
+    available: true
+    code: |-
+      RTDescrAddress : W BLOCK 1
+      GetOwnRTAddress : EQU 37B9 + 30B
+      ...
+      CALLG GetOwnRTAddress, 0
+      W1 =: RTDescrAddress %Result is returned in W1 register.
+    octal_definition: 37B9 + 30B
+  mac:
+    available: true
+    code: |-
+      MON 30 %Monitor call GetOwnRTAddress.
+      STA RTPRO %Store address of RT description.
+      ...
+      RTPRO, 0
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 30
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 265
+  line: 11710
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_30B_GetOwnRTAddress.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    nd500x returns a pointer to a SYNTHETIC RT description it builds itself.
+    There is no ND-100 in the emulator, so there is no real RT description to
+    point at. Architecturally, real RT descriptions live in ND-100 memory (the
+    ND-100 runs SINTRAN III and owns RT scheduling); the ND-500 reaches them
+    through shared memory. nd500x models that with a "SINTRAN window" at segment
+    31 (0x1F), base 0xF8000000, and puts the RT description at offset 0x1000 =
+    0xF8001000. Everything about the ADDRESS and the CONTENTS is an emulator
+    construction.
+
+  parameter_notes:
+    - name: RTDescrAddress
+      note: >-
+        Returned in W1/I1 (the A register on ND-100; the manual's MAC example is
+        "MON 30 / STA RTPRO"). nd500x ALSO writes it to parameter word 0 when an
+        argument is supplied, for high-level-language callers.
+      verified: true
+    - name: RTDescrAddress
+      note: >-
+        REQUIREMENT ON THE HOST: segment 31 must have valid MMU mappings (DC[31]
+        pointing at a valid PST physical segment, physical memory allocated,
+        readable/writable by user code) or the caller's first dereference of the
+        returned pointer faults.
+      verified: false
+
+  return_contract:
+    success: 'K flag cleared; RTDescrAddress = 0xF8001000 in W1 and in the OUT parameter.'
+    errors: []
+
+  verified:
+    - claim: 'MON 30B dispatches via MCTAB to the L07 worker GTRT in segment 025-S3IRPIT.'
+      evidence: >-
+        Carve L-VSX-500 30B-GetOwnRTAddress/README.md CORRECTED 2026-07-15:
+        MCTAB[30B] slot 005650B (segment 044-S3IDPIT, byte offset 1872) = 072036B
+        = GTRT. Reproduced: dd if=044-S3IDPIT.bin bs=1 skip=1872 count=2 -> 74 1e.
+    - claim: 'The result is returned in A/W1.'
+      evidence: >-
+        Manual MAC example "MON 30 / STA RTPRO"; carve README states the result
+        is returned in W1 (the A register on the ND-100).
+    - claim: >-
+        Saved-register fields (DPREG..DBREG) are only populated when the RT
+        program is INTERRUPTED, so a running program must see 0 there.
+      evidence: >-
+        SINTRAN III System Documentation (ND-60062-01D-EN) page 290: "All
+        registers of the current RT-program are saved in these locations IF IT IS
+        INTERRUPTED." nd500x writes 0 to offsets 8-15 accordingly.
+    - claim: 'The STATUS word (offset 1) bit layout.'
+      evidence: >-
+        ND-60062-01D-EN pages 289-290: bits 0-7 priority (0-255, 255 highest),
+        bits 8-9 ring, bit 10 unused, bit 11 5ABS absolute time scheduling, bit
+        12 5INT periodic program, bit 13 5RWAIT voluntarily waiting (RTWT), bit
+        14 5REP repeat after termination, bit 15 5WAIT waiting for I/O transfer.
+        For a running program: no flags, just priority.
+
+  unverified:
+    - >-
+      THE ADDRESS 0xF8001000 IS INVENTED. Segment 31 / the 0x1000 offset are an
+      nd500x convention with no manual or carve backing. Nothing has been
+      observed to depend on the specific value.
+    - >-
+      The 26-word RT-description layout in the handler header is transcribed from
+      nd500x SINTRAN/OS/02-QUEUE-STRUCTURES-DETAILED.md plus
+      ND-60062-01D-EN pages 289-290; the FIELD WIDTHS on ND-500 (nd500x writes
+      26 x 32-bit words) are not confirmed - the ND-100 structure is 16-bit
+      words.
+    - >-
+      Fields left as TODO/0 in nd500x with no evidence: offset 7 SEGM (should
+      carry the current domain), offsets 17-18 ACTSEG1/ACTSEG2. DEFAULT_PRIORITY
+      is an invented 100.
+    - >-
+      Offset 6 STADR is filled with ctx->return_address as a "proxy" for the
+      start address. That is a stand-in, not the real entry point.
+    - >-
+      The structure is initialised ONCE (static rt_description_initialized) and
+      never refreshed, so it is a snapshot from the first 30B call.
+    - >-
+      No carved worker: the carve records NO ND-100 code worker and NO ND-100
+      named region for this call. GETRT resolves only in the L07 N500-SYMBOLS
+      list (GETRT=106704B, the ND-500 companion). The real worker "reads the
+      current RT-description pointer and returns it in A", but that read lies
+      past the uncarved MFELL/CALLPROC bridge.
+    - >-
+      The manual behaviour "background programs get the RT description address of
+      the RT program which controls the terminal" is not modelled - nd500x
+      returns the same synthetic address regardless of caller.
+
+  discrepancies:
+    - was: >-
+        Earlier carve version: "GOTAB[30B] = 000000, a fall-through" on the
+        disproven GOTAB-is-the-MON-table model (the README body still reads that
+        way below its own correction header).
+      is: >-
+        MCTAB[30B] = 072036B = GTRT, byte-proven; dispatch is
+        MON 30B -> ENT14(072167B) -> GOTAB[30B]=MFELL(072114B) -> CALLP(032201B)
+        -> MCTAB[30B]=GTRT.
+      evidence: >-
+        Carve CORRECTED 2026-07-15 header;
+        dd if=044-S3IDPIT.bin bs=1 skip=1872 count=2 -> 74 1e.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/30B-GetOwnRTAddress/README.md'
+      note: 'MCTAB[30B] = GTRT = 072036B; no ND-100 worker carved.'
+    - doc: 'SINTRAN III System Documentation (ND-60062-01D-EN)'
+      page: 289
+      note: 'Pages 289-290: RT-description STATUS word bits and the saved-register rule.'
+    - doc: 'ND-05.009.4 EN (ND-500 Reference Manual)'
+      note: 'Memory Management - cited by the handler for the segment-31 window model.'

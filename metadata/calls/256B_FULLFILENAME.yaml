@@ -1,0 +1,295 @@
+# SINTRAN III Monitor Call: FULLFILENAME
+# Octal: 256B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 256B
+name: FullFileName
+short_names:
+- DEABF
+description: Returns a complete file name from an abbreviated one. The directory, the user, the file name, the file type, and the version are returned.
+notes:
+- You must have read access to the file.
+- The abbreviation must be unambiguous.
+- SINTRAN III, version K, allows remote file names. If the abbreviated file name contains a remote specification, the name of the remote system cannot be abbreviated.
+see_also:
+- GetFileName
+parameters:
+- name: AbbrevFileName
+  type: STRING
+  io: I
+  description: Abbreviated file name string (64 chars). May include a file type.
+- name: FileName
+  type: STRING
+  io: O
+  description: Buffer to receive complete file name, terminated by apostrophe (64 chars).
+- name: FileType
+  type: STRING
+  io: I
+  description: Default file type string (4 chars). Used on ND-100 only, ignored by ND-500.
+examples:
+  pascal:
+    available: true
+    code: |-
+      AbbrevFileName, FileName : PACKED ARRAY [0..63] OF CHAR;
+      FileType : PACKED ARRAY [0..3] OF CHAR;
+      ...
+      FullFileName(AbbrevFileName, FileName, FileType);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 AbbrevFileName PIC X(64).
+      01 FileName       PIC X(64).
+      01 FileType       PIC X(4).
+      01 ErrCode        COMP.
+      ...
+      MONITOR-CALL "FullFileName" USING AbbrevFileName, FileName, FileType.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      CHARACTER AbbrevFileName*64, FileName*64, FileType*4
+      ...
+      Monitor_Call('FullFileName', AbbrevFileName(1:64), FileName(1:64),
+      C FileType(1:4))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      BYTES : AbbrevFileName(0:63), FileName(0:63), FileType(0:3)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('FullFileName', AbbrevFileName, FileName, FileType)
+  assembly_500:
+    available: true
+    code: |-
+      AbbrevFileName : STRINGDATA 'EX'''
+      FileName : STRING 64
+      FileType : STRINGDATA 'SYMB''' %Default file type.
+      ErrCode : W BLOCK 1
+      FullFileName : EQU 37B9 + 256B
+      ...
+      CALLG FullFileName, 3, AbbrevFileName, FileName, FileType
+          IF K GO ERROR
+      ...
+      ERROR : W1 := ErrCode              %ErrorCode in W1 register.
+    octal_definition: 37B9 + 256B
+  mac:
+    available: true
+    code: |-
+      LDX (ABBR)      %Address of abbreviated file name string.
+      LDA (FILE)      %Address of string to receive full file name.
+      LDT (TYPE)      %Address of default file type string.
+      MON 256         %Monitor call FullFileName.
+      JMP ERROR       %Error return from monitor call.
+      ...             %Normal return.
+      ERROR, ...      %Error number in register A.
+      ...
+      ABBR, 'EX'      %Find full file name of EX.
+      FILE, 0         %Empty string. (A and X may be identical.)
+      *+76/           %Make space to receive full file name.
+      TYPE, 'SYMB'    %Default file type SYMB.
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 256
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 9205
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_256B_FullFileName.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: FileType
+      note: >-
+        The ND-500 form of this call takes TWO arguments (AbbrevFileName,
+        FileName). The default-file-type parameter is ND-100-only and is IGNORED
+        on the ND-500 - which the manual field in this YAML already says.
+        REQUIRING three arguments rejects the real 2-arg CALLG that NC and the
+        linker issue, so the handler requires only 2 and reads arg 2 if present.
+      verified: true
+    - name: FileName
+      note: >-
+        The output name is written to the caller's buffer and terminated with
+        047 octal (0x27, apostrophe) - not a NUL.
+      verified: true
+
+  return_contract:
+    success: >-
+      The expanded name is written to FileName, apostrophe-terminated. K FLAG:
+      the ND-500 form (as the B01 linker calls it) returns with K SET on success,
+      NOT cleared - the caller distinguishes success from error by W1/i1 (0 =
+      success, error code otherwise), not by the K flag alone. This corrects the
+      earlier 'K flag cleared' reading, which came from the generic MAC-style
+      'IF K GO ERROR' example and was never byte-verified for the ND-500 body.
+      Live-linker evidence 2026-07-18: see updates_2026_07_18.
+    errors:
+      - code: 46
+        octal: 056B
+        meaning: >-
+          No such file name (unresolved abbreviation, or an unparseable name).
+          This exact code is what NC tests to decide whether to CREATE the file.
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 args)'
+
+  verified:
+    - claim: >-
+        On an unresolved name this call must set K and return 46 (056B). A
+        pass-through echo that always succeeds silently breaks NC's
+        create-if-missing path.
+      evidence: >-
+        Verified against the carve (006-S3FS DEABF) and the NC-oracle tier3
+        contract. Recorded in
+        nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md section
+        "256B DEABF (FullFileName)" and MON_COMPLETENESS_MATRIX.md row 256B.
+    - claim: 'The 2-argument ND-500 form is the real one.'
+      evidence: >-
+        NC and the linker issue a 2-arg CALLG; requiring 3 rejected it. Same
+        source as above.
+
+  unverified:
+    - >-
+      The ND-500 DEABF body does NOT cleanly decode in the carve, so the FIELD
+      ASSEMBLY of the returned name (directory, user, file name, file type,
+      version - the five things the manual promises) follows the MANUAL, not a
+      byte-proven layout. nd500x currently returns only (USER)NAME:TYPE - it does
+      NOT return the directory or the version. Treat the exact returned form as
+      INFERRED.
+    - >-
+      nd500x resolves by checking host-file EXISTENCE via the path translator.
+      It does NOT run the carved COMPS/GOBJI abbreviation matcher that 50B OPEN
+      uses (mon_file_table.c). So a name that 50B OPEN would resolve by
+      abbreviation may be reported as "no such file name" here. This is a known
+      INCONSISTENCY between the two calls and has not been reconciled.
+    - >-
+      There is no AMBIGUOUS return path. The manual says "The abbreviation must
+      be unambiguous"; the carved scanner (GOBJI @056326) returns 057 for an
+      ambiguous name. nd500x never returns 057 from this call.
+    - >-
+      "You must have read access to the file" is not modelled.
+    - >-
+      Remote file names (SINTRAN III version K) are not modelled.
+    - >-
+      Two 256B unit tests in
+      nd500x/test/test_mon_calls.c fail as a KNOWN, INTENTIONAL
+      consequence of the err-46-on-unresolved change: they were written against
+      the old always-succeed echo. The failures are expected, not a regression.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - carve: 'L-VSX-500 segment 006-S3FS, DEABF (body does not cleanly decode - routing/contract only)'
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'Section "256B DEABF (FullFileName) - matters for NC create-if-missing".'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 256B - FIXED.'
+  updates_2026_07_17:
+    - topic: 'STR args are [len][ptr] descriptors on ND-500, not inline'
+      status: verified
+      detail: >-
+        DEABF arg 0 (abbreviated name, IN) and arg 1 (full name, OUT) are ND-500
+        string DESCRIPTORS: [length:4][pointer:4]. The name bytes live at the
+        pointer, not at the argument address. Reading arg 0 inline gets the
+        descriptor's own first byte (the length's high byte, 0x00) as a
+        terminator and yields an EMPTY name. Observed: the ND linker's
+        `OPEN-DOMAIN "A-TEST"` passes arg 0 = {len=64, ptr-> "A-TEST:DOM'"}. arg 3
+        (default file type) is a dummy on ND-500.
+      effect: >-
+        With inline reads DEABF returned "no such file" for a valid name, and the
+        linker aborted OPEN-DOMAIN with error 41B; it also wrote its output to the
+        descriptor address, corrupting it (later page fault). Fixed to read/write
+        via the descriptor pointer, with inline fallback. Same [len][ptr] class as
+        12B SETCM / NC UECOM.
+      nd500x_commit: 975707b
+  updates_2026_07_18:
+    - topic: 'ND-500 DEABF returns K SET on success (corrects return_contract.success)'
+      status: verified-against-live-linker
+      detail: >-
+        The B01 linker resolves file names with `callg <seg31:256B DEABF>` at
+        B004DA08, then `if k go` at B004DA13. The DEABF K flag propagates through
+        the linker's scanner/resolve chain (B004D4F4 -> B004D8DE) and finally
+        gates B0040D75 `if -k go`: with K SET the linker calls B0040C44 and
+        continues the LOAD; with K CLEAR it falls through to error 52
+        ("(-677:52)", blank message) and LOAD aborts BEFORE opening the object
+        file. So the ND-500 linker requires DEABF success to end with K SET.
+      evidence: >-
+        CALLTRACE differential (nd500x test/diag_linkdrive) of
+        `OPEN-DOMAIN A-TEST;;LOAD B:NRF;;EXIT`. PRE-FIX (DEABF success -> K
+        cleared, the old convention): B004DA16->B004DBD0->B004DBED (b.0xC=0),
+        helper B004D8DE returns K CLEAR, B0040D75 falls to error 52. POST-FIX
+        (DEABF success -> K set): B004DA13->B004DBF1, helper returns K SET,
+        B0040D75 calls B0040C44, LOAD proceeds. Cross-check: `LOAD NOPE`
+        (nonexistent) still returns error 46 and the linker correctly prints
+        "*** ERROR - NOPE ... No such file name", so K-set-on-success does NOT
+        break the error path - the caller distinguishes success (i1=0) from
+        error (i1=46) by W1/i1, not by K.
+      caveat: >-
+        The carve's earlier 'success = K cleared' was inherited from the generic
+        MAC/ND-100 `IF K GO ERROR` example and the YAML's own unverified note
+        already flagged the ND-500 DEABF body as not-cleanly-decoded. This update
+        supersedes that line for the ND-500 form. The ERROR case (set K, return
+        46) remains carve-verified and unchanged: on the ND-500 the caller keys
+        on i1/W1, and both success (i1=0) and error (i1!=0) end with K set.
+      nd500x_handler: nd500x/src/libmon/handlers/mon_256B_FullFileName.c
+      nd500x_change: >-
+        On the resolve/success path, after mon_set_success (which sets K=0),
+        explicitly ctx->set_k_flag(cpu, 1). Error path (mon_set_error) already
+        set K=1, so no change there. Not yet committed as of 2026-07-18.
+  updates_2026_07_18b:
+    - topic: 'DEABF success MUST also set W1/i1 = 0 (this is what actually unblocks LOAD)'
+      status: verified-against-live-linker
+      detail: >-
+        The K=1-on-success change alone did NOT make LOAD work - it only traded
+        one failure for another. The linker resolves the LOAD object name through
+        its universal MON dispatcher B004D4F4 (called at B0040D5C with routine
+        0xAE = 256B), whose generic trampoline copies the callee's returned I1
+        into the caller result slot (B004DA11 `w1 =: b.0x44` -> b.0xC) and treats
+        a NONZERO value as an error code (wrapper B004D8DE: b.0xC != 0 -> retk).
+        Our DEABF success path called mon_set_success (which does NOT write I1)
+        and the executor writes I1 only on error, so on success I1 kept the
+        trampoline's leftover call-target 0xF80000AE (0xF8000000 + 0xAE; 0xAE is
+        256B's own routine number). The linker read that as error 0xF80000AE and
+        RE-PROMPTED the LOAD object-file field forever (each fed line concatenated
+        into the un-cleared VTM field, e.g. EXIT after `LOAD B:NRF` -> DEABF
+        lookup of 'EXITB:NRF').
+      fix: >-
+        In mon_256B_FullFileName.c, on the success path set ctx->set_i1(cpu, 0)
+        (in addition to the existing set_k_flag(cpu,1)). This matches the
+        documented contract (caller distinguishes success by W1/i1 == 0).
+      evidence: >-
+        BREAK at B004DA13 during LOAD: pre-fix I1 = 0xF80000AE (the leftover
+        target), K set. Post-fix I1 = 0, and the re-prompt loop is gone: LOAD
+        proceeds past name-resolution and EXIT exits cleanly (MON 0B LEAVE),
+        OPEN-DOMAIN "A-TEST" still creates+reads the domain (no regression on the
+        other DEABF caller at B0000A6D).
+      still_blocked: >-
+        LOAD does NOT yet open/read the object B.NRF. After DEABF success the
+        linker's LOAD-object routine (B0040CB0..B0040D84) still raises error 52
+        ("(-677:52)", blank message) at B0040D75: there K is CLEAR (the dispatcher
+        B004D4F4 returns via `ret`) and the status byte b.0x49 == 1 (the success
+        path at B0040CC1 sets b.0x49 = 4). This is a multi-step routine (calls
+        B0040250, B0040C44, then DEABF) and the error-52 root cause is NOT yet
+        found - it is the same error 52 the prior session flagged as unresolved,
+        now isolated to this routine and this status byte. Run the linker from
+        build/link_sandbox (NOT nc_sandbox).
+      nd500x_handler: nd500x/src/libmon/handlers/mon_256B_FullFileName.c

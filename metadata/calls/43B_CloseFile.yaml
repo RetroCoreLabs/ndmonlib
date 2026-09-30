@@ -1,0 +1,186 @@
+# SINTRAN III Monitor Call: CloseFile
+# Octal: 43B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 43B
+name: CloseFile
+short_names:
+- CLOSE
+description: |-
+  Closes one or more files. Files must be opened before they are accessed. Afterwards they should be closed.
+
+  - **CloseFile** also resets peripheral files. This is similar to DeviceControl with control flag -1.
+  - For non-RT programs, files are closed when your program terminates.
+notes:
+- >-
+    Version history: in the N-version, MON CLOSE (MON 43) used from an RT-program to
+    close a file that was not opened by the program itself now reports the closing
+    of the RT-open file to be logged by the ERS/SINTRAN III Watchdog
+    (ND-860230-8-EN SINTRAN III - Release Information - N-version.md:962, 1406).
+see_also:
+- OpenFile
+- CloseSpoolingFile
+- BackupClose
+- and @CLOSE-FILE
+parameters:
+- name: FileNumber
+  type: INTEGER
+  io: I
+  description: |-
+    File number returned when the file was opened.
+    -1 = close all files not permanently open
+    -2 = close all files including scratch and permanently open files
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber : INTEGER2;
+      ...
+      CloseFile(FileNumber);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "CloseFile" USING FileNumber.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber
+      ...
+      Monitor_Call('CloseFile', FileNumber)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber
+      ...
+      ON ROUTINEERROR DO
+         IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('Closefile', FileNumber)
+  assembly_500:
+    available: true
+    code: |-
+      FileNumber : W BLOCK 1
+      ErrCode : W BLOCK 1
+      CloseFile : EQU 37B9 + 43B
+      ...
+      CALLG CloseFile, 1, FileNumber
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode          %ErrorCode in W1 register.
+    octal_definition: 37B9 + 43B
+  mac:
+    available: true
+    code: |-
+      LDT  FILNO                 %Load register T with file number.
+      MON  43                   %Monitor call Closefile.
+      JMP  ERROR                %Error return from monitor call.
+      ...                        %Normal return.
+      ERROR, ...                 %Error number in register A.
+      ...
+      FILNO, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 43
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 117
+  line: 4868
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_43B_CloseFile.c
+  supporting_code: nd500x/src/libmon/mon_file_table.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: FileNumber
+      note: >-
+        Read as a SIGNED 32-bit word. The negative special values the manual
+        documents (-1, -2) only work if the parameter is sign-interpreted; read
+        unsigned they become huge file numbers and fail the range check.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared.'
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range (not 64-127 decimal / 0100-0177 octal)'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+
+  verified:
+    - claim: 'CLOSE is where a deferred 73B SMAX length is physically applied.'
+      evidence: >-
+        73B SMAX only RECORDS the logical max-byte length (carve: the physical
+        length is applied at CLOSE, not by SMAX). nd500x sets a max_bytes_set
+        flag in 73B and ftruncates to bytes_in_file here, and only when that flag
+        is set and the file is not a scratch file about to be unlinked.
+        mon_file_table.c mon_close_file. Commit 2618145 + the SMAX/CLOSE
+        deferral described in
+        nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md.
+    - claim: 'FileNumber -1 and -2 close all files (per the manual field).'
+      evidence: >-
+        Implemented as a full file-table reset for both values. This satisfies
+        the manual text but does not distinguish permanently-open files - see
+        unverified.
+
+  unverified:
+    - >-
+      The carve does NOT byte-prove the SMAX -> CLOSE link. "SMAX records, CLOSE
+      applies" is the consistent model we adopted after the immediate-ftruncate
+      was proven harmful (it shortened NC's scratch file under its feet); it is
+      INFERRED, not read from the carve.
+    - >-
+      -1 and -2 are implemented identically (reset everything). The manual
+      distinguishes them: -1 = all files NOT permanently open, -2 = all including
+      scratch and permanently open. nd500x has no permanently-open model
+      (236B SetPermanentOpen), so the distinction is currently unmodelled.
+    - >-
+      The manual note "CloseFile also resets peripheral files (similar to
+      DeviceControl with -1)" is NOT implemented - closing a file performs no
+      device reset.
+    - >-
+      "Releases any reservation on the file" is not implemented; CLOSE does not
+      interact with 122B/123B reservation state.
+
+  emulator_specific:
+    - note: >-
+        SCRATCH files are UNLINKED on close by default. Set the environment
+        variable ND500X_KEEP_SCRATCH=1 to keep them - the VDM/C pipeline needs
+        the scratch (SCRATCHnn:DATA, file 0100 octal = 64) to survive NC's close
+        so the CAT-500 back-end can read the CAT intermediate out of it. This is
+        an emulator affordance, NOT SINTRAN behaviour.
+      evidence: 'commit f353a40; mon_file_table.c mon_close_file.'
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'Section "73B SMAX + 43B CLOSE - truncation deferral".'
+    - commit: '2618145 (nd500x) - SMAX records, CLOSE applies'
+    - commit: 'f353a40 (nd500x) - ND500X_KEEP_SCRATCH'

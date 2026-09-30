@@ -1,0 +1,108 @@
+# SINTRAN III Monitor Call: XMSGCallB (B5XMSG)
+# Octal: 513B
+# Reverse-engineered from SINTRAN III NPL source (MP-P2-N500.NPL).
+# The manual does not document this call; contract below is RE-derived.
+octal: 513B
+name: XMSGCallB
+short_names:
+- B5XMSG
+description: >-
+  ND-500 XMSG gateway (buffer-carrying convention). Identical handler body to
+  A5XMSG (MON 512): opens/closes ports, sends/receives messages, manages message
+  buffers and privileges, then forwards to the ND-100 XMSG core via *MON 2XMSG.
+  The only in-source distinction from A5XMSG is that the buffer functions (6/7/53)
+  are commented 'use B5XMSG' - B carries a data buffer (LBUFA) in the A slot.
+  ND subsystems only.
+notes:
+- >-
+    Internal-use ND-500 level-12 monitor call; not intended for user programs.
+- >-
+    Handler SUBR A5XMSG,B5XMSG at MP-P2-N500.NPL:2062; both labels A5XMSG and B5XMSG
+    fall into ONE identical body (A5XMSG: B5XMSG: at :2076-2077, no branch on the MON
+    number). MON 512 and MON 513 execute the same code.
+- >-
+    Dispatched via the ND-500 level-12 GOSW table; entered with X = current ND-500
+    message (N5MESSAGE) and B = ND-500 CPU datafield.
+- >-
+    Subfunction code is read from message field N5XFU and masked A /\ X5MASK with
+    X5MASK=77 (octal), giving up to 64 slots; illegal if A-X5MAXF>0. Dispatch is
+    A /\ X5MASK GOSW at MP-P2-N500.NPL:2095. All converge on MONXM -> *MON 2XMSG
+    (:2227-2229).
+- >-
+    Subfunctions (octal): 0 LFDUM dummy, 1 LFDCT disconnect, 2 LFGET get buffer,
+    3 LFREL release buf, 4 LFRHD read header, 5 LFWHD write header, 6 LFREA read msg
+    buf, 7 LFWRI write msg buf, 10 LFSCM set current msg, 11 LFMST msg status,
+    12 LFOPN open port, 13 LFCLS close port, 14 LFSND send, 15 LFRCV receive next,
+    16 LFPST port status, 17 LFGST general status, 26 LFM2P magic-to-port,
+    27 LFP2M port-to-magic, 36 LFPRV request privs, 37 LFRTN return msg,
+    40 LFRRH recv+read hdr, 45 LFDMM max task space, 46 LFALM alloc msgs,
+    47 LFFRM free / LFGSM gen-status-mult, 50 LFLMP list msgs/ports,
+    51 LFRRE recv+read msg, 52 LFCPV check privs, 53 LFWRT write+return.
+- >-
+    A-vs-B distinction: the body is identical; the only in-source hint is a comment
+    'use B5XMSG' on buffer functions 6/7/53, i.e. B carries a data buffer (LBUFA) in
+    the A slot while A is the non-buffer convention. The concrete A != B difference is
+    a caller-side parameter convention and is UNCERTAIN from the handler body.
+- >-
+    Write-back: result path X5RET -> second GOSW (RFDUM..RFGSM) stores results into
+    message params and applies the per-function mask XMRETMASK into NUMPA.
+see_also:
+- XMSGFunction
+- XMSGCallA
+parameters:
+- name: SubFunction
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - XMSG subfunction code, read from message field N5XFU and masked
+    with X5MASK=77 (octal). Selects one of the LFxxx subfunctions listed in the
+    notes. Message offset, not a confirmed CALLG parameter.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 513B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source
+  handler: >-
+    MP-P2-N500.NPL:2062 (SUBR A5XMSG,B5XMSG); shared body :2076-2077; buffer-fn hint :2160-2162
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

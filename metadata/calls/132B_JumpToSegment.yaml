@@ -1,0 +1,88 @@
+# SINTRAN III Monitor Call: JumpToSegment
+# Octal: 132B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 132B
+name: JumpToSegment
+short_names:
+- MCALL
+description: Calls a routine on another segment in the ND-100. You can divide an ND-100 RT program between
+  various segments. This monitor call switches one or both of the current segments according to what you
+  specify in parameter 2. ChangeSegment may be used instead of JumpToSegment and ExitFromSegment. The
+  segment numbers are restricted to 8-bits (values 0-255). Use SegmentFunction (MON 341) with version
+  K of SINTRAN III.
+notes:
+- Use ExitFromSegment to return from the routine.
+- JumpToSegment may be nested.
+- This monitor call does not change reentrant segments.
+see_also:
+- ExitFromSegment
+- ChangeSegment
+- SegmentFunction
+parameters:
+- name: SubroutineAddr
+  type: INTEGER
+  io: I
+  description: Address of routine.
+- name: NewSegment
+  type: INTEGER
+  io: I
+  description: New segments. The most significant byte identifies the first segment. The least significant byte identifies the second segment. Use 377B as segment number if you do not want to change it.
+examples:
+  pascal:
+    available: true
+    code: |-
+      SubroutineAddr, NewSegment : INTEGER2;
+      ...
+      JumpToSegment(SubroutineAddr, NewSegment);
+  cobol:
+    available: false
+    code: ''
+    notes: Not available
+  fortran:
+    available: false
+    code: ''
+    notes: Not available
+  planc:
+    available: false
+    code: ''
+    notes: Not available
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      | LDT (PAR      | %Load register T with address of parameter list.    |
+      |---------------|-----------------------------------------------------|
+      | MON 132       | %Monitor call JumpToSegment.                        |
+      | ...           | %Return after ExitFromSegment.                      |
+      | PAR, SUBR     | %Address of subroutine.                             |
+      | SEG           | %New segment to be loaded.                          |
+      | ...           |                                                     |
+      | SUBR, ...     |                                                     |
+      | SEG, 10030    | %New segments are 20B and 30B in this example.      |
+      |               | %ExitFromProgram shows the code on segment 30.      |
+
+
+      | ND-100  | User RT and user SYSTEM | RT programs |
+    mon_number: 132
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 329
+  line: 14899
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

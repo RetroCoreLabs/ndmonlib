@@ -1,0 +1,81 @@
+octal: 137B
+name: DisableRTStart
+short_names:
+- RTOFF
+description: 'Disables start of RT programs. No RT program can be started before EnableRTStart is executed.
+
+
+  - RT programs in the time queue will not start. Other active RT programs are not affected.'
+see_also:
+- EnableRTStart
+- and @RTOFF
+parameters:
+- name: RTProgram
+  type: INTEGER2
+  io: I
+  description: Address of the RT description. 0 means calling program.
+examples:
+  pascal:
+    available: true
+    code: "RTProgram : INTEGER2;\n\n    DisableRTStart(RTProgram);"
+  cobol:
+    available: true
+    code: "01 RTProgram COMP.\n\n    MONITOR-CALL \"DisableRTStart\" USING RTProgram."
+  fortran:
+    available: true
+    code: "    INTEGER RTProgram\n\n    Monitor_Call('DisableRTStart', RTProgram)"
+  planc:
+    available: true
+    code: 'INTEGER : RTProgram
+
+      ...
+
+      Monitor_Call(''DisableRTStart'', RTProgram)'
+  assembly_500:
+    available: true
+    code: 'RTProgram : W BLOCK 1
+
+      DisableRTStart : EQU 37B9 + 137B
+
+      ...
+
+      CALLG DisableRTStart, 1, RTProgram'
+    octal_definition: 37B9 + 137B
+  mac:
+    available: true
+    code: 'LDA (PAR %Load register A with address of parameter list.
+
+      MON 137 %Monitor call DisableRTStart.
+
+      ...
+
+      PAR, RTPRO %Address of RT description.
+
+      ...
+
+      RTPRO, ...
+
+
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+
+      |-------------------|-------------------------|-------------|'
+    mon_number: 137
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 157
+  line: 6841
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

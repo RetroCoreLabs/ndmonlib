@@ -1,0 +1,91 @@
+octal: 164B
+name: SaveSegment
+short_names:
+- WSEG
+description: Saves a segment in the ND-100. All pages in physical memory which have been changed, are
+  written back to the disk.
+see_also:
+- SaveND500Segment
+parameters:
+- name: SegmentNumber
+  type: INTEGER2
+  io: I
+  description: Segment number.
+examples:
+  pascal:
+    available: true
+    code: 'SegmentNumber : INTEGER2;
+
+      ...
+
+      SaveSegment(SegmentNumber);'
+  cobol:
+    available: true
+    code: '01 SegmentNumber COMP.
+
+      ...
+
+      MONITOR-CALL "SaveSegment" USING SegmentNumber.'
+  fortran:
+    available: true
+    code: 'INTEGER SegmentNumber
+
+      ...
+
+      Monitor_Call(''SaveSegment'', SegmentNumber)'
+  planc:
+    available: true
+    code: 'INTEGER : SegmentNumber
+
+      ...
+
+      Monitor_Call(''SaveSegment'', SegmentNumber)'
+  assembly_500:
+    available: true
+    code: 'SegmentNumber : W BLOCK 1
+
+      SaveSegment : EQU 3789 + 164B
+
+      ...
+
+      CALLG SaveSegment, 1, SegmentNumber'
+    octal_definition: 37B9 + 164B
+  mac:
+    available: true
+    code: '| Instruction |  | Comment |
+
+      |-------------|--|---------|
+
+      | LDA | {PAR | %Load register A with address of parameter list. |
+
+      | MON | 164 | %Monitor call SaveSegment. |
+
+      | ... | | |
+
+      | PAR, SEGNO | | %Segment number. |
+
+      | ... | | |
+
+      | SEGNO, ... | | |
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 423
+  line: 19161
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

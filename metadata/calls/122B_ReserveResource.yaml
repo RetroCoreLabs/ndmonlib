@@ -1,0 +1,224 @@
+octal: 122B
+name: ReserveResource
+short_names:
+- RESRV
+description: 'Reserves a device or file for your program only. You release it with ReleaseResource. Some
+  devices, e.g. terminals, have both an input and output part. You can only reserve one part with each
+  ReserveResource call.
+
+
+  - A normal termination of an RT program releases all resources.
+
+  - Release the device with ReleaseResource or ForceRelease.
+
+  - A background program does not release a resource when you press the ESCAPE key.'
+see_also:
+- ForceReserve
+- ReserveDir
+- '@RESRV'
+- '@RESERVE-FILE'
+- and @RESERVE-DEVICE-UNIT
+parameters:
+- name: DeviceNo
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B.
+- name: IOFlag
+  type: INTEGER2
+  io: I
+  description: Input/output flag. 0=input part, 1=output part.
+- name: WaitFlag
+  type: INTEGER2
+  io: I
+  description: Wait flag. 0=wait if reserved, 1=return status value.
+- name: Status
+  type: INTEGER2
+  io: O
+  description: Return status (output). Only used if WaitFlag=1. Negative=already reserved.
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNo, IOFlag, WaitFlag, ReturnStatus : INTEGER2;
+
+      ...
+
+      ReserveResource(DeviceNo, IOFlag, WaitFlag, ReturnStatus);'
+  cobol:
+    available: true
+    code: '01 DevNo COMP.
+
+      01 IOFlag COMP.
+
+      01 WaitFlag COMP.
+
+      01 RetStatus COMP.
+
+      ...
+
+      MONITOR-CALL "ReserveResource" USING DevNo, IOFlag, WaitFlag, RetStatus.'
+  fortran:
+    available: true
+    code: 'INTEGER DevNo, IOFlag, WaitFlag, ReturnStatus
+
+      ...
+
+      Monitor_Call(''ReserveResource'', DevNo, IOFlag, WaitFlag, ReturnStatus)'
+  planc:
+    available: true
+    code: 'INTEGER: DeviceNo, IOFlag, WaitFlag, ReturnStatus
+
+      ...
+
+      Monitor_Call(''ReserveResource'', DeviceNo, IOFlag, WaitFlag, ReturnStatus)'
+  assembly_500:
+    available: true
+    code: 'DeviceNo : W BLOCK 1
+
+      IOFlag : W BLOCK 1
+
+      WaitFlag : W BLOCK 1
+
+      Status : W BLOCK 1
+
+      ReserveResource : EQU 37B9 + 122B
+
+      ...
+
+      CALLG ReserveResource, 3, DeviceNo, IOFlag, WaitFlag
+
+      W1 =: Status'
+    octal_definition: 37B9 + 122B
+  mac:
+    available: true
+    code: 'LDA (PAR %Load register A with address of parameter list.
+
+      MON 122 %Monitor call ReserveResource.
+
+      ...
+
+      PAR, DEVNO %Logical device number.
+
+      IOF %Input/output flag.
+
+      WFLAG %Wait flag
+
+      STAT %Status
+
+
+      | DEVNO, ... |   |
+
+      |------------|---|
+
+      | IOF, ...   |   |
+
+      | WFLAG, ... |   |
+
+      | STAT, ...  |   |
+
+
+      ND-100 and ND-500 | All users | All programs'
+    mon_number: 122
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 419
+  line: 18982
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_122B_ReserveResource.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    Real bookkeeping against the nd500x device-reservation table
+    (mon_reserve_device in src/libmon/mon_file_table.c), not a stub. There is no
+    other process in the emulator, so a reservation can only ever collide with
+    the caller's own earlier reservation.
+
+  parameter_notes:
+    - name: Status
+      note: >-
+        OUT parameter, and CONDITIONAL: the manual says it is only used when
+        WaitFlag=1, and nd500x writes it only when WaitFlag != 0 AND a 4th
+        argument was supplied. OUT-PARAMETER DEFECT CLASS - if you take the
+        WaitFlag=1 path and return without writing this word, the caller reads a
+        stale cell and the failure surfaces far away and much later (the shape of
+        the 412B FSCNT bug, commit 73ac594, and the 144B MAGTP function-0 bug,
+        commit 6ad9c09). Writing it is part of the contract.
+      verified: true
+    - name: WaitFlag
+      note: >-
+        0 = wait if busy, 1 = return status immediately. nd500x passes
+        (wait_flag == 0) as its "may block" argument to mon_reserve_device.
+      verified: true
+    - name: IOFlag
+      note: '0 = input part, 1 = output part. One part per call.'
+      verified: true
+    - name: 'DeviceNo / IOFlag / WaitFlag / Status'
+      note: >-
+        On ND-500 every one of these INTEGER parameters is a 32-bit word (W
+        BLOCK), read with mon_read_param_word. The manual types them INTEGER2 for
+        the ND-100 16-bit form.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; the device part is marked reserved.'
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 3 arguments supplied)'
+      - code: 133
+        octal: 205B
+        meaning: 'Device already reserved'
+
+  verified:
+    - claim: 'MON 122B dispatches via MCTAB to the L07 worker RESRV in segment 003-S3CP.'
+      evidence: >-
+        Carve L-VSX-500 122B-ReserveResource/README.md: MCTAB slot (segment
+        044-S3IDPIT, byte offset 1988) = 037103B = RESRV; RESRV worker body
+        carved at 037103B-037155B in 003-S3CP (byte offset 7302). Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=1988 count=2 -> 3e 43.
+    - claim: 'Error 133 decimal = 205B "Device already reserved" is a real SINTRAN code.'
+      evidence: >-
+        Commit 6b57202 replaced invented codes with the manual's Appendix A
+        table (ND-60.228.2 EN, "Error Returns from SINTRAN III Background
+        Programs"); mon_errors.h records MON_ERR_DEVICE_ALREADY_RESERVED = 133
+        (205B). Note the emulator stores the DECIMAL column in W1 while SINTRAN
+        returns the octal number.
+
+  unverified:
+    - >-
+      NO WAITING IS IMPLEMENTED. With WaitFlag=0 the manual says the program
+      waits until the resource is free; nd500x never blocks - it returns error
+      133 either way. Unobserved so far because nothing else contends.
+    - >-
+      The SIGN of the Status output. The manual and the nd500x registry say
+      "negative = already reserved"; the handler writes through whatever
+      mon_reserve_device returned (negative on failure) without normalising it to
+      a documented value. The exact value SINTRAN returns is not read from a
+      manual or the carve.
+    - >-
+      The RESRV worker body is carved but was NOT decoded for this note, so the
+      real reservation semantics (queueing, RT priority, what "device" means for
+      an open file) are unread.
+    - >-
+      "A normal termination of an RT program releases all resources" and "a
+      background program does not release a resource when you press ESCAPE" are
+      not modelled - nd500x's 0B LEAVE only halts the CPU.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/122B-ReserveResource/README.md'
+      note: 'MCTAB[122B] = RESRV = 037103B, worker carved in 003-S3CP.'
+    - doc: 'SINTRAN III Monitor Calls (ND-60.228.2 EN)'
+      note: 'Appendix A error table - the source of 205B/133. See src/libmon/mon_errors.h.'

@@ -1,0 +1,116 @@
+# SINTRAN III Monitor Call: ExitFromProgram
+# Octal: 0B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 0B
+name: ExitFromProgram
+short_names:
+- LEAVE
+description: |-
+  Terminates the program. Returns to SINTRAN III. Batch jobs continues with the next command.
+
+  - Background programs close all files not set permanently open. RT programs do not close any files.
+  - RT programs release all reserved devices.
+see_also:
+- ExitRTProgram
+parameters: []
+examples:
+  planc:
+    available: true
+    code: Monitor_Call('ExitFromProgram')
+  assembly_500:
+    available: true
+    code: |-
+      ExitFromProgram : EQU 37B9 + 0B
+      ...
+      CALLG ExitFromProgram, 0
+      IF K GO Error %Possible if wrong number of parameters.
+    octal_definition: 37B9 + 0B
+  mac:
+    available: true
+    code: |-
+      MON 0 %Monitor call ExitFromProgram.
+
+      | ND-100 and ND-500 | All users | All programs |
+      |-------------------|-----------|--------------|
+    mon_number: 0
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 185
+  line: 7998
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_0B_ExitFromProgram.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    In the emulator LEAVE has no SINTRAN to return to, so the handler requests a
+    CPU halt ("Program exit (MON 0B LEAVE)") and reports success. It does NOT
+    close open files or release reserved devices, which the manual says a
+    background program does on LEAVE - see unverified below.
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom) @PC=0xB0016205'
+      params: {}
+      expectation: >-
+        A clean program exit. This PC is the verified anchor for "the linker
+        terminated normally" - a MON halt here is the expected end state, not a
+        failure.
+      note: 'Reported as a verified anchor for the ND linker path (2026-07-17).'
+    - caller: 'NC C front-end (nc-a06.dom)'
+      params: {}
+      expectation: >-
+        NC ends every successful compile with a clean MON 0B LEAVE. Used
+        throughout the nd500x work as the regression signal - e.g. commit
+        15ca5e9/b615586: "NC unchanged: clean MON 0B LEAVE at instr 1902382".
+      note: 'The instruction number is a determinism check, not part of the contract.'
+
+  return_contract:
+    success: 'CPU halts; K flag cleared. The handler never returns an error.'
+    errors: []
+
+  verified:
+    - claim: >-
+        MON 0B is dispatched through MCTAB, not the level-14 GOTAB, and its L07
+        worker is PRTEX.
+      evidence: >-
+        Carve L-VSX-500: MCTAB base 005620B in segment 044-S3IDPIT; the 0B slot
+        (byte offset 1824) reads 35 bb = 032673B = PRTEX in segment 003-S3CP.
+        dd if=044-S3IDPIT.bin bs=1 skip=1824 count=2 -> 35 bb. The earlier
+        "GOTAB[0B]=000000 fall-through / LEAVE=144142B zero-filled" reading is
+        retracted by the carve itself (CORRECTED 2026-07-15 header).
+    - claim: 'The emulator halts the CPU on 0B and both real ND programs reach it.'
+      evidence: >-
+        handler mon_0B_ExitFromProgram.c calls mon_request_halt(); observed for
+        NC (clean LEAVE) and the ND linker (PC=0xB0016205).
+
+  unverified:
+    - >-
+      The manual behaviours "background programs close all files not set
+      permanently open" and "RT programs release all reserved devices" are NOT
+      implemented by the nd500x handler - it only halts. No program observed so
+      far depends on the implicit close, but a program that LEAVEs with a
+      half-written file would not get it flushed by this call.
+    - >-
+      The PRTEX worker body was not read; only the MCTAB slot value is
+      byte-proven. Whatever PRTEX does beyond terminating is unknown.
+    - >-
+      "Batch jobs continue with the next command" has no analogue in the
+      emulator (there is no batch processor).
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/0B-ExitFromProgram/README.md'
+      note: 'CORRECTED 2026-07-15 header carries the byte-verified MCTAB[0B] = PRTEX = 032673B.'

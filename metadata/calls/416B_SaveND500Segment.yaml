@@ -1,0 +1,92 @@
+octal: 416B
+name: SaveND500Segment
+short_names:
+- WSEGN
+description: 'Writes all modified pages of a segment back to the disk.
+
+
+  - Not allowed when fixed in memory.'
+see_also:
+- SaveSegment
+parameters:
+- name: LogSegmentNo
+  type: INTEGER2
+  io: I
+  description: Logical segment number in the domain. If 0, the segment number is retrieved from the parameter
+    address.
+- name: FirstPage
+  type: INTEGER2
+  io: I
+  description: First logical page in the segment.
+- name: LastPage
+  type: INTEGER2
+  io: I
+  description: Last logical page in the segment.
+examples:
+  pascal:
+    available: true
+    code: 'LogSegmentNo, FirstPage, LastPage : LONGINT;
+
+      ...
+
+      SaveND500Segment(LogicalSegmentNo, FirstPage, LastPage);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 LogSegmentNo COMP.
+
+      01 FirstPage COMP.
+
+      01 LastPage COMP.
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "SaveND500Segment" USING LogSegmentNo, FirstPage, LastPage.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER LogSegmentNo, FirstPage, LastPage
+
+      ...
+
+      Monitor_Call(''SaveND500Segment'', LogSegmentNo, FirstPage, LastPage)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER : LogSegmentNo, FirstPage, LastPage\n...\nON ROUTINEERROR DO\n  IF ErrCode > 0 THEN\
+      \ ...\nENDON\nMonitor_Call('SaveND500Segment', LogSegmentNo, FirstPage, LastPage)"
+  assembly_500:
+    available: true
+    code: "LogSegmentNo : W BLOCK 1\nFirstPage : W BLOCK 1\nLastPage : W BLOCK 1\nErrCode : W BLOCK 1\n\
+      SaveND500Segment : EQU 37B9 + 416B\n...\n  CALLG SaveND500Segment, 3, LogSegmentNo, FirstPage, LastPage\n\
+      \  IF K GO ERROR\n...\nERROR : W1 =: ErrCode                    %ErrorCode in W1 register."
+    octal_definition: 37B9 + 416B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 421
+  line: 19071
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

@@ -1,0 +1,90 @@
+# SINTRAN III Monitor Call: GetErrorDevice
+# Octal: 254B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 254B
+name: GetErrorDevice
+short_names:
+- GERDV
+description: Gets the logical device number of the error device. The error device may be reserved by an
+  RT program. If this is the case, the monitor call returns the address of the RT description. The error
+  device is the terminal which outputs system errors and RT program messages. The error device is normally
+  the console.
+see_also:
+- '@GET-ERROR-DEVICE'
+- '@SET-ERROR-DEVICE'
+parameters:
+- name: ErrorDevice
+  type: INTEGER
+  io: O
+  description: The logical device number of the error device.
+- name: RTProgram
+  type: INTEGER
+  io: O
+  description: RT description address of reserving RT program. 0 means unreserved.
+examples:
+  pascal:
+    available: true
+    code: |-
+      ErrorDevice, RTProgram : INTEGER2;
+      ...
+      FindErrorDevice(ErrorDevice, RTProgram);   [Note routine name.]
+  cobol:
+    available: true
+    code: |-
+      01 ErrorDevice COMP.
+      01 RTProgram COMP.
+      ...
+      MONITOR-CALL "GetErrorDevice" USING ErrorDevice, RTProgram.
+  fortran:
+    available: true
+    code: |-
+      INTEGER ErrorDevice, RTProgram
+      ...
+      Monitor_Call('GetErrorDevice', ErrorDevice, RTProgram)
+  planc:
+    available: true
+    code: |-
+      INTEGER : ErrorDevice, RTProgram
+      ...
+      Monitor_Call('GetErrorDevice', ErrorDevice, RTProgram)
+  assembly_500:
+    available: true
+    code: |-
+      ErrorDevice : W BLOCK 1
+      RTProgram : W BLOCK 1
+      GetErrorDevice : EQU 37B9 + 254B
+      ...
+      CALLG GetErrorDevice, 2, ErrorDevice, RTProgram
+    octal_definition: 37B9 + 254B
+  mac:
+    available: true
+    code: |-
+      MON 254 %Monitor call GetErrorDevice.
+      STA ERDEV %Store logical number of error device.
+      COPY SD DA
+      STA RTPRO %Store address of RT description.
+      ...
+      ERDEV, 0
+      RTPRO, 0
+
+
+      | ND-100 and ND-500 | User SYSTEM | All programs |
+    mon_number: 254
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 239
+  line: 10468
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

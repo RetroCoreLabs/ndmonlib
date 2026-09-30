@@ -1,0 +1,158 @@
+# SINTRAN III Monitor Call: GetAllFileIndexes
+# Octal: 217B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 217B
+name: GetAllFileIndexes
+short_names:
+- GUIOI
+description: |-
+  Gets the directory index, the user index, and the object index of a file. These are indexes in the SINTRAN III File System. Appendix C describes the File System.
+
+  - The file must be open.
+  - You may get the information if the file is on your local computer, or on a remote computer system if the computers are connected through a COSMOS network.
+see_also:
+- GetDirUserIndexes
+- GetDirNameIndex
+- GetFileIndexes
+- GetDirEntry
+- GetUserEntry
+- GetObjectEntry
+- and GetDefaultDir
+parameters:
+- name: FileNo
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: DirIndex
+  type: INTEGER
+  io: O
+  description: Directory index.
+- name: UserIndex
+  type: INTEGER
+  io: O
+  description: User index.
+- name: ObjectIndex
+  type: INTEGER
+  io: O
+  description: Object index.
+- name: RemoteFlag
+  type: INTEGER
+  io: O
+  description: 0 if file is local, 1 if on remote computer.
+- name: RemoteSystem
+  type: STRING
+  io: O
+  description: Remote system identification string (optional, 64 chars).
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNo, DirIndex, UserIndex, ObjectIndex : INTEGER2;
+      ...
+      GetAllFileIndexes(FileNo, DirIndex, UserIndex, ObjectIndex);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNo COMP.
+      01 DirIndex COMP.
+      01 UserIndex COMP.
+      01 ObjectIndex COMP.
+      01 RemoteFlag COMP.
+      01 RemoteSystem PIC X(64).
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetAllFileIndexes" USING FileNo, DirIndex, UserIndex,
+        ObjectIndex, RemoteFlag, RemoteSystem.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNo, DirIndex, UserIndex, ObjectIndex, RemoteFlag
+      CHARACTER RemoteSystem*64
+      ...
+      Monitor_Call('GetAllFileIndexes', FileNo, DirIndex, UserIndex,
+        ObjectIndex, RemoteFlag, RemoteSystem(1:64))
+      IF (ErrCode .NE. 0) THEN ...
+
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNo, DirIndex, UserIndex, ObjectIndex, RemoteFlag
+      BYTES : RemoteSystem(0:63)
+      ...
+      ON ROUTINEERROR DO
+      &emsp;IF ErrCode >< 0 THEN ...
+      ENDON
+
+      Monitor_Call('GetAllFileIndexes', FileNo, DirIndex, UserIndex, ObjectIndex,&
+      &emsp;&emsp;RemoteFlag, RemoteSystem)
+  assembly_500:
+    available: true
+    code: |-
+      | Variable      | Width | Description |
+      |---------------|-------|-------------|
+      | FileNo        | W BLOCK 1 | |
+      | DirIndex      | W BLOCK 1 | %If bit 7 is set, SysId is a 5th parameter. |
+      | UserIndex     | W BLOCK 1 | |
+      | ObjectIndex   | W BLOCK 1 | |
+      | SysId         | STRING 16 | %Remote system name as an optional 5th parameter. |
+      | ErrCode       | W BLOCK 1 | |
+
+      GetAllFileIndexes : EQU 37B9 + 217B
+      ...
+      CALLG GetAllFileIndexes, 4, FileNo, DirIndex, UserIndex, ObjectIndex
+      % This call is for a local file. For a remote file, the
+      % format would be:
+      % CALLG GetAllFileIndexes, 5, FN, DI, UI, OI, SysID
+      IF K GO ERROR
+      ...
+
+      ERROR : WI =: ErrCode %ErrorCode in W1 register.
+    octal_definition: 37B9 + 217B
+  mac:
+    available: true
+    code: |-
+      LDA (BUFF %Buffer in which to return remote system
+      COPY SA DD % identification
+      LDA FILNO %File number returned from earlier OpenFile.
+      MON 217 %Monitor call GetAllFileIndexes.
+      JMP ERROR %Error return from monitor call.
+      STT INDEX %Normal return, store directory and user index.
+      STX OBJIX %Store object index.
+      COPY SD DA %Remote identification in D register if bit 15
+      STA REMID % in T register is set.
+      ...
+      ERROR, ... %Error number in register A.
+      ...
+      FILNO, ...
+      INDEX, 0 %Dir index: left byte. User index: right byte.
+      OBJIX, 0 %Object index.
+      REMID, 0 %Address of remote identification string.
+      BUFF, 0
+      *+40/
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 217
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 221
+  line: 9456
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

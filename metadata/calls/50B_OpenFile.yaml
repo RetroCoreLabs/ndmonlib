@@ -1,0 +1,406 @@
+# SINTRAN III Monitor Call: OpenFile
+# Octal: 50B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 50B
+name: OpenFile
+short_names:
+- OPEN
+description: Opens a file. You cannot access a file before you open it. Specify what kind of access you
+  want, e.g. sequential write or random read.
+notes:
+- CloseFile closes the file.
+- Opened files are closed when a program terminates.
+- You may have a maximum of 18 files opened at a time.
+- Files are protected from access by unauthorized users. Use @FILE-STATISTICS to list the file access.
+- ND-500 has its own file numbers which may differ from the SINTRAN III file numbers.
+see_also:
+- ScratchOpen
+- SetPermanentOpen
+- DirectOpen
+- and @OPEN-FILE
+parameters:
+- name: FileNo
+  type: INTEGER
+  io: IO
+  description: If 0 on input, returns the ND-500 open file number. Otherwise specifies the file number to use.
+- name: AccessCode
+  type: INTEGER
+  io: I
+  description: |-
+    Access code specifying type of file access:
+    0 = Sequential write
+    1 = Sequential read
+    2 = Random read or write
+    3 = Random read only
+    4 = Sequential read or write
+    5 = Sequential write append
+    6 = Random read or write common on contiguous files
+    7 = Random read common on contiguous files
+    8 = Random read or write on contiguous files (direct transfer for RT programs)
+    9 = Random read, write append for WriteToFile
+- name: FileName
+  type: STRING
+  io: I
+  description: File name string (up to 64 characters). If empty, name is read from terminal.
+- name: FileType
+  type: STRING
+  io: I
+  description: Default file type string (up to 4 characters), e.g. 'SYMB'.
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNo, AccessCode : INTEGER;
+      FileName : PACKED ARRAY [0..63] OF CHAR;
+      FileType : PACKED ARRAY [0..3] OF CHAR;
+      ...
+      OpenFile(FileNo, AccessCode, FileName, FileType);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNo COMP.
+      01 AccessCode COMP.
+      01 FileName PIC X(64).
+      01 FileType PIC X(4).
+      01 ErrCode COMP.
+      MOVE 0 TO FileNo.
+      MONITOR-CALL "OpenFile" USING FileNo, AccessCode, FileName, FileType.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNo, AccessCode
+      CHARACTER FileName*64, FileType*4
+  planc:
+    available: true
+    code: |-
+      plaintext
+      INTEGER : FileNo, AccessCode
+      BYTES : FileName(0:63), FileType(0:3)
+      ...
+      ON ROUTINEERROR DO
+         IF ErrCode > 0 THEN ...
+      ENDON
+
+      0 =: FileNo
+      Monitor_Call('OpenFile', FileNo, AccessCode, FileName, FileType)
+  assembly_500:
+    available: true
+    code: |-
+      | Variable   | Type      | Description                                                |
+      |------------|-----------|------------------------------------------------------------|
+      | FileNo     | W BLOCK 1 | %Returned ND-500 open file number if 0 on input.           |
+      | S3No       | W BLOCK 1 | %SINTRAN III open file number as optional parameter.       |
+      | AccessCode | W BLOCK 1 |                                                           |
+      | FileName   | STRINGDATA| 'EXAMPLE'                                                  |
+      | FileType   | STRINGDATA| 'SYMB'                                                     |
+      | ErrCode    | W BLOCK 1 |                                                           |
+      | OpenFile   | EQU 37B9 + 50B |                                                      |
+
+      plaintext
+      ...
+      CALLG OpenFile, 4, FileNo, AccessCode, FileName, FileType
+      IF K GO ERROR
+      ...
+      ERROR = W1 =: ErrCode %ErrorCode in W1 register.
+    octal_definition: 37B9 + 50B
+  mac:
+    available: true
+    code: |-
+      plaintext
+      LDX (FILE %If 0, the name is read from the terminal.
+      LDA (TYPE %Address of default file type string.
+      LDT ACCES %Access code.
+      MON 50 %Monitor call OpenFile.
+      JMP ERROR %Error return from monitor call.
+      STA FILNO %Normal return, store the file number returned.
+      ...
+      ERROR, ... %Error number in register A.
+      FILNO, 0
+      ACCES, ...
+      FILE, 'EXAMPLE' %Open EXAMPLE:SYMB
+      TYPE, 'SYMB' %
+
+
+
+      ND-100 and ND-500 | All users | All programs
+      ---|---|---
+    mon_number: 50
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 369
+  line: 16558
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_50B_OpenFile.c
+  supporting_code: nd500x/src/libmon/mon_file_table.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: FileNo
+      note: >-
+        On ND-500 every INTEGER parameter is a 32-bit WORD. The manual's own
+        assembly_500 example for this call declares each INTEGER parameter as
+        'W BLOCK 1' (not 'H BLOCK'), so the handler reads/writes all four
+        parameters with word accessors.
+      verified: true
+    - name: FileNo
+      note: >-
+        The handler treats FileNo as BIDIRECTIONAL exactly as the manual's io: IO
+        says: 0 on input allocates, non-zero uses the given number, and the
+        assigned number is written BACK into the parameter slot as well as left
+        in W1. Callers observed reading either channel.
+      verified: true
+    - name: FileName
+      note: >-
+        Real callers (NC, the ND linker) pass the name as a
+        [Length:4][Pointer:4] string DESCRIPTOR, not as inline text. Reading the
+        parameter slot directly yields the descriptor struct (first byte 0x00)
+        and so an empty string. nd500x uses mon_read_descriptor_string here.
+      verified: true
+    - name: FileName
+      note: >-
+        The guest string is terminated by 047 octal (0x27, apostrophe). The
+        descriptor reader converts that to a C NUL before the name reaches the
+        matcher, so NUL is the terminator inside the matcher.
+      verified: true
+
+  abbreviated_file_name_resolution:
+    summary: >-
+      SINTRAN resolves an ABBREVIATED file name on OPEN. This is not a
+      convenience feature - the ND linker depends on it. Implemented in nd500x
+      byte-for-byte from the carve; hooked ONLY after a literal open fails, and
+      ONLY on a READ open (SINTRAN does not permit abbreviation when creating a
+      file).
+    source:
+      carve: 'L-VSX-500 segment 006-S3FS'
+      comparator: 'COMPS @041552'
+      scanner_decision: 'GOBJI @056326 (terminal codes 056576-056607)'
+      carve_doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/segments-ref/006-S3FS/CARVE-ANSWER-FLPAR-MDEAB-FOR-IMPLEMENTER.md
+    comparator_COMPS:
+      note: >-
+        Compares a WHOLE supplied name against a WHOLE stored name in one pass
+        and returns three states (NO_MATCH / PREFIX_MATCH / EXACT_MATCH). The
+        '-' handling yields per-subpart behaviour implicitly - there is no
+        separate subpart splitter.
+      rules:
+        - rule: 'equal chars advance; both terminators together -> EXACT_MATCH'
+          address: '041603 / 041612 (advance at 041606)'
+        - rule: "'*' in the supplied name is a PER-CHARACTER wildcard"
+          address: '041600 / 041661'
+        - rule: 'supplied terminator reached first -> PREFIX_MATCH (supplied is a prefix of stored)'
+          address: '041616-041620'
+        - rule: >-
+            '-' in the supplied name (including the empty middle of '--') skips
+            the STORED name forward to its next '-' boundary, so that slot
+            matches ANY value
+          address: '041621-041706'
+        - rule: 'anything else -> NO_MATCH'
+          address: '041621 -> 041623 -> 041614'
+    scanner_GOBJI:
+      note: >-
+        Scan the directory. An EXACT match wins outright and stops the scan
+        immediately. Otherwise count PREFIX hits: 0 -> error 056 (no such file),
+        more than 1 -> error 057 (ambiguous), exactly 1 -> unique, resolve to it.
+      address: '056326'
+    name_type_split:
+      note: >-
+        Name and type are matched as SEPARATE strings, per the NAME:TYPE framing
+        split (SEPOB @056645 / SEPFS @042622). Do NOT match the joined string.
+      verified: true
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), startup'
+      params:
+        FileName: "'UE-ERMSG--C:ERR'"
+      expectation: >-
+        Must resolve to the real on-disk file UE-ERMSG-EN-C06:ERR - the empty
+        slot in '--' swallows 'EN', and supplied-is-prefix takes '-C' to '-C06'.
+        Observed: "MON OPEN: './GUEST/UE-ERMSG--C.ERR' resolved to
+        './GUEST/UE-ERMSG-EN-C06.ERR'" -> opened as file 101. Without
+        abbreviation the literal fopen fails and OPEN returns -46, and the linker
+        never finds its error-message file.
+    - caller: 'ND linker (linker-b01.dom), DDB table load'
+      params:
+        FileName: "'DDBTABLES-G':VTM"
+      expectation: >-
+        Must resolve to DDBTABLES-G06:VTM (supplied-is-prefix-of-stored). This is
+        how the linker loads its DDB tables at all; it then 74B SETBTs to 0 and
+        reads the file via 144B MAGTP function 0.
+    - caller: 'ND linker (linker-b01.dom), first startup OPEN'
+      params:
+        FileName: "'' (empty)"
+      expectation: >-
+        Observed: the first 50B OPEN the linker issues carries an EMPTY filename.
+        nd500x mis-resolves it to './GUEST/.' and fails with -46, which cascades
+        into 74B SETBT (invalid file 56) and 76B SETBS (block size 0). See
+        discrepancies - the manual says an empty name means "read the name from
+        the terminal", which nd500x does not implement.
+
+  return_contract:
+    success: >-
+      K flag cleared; the assigned file number is returned BOTH in W1 and written
+      back into the FileNo parameter slot (arg 0).
+    errors:
+      - code: 46
+        octal: 056B
+        meaning: 'No such file name (also: abbreviation resolved to 0 candidates)'
+      - code: 47
+        octal: 057B
+        meaning: 'Ambiguous file name (abbreviation resolved to more than 1 candidate)'
+      - code: 69
+        octal: 105B
+        meaning: 'File already open'
+      - code: 71
+        octal: 107B
+        meaning: 'Attempt to open too many files'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 4 args)'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (AccessCode > 9)'
+
+  verified:
+    - claim: >-
+        The abbreviated-name matcher (COMPS/GOBJI) is implemented as carved and
+        resolves the linker's real names.
+      evidence: >-
+        Carve L-VSX-500 006-S3FS COMPS @041552 / GOBJI @056326, each branch cited
+        to its octal address in
+        nd500x/src/libmon/mon_file_table.c. Runtime:
+        'UE-ERMSG--C:ERR' -> 'UE-ERMSG-EN-C06:ERR' (opened as file 101) and
+        'DDBTABLES-G:VTM' -> 'DDBTABLES-G06:VTM'. Unit tests 9/9. Commit badb3c4.
+    - claim: >-
+        Abbreviation is attempted only after the literal open fails, and only on
+        a READ open.
+      evidence: >-
+        SINTRAN does not permit abbreviation when creating a file; hook site is
+        mon_file_table.c mon_file_open_ex, guarded on !fp and a non-write mode.
+    - claim: 'Mass-storage file numbers occupy 64-127 decimal (0100-0177 octal).'
+      evidence: >-
+        Used consistently by every file handler (is_mass_storage_file) and
+        matches the manual note "ND-500 has its own file numbers which may differ
+        from the SINTRAN III file numbers"; the linker's OPEN returned 65 and 101
+        in observed runs.
+
+  unverified:
+    - >-
+      COMPS edge: when the STORED name runs out of subparts before the SUPPLIED
+      name (i.e. the supplied name has MORE subparts than the stored one), the
+      carve did not trace the branch. nd500x treats it as NO_MATCH. The verified
+      common path is unaffected. Carried from the handler comment.
+    - >-
+      Because EXACT short-circuits the scan, 'A--C' can take 'A-XX-C' without
+      ever noticing that 'A-YY-C' also matches (so no ambiguity is reported).
+      That is what the carved code does; whether the real system reaches the same
+      outcome for every directory ordering is not proven.
+    - >-
+      The manual states "You may have a maximum of 18 files opened at a time".
+      nd500x does not enforce 18; it errors 107B only when its own table is full.
+      Whether the real limit is exactly 18 on ND-500 has not been carve-checked.
+    - >-
+      The manual's "If empty, name is read from terminal" behaviour is NOT
+      implemented (see discrepancies).
+    - >-
+      Access codes 6/7/8 (contiguous / direct transfer) are accepted and recorded
+      but nd500x has no contiguous-file or direct-transfer model behind them.
+
+  discrepancies:
+    - was: 'The SINTRAN ambiguous-file-name code is 0111.'
+      is: >-
+        Ambiguous is 057 and no-such is 056. The 0111/0113 codes belong to a
+        SEPARATE access/type classifier that runs AFTER a unique resolve. Any
+        implementation with 0111 wired as "ambiguous" is wrong.
+      evidence: >-
+        Carve GOBJI @056326 with terminal codes at 056576-056607; corrected in
+        commit badb3c4 and in
+        nd500x/docs/HANDOFF_CSHARP_FILE_TABLE_SINTRAN_SEMANTICS.md.
+    - was: >-
+        An earlier belief in this tree that the resolver returns "A=0 unique /
+        A=-2".
+      is: 'That pair is really the SPUSH/SPOP skip-count, not a result code.'
+      evidence: 'Carve read recorded in commit badb3c4.'
+    - was: >-
+        Emulator defect (now fixed): the -52 illegal-parameter case fell through
+        to the no-such-file-name error because of a missing break.
+      is: 'Illegal parameter now returns 174B distinctly.'
+      evidence: 'Commit 2618145.'
+    - was: >-
+        Manual parameter text: "FileName ... If empty, name is read from
+        terminal."
+      is: >-
+        NOT implemented in nd500x. An empty name is passed through to the path
+        translator, which produces './GUEST/.' and fails with -46. The manual
+        field is left untouched - the manual is right and the emulator does not
+        implement this.
+      evidence: >-
+        Read from the nd500x path-translation code. NO program we run is known to
+        exercise it, so the divergence is currently theoretical.
+      correction: >-
+        CORRECTED 2026-07-17. An earlier draft of this entry claimed "the ND
+        linker DOES issue an empty-name OPEN at startup, so this behaviour is
+        reachable in practice". That was read from a trace taken BEFORE the smove
+        fix (nd500x commit e9111dd) and is now FALSE. The empty name was a
+        SYMPTOM: the ND-500 STRING class was a silent no-op, so the linker's
+        "by smove" never filled its file-name buffer and it opened garbage. With
+        smove fixed, the linker opens 'DDBTABLES-G':VTM and issues ZERO
+        empty-name OPENs (re-measured: 0 occurrences over a 400,000-instruction
+        run). Do not chase this - it is not a live path.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      page: 369
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/HANDOFF_CSHARP_FILE_TABLE_SINTRAN_SEMANTICS.md
+      note: 'Full write-up of the matcher and the device model. Item 1.'
+    - carve: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/segments-ref/006-S3FS/CARVE-ANSWER-FLPAR-MDEAB-FOR-IMPLEMENTER.md
+      note: 'COMPS/GOBJI carve answer.'
+    - commit: 'badb3c4 (nd500x) - SINTRAN abbreviated file-name resolution on OPEN'
+    - commit: '2618145 (nd500x) - 50B missing break'
+  updates_2026_07_17:
+    - topic: 'File-name QUOTES convention = create (byte-verified)'
+      status: verified
+      detail: >-
+        SINTRAN III has NO write-open-creates. A file name in DOUBLE QUOTES means
+        "create if absent"; without quotes the file must already exist. Carve
+        006-S3FS: the resolver GCFIL @064670B tests the first char for '"' (042B)
+        at 064677B and dispatches CROBJ @063726B (create) for quoted, GFILI
+        @057173B (lookup-only) for unquoted. The quotes are STRIPPED by the copy
+        loop; there is no create flag - quoted and unquoted take different
+        routines. Reached from MON 50B via MCTAB[50B]=103034B=OPFIL ->
+        FCON@067002B -> FFILE@065144B.
+      rules:
+        - 'QUOTED + absent -> create (indexed file), version defaults to 1.'
+        - 'QUOTED + already exists -> error 076B "File already exists" (62 dec). NOT truncated, overwritten, or opened-as-is (SAA 76 at 064040B).'
+        - 'UNQUOTED + missing -> error 056B "No such file name" (46 dec), for EVERY access code 0..9. GFILI has no create call at all.'
+        - '":TYPE" scratch syntax -> created on open by definition.'
+        - 'Quote decision is purely lexical and happens before access-code processing; access 0 (sequential write) does NOT imply create.'
+        - 'A quoted (USER) prefix: SEPUS skips one leading quote before the user; the quote wraps the whole spec.'
+      linker_note: >-
+        The ND linker relies on this: OPEN-DOMAIN "NAME" (quoted) creates a new
+        domain; OPEN-DOMAIN NAME (unquoted) opens an existing one and errors 41B
+        (its own code) if absent. The quotes arrive at MON 50B as literal name
+        characters (FileName='"A-TEST"').
+      discrepancy:
+        was: 'nd500x auto-created any write-access open of a missing file.'
+        is: 'Non-standard - removed 2026-07-17 (commit c61b039). Create now gated on quoted-or-scratch; unquoted-missing returns -46.'
+      unverified:
+        - 'CROBJ also creates when GOBJI lookup returns T==0 ("object entry exists but no version"?) - exact meaning of GOBJI T not chased.'
+      source: 'NDInsight/SINTRAN/ND500/CARVE-ANSWER-OPEN-QUOTED-FILENAME.md; ND-60.050.06 Users Guide p1422; ND-60.128.5 Ref Manual ~2054'

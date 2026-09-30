@@ -1,0 +1,124 @@
+# SINTRAN III Monitor Call: GraphicFunction
+# Octal: 155B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 155B
+name: GraphicFunction
+short_names:
+- GRAPH
+description: Executes various functions on a graphic peripheral, such as a NORDCOM terminal, a pen plotter, or a Textronix display.
+notes:
+- Some functions require a delay from the calling program. See the specifications for the peripheral in use. SuspendProgram delays a program.
+- The old monitor call PLOT is obsolete.
+see_also:
+- SuspendProgram
+parameters:
+- name: Ycoor
+  type: INTEGER
+  io: I
+  description: The Y-coordinate of new line relative to current reference point.
+- name: Xcoor
+  type: INTEGER
+  io: I
+  description: The X-coordinate of new line relative to current reference point.
+- name: Code
+  type: INTEGER
+  io: I
+  description: Integer code.
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number.
+- name: Func
+  type: INTEGER
+  io: I
+  description: 'Function code. 0 means PLOT. 1 means PLOTS, i.e. establish reference point and/or clear a NORDCOM screen. 2 means NEWP, i.e. select pen or screen.'
+- name: ReturnValue
+  type: INTEGER
+  io: O
+  description: Return value. Output parameter for the PLOT function. Not used on the ND-500.
+examples:
+  pascal:
+    available: true
+    code: |-
+      Xcoor, Ycoor, Code, DeviceNo, Func, ReturnValue : INTEGER2;
+      ...
+      GraphicFunction(Xcoor, Ycoor, Code, DeviceNo, Func, ReturnValue);
+    mon_number: null
+    notes: ''
+  cobol:
+    available: true
+    code: |-
+      01 Xcoor COMP.
+      01 Ycoor COMP.
+      01 Code COMP.
+      01 DeviceNo COMP.
+      01 Func COMP.
+      01 ReturnValue COMP.
+      ...
+      MONITOR-CALL "GraphicFunction" USING Xcoor, Ycoor, Code, DeviceNo, Func, ReturnValue.
+    mon_number: null
+    notes: ''
+  fortran:
+    available: true
+    code: |-
+      INTEGER Xcoor, Ycoor, Code, DeviceNo, Func, ReturnValue
+      ...
+      Monitor_Call('GraphicFunction', Xcoor, Ycoor, Code, DeviceNo, Func, ReturnValue)
+    mon_number: null
+    notes: ''
+  planc:
+    available: true
+    code: |-
+      INTEGER : Xcoor, Ycoor
+      INTEGER : Code, DeviceNo, Func, ReturnValue
+      ...
+      Monitor_Call('GraphicFunction', Xcoor, Ycoor, Code, DeviceNo, &
+          Func, ReturnValue)
+    mon_number: null
+    notes: ''
+  assembly_500:
+    available: true
+    code: |-
+      Xcoor : W BLOCK 1
+      Ycoor : W BLOCK 1
+      Code : W BLOCK 1
+      DeviceNo : W BLOCK 1
+      Func : W BLOCK 1
+      GraphicFunction : EQU 37B9 + 155B
+      ...
+      CALLG GraphicFunction, 5, Xcoor, Ycoor, Code, DeviceNo, Func
+    octal_definition: 37B9 + 155B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR                 %Load register A with address of parameter list.
+      MON 155                  %Monitor call Graphic.
+      STA STAT                 %Store return status.
+      ...
+      STAT, 0
+      PAR,
+      XCOOR                    %X coordinate of endpoint.
+      YCOOR                    %Y coordinate of endpoint.
+      CODE                     %Integer code.
+      DEVNO                    %Logical device number.
+      FUNC                     %Function.
+    mon_number: 155
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 13588
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true

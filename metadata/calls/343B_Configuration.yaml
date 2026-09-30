@@ -1,0 +1,85 @@
+# SINTRAN III Monitor Call: Configuration
+# Octal: 343B
+# Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17).
+octal: 343B
+name: Configuration
+short_names:
+- CONFG
+description: >-
+  System configuration read/write (manual sections 2.14 and 2.17, short name
+  CONFG). Indexed configuration access with 6 sub-functions. Internal-use call;
+  contract is RE-derived from the labelled handler body.
+notes:
+- >-
+    Version history: L-version defined five new configuration parameters, numbers
+    51B-55B (and extended parameter 41B)
+    (ND-860230-6-EN Sintran III - Release Information - L-Version.md:1319).
+    N-version extended configuration parameter 52B by introducing a new subparameter
+    number 10B (SUBIN); the older subparameters are unchanged
+    (ND-860230-8-EN SINTRAN III - Release Information - N-version.md:1015, 1058-1070).
+- >-
+    Internal-use monitor call (manual sections 2.14 / 2.17); not intended for user
+    programs.
+- >-
+    Handler MNCFG at RP-P2-CONFG.NPL:220 - indexed configuration read/write, 6
+    sub-functions. VERIFIED (labelled handler body read).
+- >-
+    Sub-functions are selected by an index; the exact caller convention
+    (register/CALLG mapping) is not confirmed from the available source.
+see_also: []
+parameters:
+- name: SubFunction
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - configuration sub-function index (one of 6 read/write
+    functions). Exact caller convention not confirmed from the available source.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 343B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17)
+  handler: >-
+    RP-P2-CONFG.NPL:220 (MNCFG)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

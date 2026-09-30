@@ -1,0 +1,207 @@
+# SINTRAN III Monitor Call: SetCommandBuffer
+# Octal: 12B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 12B
+name: SetCommandBuffer
+short_names:
+- SETCM
+description: |-
+  Transfers a string to the command buffer. The command buffer contains the last command input from the terminal. You may read the command buffer by reading from logical device number 0. See InByte.
+
+  - The command @TERMINAL-STATISTICS lists the command buffer.
+  - You may apply the SINTRAN III command editing characters to the command buffer when the program has terminated.
+  - The parameter is fetched through the alternative page table.
+  - You may use this monitor call to erase sensitive information in the command buffer, e.g., password parameters.
+notes:
+- >-
+    Version history: M-version increased the maximum length of the command buffer
+    from 104 characters to 150 characters
+    (ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md:1075).
+see_also:
+- '`ExecuteCommand`'
+- '`CallCommand`'
+parameters:
+- name: Command
+  type: STRING
+  io: I
+  description: String to transfer to the command buffer (up to 32 characters).
+examples:
+  pascal:
+    available: true
+    code: |2-
+          Command : PACKED ARRAY [0..31] OF CHAR;
+          ...
+          SetCommandBuffer(Command);
+  cobol:
+    available: true
+    code: |2-
+          01 Command PIC X(32).
+          ...
+          MONITOR-CALL "SetCommandBuffer" USING Command.
+  fortran:
+    available: true
+    code: |2-
+          CHARACTER Command*32
+          ...
+          Monitor_Call('SetCommandBuffer', Command(1:32))
+  planc:
+    available: true
+    code: |-
+      BYTES : Command(0:31)
+      ...
+      Monitor_Call('SetCommandBuffer', Command)
+  assembly_500:
+    available: true
+    code: |-
+      Command : STRINGDATA 'CLOSE-FILE 102'
+      SetCommandBuffer : EQU 37B9 + 12B
+      ...
+      CALLG SetCommandBuffer, 1, Command
+    octal_definition: 37B9 + 12B
+  mac:
+    available: true
+    code: |-
+      | Instruction | Operand | Description                                           |
+      |-------------|---------|-------------------------------------------------------|
+      | LDA         | (CMND)  | %Address of string with command.                      |
+      | MON         | 12      | %Monitor call SetCommandBuffer.                       |
+      | ...         |         |                                                       |
+      | CMND,       | 'CLOSE-FILE 102' | %Transfer 'CLOSE-FILE 102' to the command buffer. |
+
+      | ND-100 and ND-500 | All users | Background programs |
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 439
+  line: 19999
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_12B_SetCommandBuffer.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    Implemented and proven against NC. The hard-won fact here is the ARGUMENT
+    LAYOUT: the VDM front-ends do not pass an inline string.
+
+  parameter_notes:
+    - name: Command
+      note: >-
+        THE DESCRIPTOR. NC (and the other VDM front-ends) pass the command as a
+        [Length:4][Pointer:4] DESCRIPTOR, not as inline text: arg0 points at
+        {maxlen, ptr, ...} and the actual text lives AT the pointer, terminated
+        by 0x27 ("'"). Exactly the same layout as 317B UECOM. A direct string
+        read of arg0 reads the descriptor struct itself, whose first byte is
+        0x00, and yields "". nd500x tries mon_read_descriptor_string() first and
+        falls back to the inline read for callers that really do pass text
+        inline.
+      verified: true
+    - name: Command
+      note: >-
+        The command buffer is device 0. A program reads it back with 1B INBT on
+        logical device number 0. nd500x stores it via the shared
+        mon_set_command_buffer() in mon_file_table.c - the SAME buffer a device-0
+        read drains.
+      verified: true
+    - name: Command
+      note: >-
+        THREAD SAFETY: the shared command-buffer functions in mon_file_table.c
+        keep static global state with no mutex. External synchronisation is
+        required for multi-threaded access.
+      verified: true
+
+  observed_calls:
+    - caller: 'NC C front-end (nc-a06.dom)'
+      params:
+        Command: "'CC -> B'"
+      expectation: >-
+        NC sets a compiler status label into the command buffer. Before the
+        descriptor fix the emulator decoded this as the empty string.
+      note: >-
+        Commit b615586: "NC's SETCM now decodes as 'CC -> B' (a compiler status
+        label) instead of ''. NC unchanged: clean MON 0B LEAVE at instr 1902382."
+
+  return_contract:
+    success: 'K flag cleared; the command buffer now holds the string.'
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 1 argument supplied)'
+
+  verified:
+    - claim: 'MON 12B dispatches via MCTAB to the L07 worker SETOL.'
+      evidence: >-
+        Carve L-VSX-500 12B-SetCommandBuffer/README.md CORRECTED 2026-07-15:
+        MCTAB[12B] slot 005632B (segment 044-S3IDPIT, byte offset 1844) = 050666B
+        = SETOL in segment 003-S3CP. Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=1844 count=2 -> 51 b6.
+    - claim: 'The command buffer read back from device 0 is CR-terminated, never raw EOF.'
+      evidence: >-
+        Commit 19f7354, byte-proven in the L07 command processor by a carve
+        trace: at the 47B source marker it substitutes CR (050773: SAA 15 ->
+        SBYT) and resets the byte pointer. So 47B is an INTERNAL SOURCE MARKER
+        that never reaches a device-0 reader: the buffer a program reads via 1B
+        INBT ends in CR (015B / 0x0D), never 47B, never raw EOF. A program
+        launched with no arguments still reads a lone CR. Read-side confirmation:
+        the ND linker's first device-0 read returns 0x0D and it proceeds to its
+        banner.
+    - claim: 'Getting the device-0 termination wrong makes a real program busy-spin.'
+      evidence: >-
+        Before 19f7354, mon_read_command_buffer_char() returned raw -1 (EOF) once
+        the stored bytes ran out; the ND linker then busy-spun - measured 20,088
+        consecutive 1B INBT retries at PC=0xB004E759 in 600k instructions.
+
+  unverified:
+    - >-
+      WHAT A DEVICE-0 READ RETURNS AFTER THE CR (past end-of-line) is still
+      unproven - the linker never does it. nd500x treats it as a suspend
+      (STOP_WAIT_INPUT). Explicitly flagged as unproven in commit 19f7354.
+    - >-
+      The 32-CHARACTER CAP the manual documents is NOT enforced by nd500x - the
+      handler takes up to 256 bytes. Recorded as a pending correction for BOTH
+      emulators in nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md PART
+      C: "12B SETCM: cap the stored command buffer at 32 chars (documented
+      capacity)."
+    - >-
+      The SETOL worker body was not decoded, so the real truncation/padding
+      behaviour at the 32-char boundary is unknown.
+    - >-
+      The carve found NO ND-100 code worker for this call: the short name SETCM
+      resolves only in the L07 N500-SYMBOLS list (SETCM=106214B, the ND-500
+      companion), and CBUF=170207B - the command-buffer DATA area - is
+      zero-filled in this L image.
+    - >-
+      Not yet audited against the carve - listed under "NOT yet audited vs carve"
+      in nd500x/docs/HANDOFF_MON_COMPLETENESS.md.
+
+  discrepancies:
+    - was: >-
+        Earlier carve version: "GOTAB[12B] = 000000, a fall-through; there is no
+        ND-100 code worker" on the disproven GOTAB-is-the-MON-table model. The
+        body of that README still reads that way below its own correction header.
+      is: >-
+        MCTAB[12B] = 050666B = SETOL, byte-proven; the real dispatch is
+        MON 12B -> ENT14(072167B) -> GOTAB[12B]=MFELL(072114B) -> CALLP(032201B)
+        -> MCTAB[12B]=SETOL.
+      evidence: >-
+        Carve CORRECTED 2026-07-15 header;
+        dd if=044-S3IDPIT.bin bs=1 skip=1844 count=2 -> 51 b6.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/12B-SetCommandBuffer/README.md'
+      note: 'MCTAB[12B] = SETOL. Note the README body contradicts its own correction header.'
+    - doc: nd500x/docs/CAT500_UECOM_CSHARP_HANDOFF.md
+      note: 'The [len][ptr] descriptor layout shared with 317B UECOM (the CAT-500 route).'

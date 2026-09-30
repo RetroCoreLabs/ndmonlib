@@ -1,0 +1,167 @@
+octal: 413B
+name: FileNotAsSegment
+short_names:
+- FSCDNT
+description: 'Disconnects a file as a segment in your domain. FileAsSegment allows files to be accessed
+  as segments. This monitor call disconnects the file.
+
+
+  - The file is not closed.
+
+  - The file is automatically disconnected by CloseFile.'
+see_also:
+- FileAsSegment
+parameters:
+- name: FileNumber
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: LogSegmentNumber
+  type: INTEGER2
+  io: I
+  description: Segment number (optional parameter).
+examples:
+  pascal:
+    available: true
+    code: 'FileNumber, LogSegNumber: LONGINT;
+
+      ...
+
+      FileNotAsSegment(FileNumber, LogSegNumber);'
+  cobol:
+    available: true
+    code: '01 FileNumber COMP.
+
+      02 LogSegNumber COMP.
+
+      ...
+
+      MONITOR-CALL "FileNotAsSegment" USING FileNumber, LogSegNumber.'
+  fortran:
+    available: true
+    code: 'INTEGER FileNumber, LogSegNumber
+
+      ...
+
+      Monitor_Call(''FileNotAsSegment'', FileNumber, LogSegNumber)'
+  planc:
+    available: true
+    code: 'INTEGER : FileNumber, LogSegNumber
+
+      ...
+
+      Monitor_Call(''FileNotAsSegment'', FileNumber, LogSegNumber)'
+  assembly_500:
+    available: true
+    code: 'FileNumber : W BLOCK 1
+
+      LogSegNumber : W BLOCK 1
+
+      FileNotAsSegment : EQU 37B9 + 413B
+
+      ...
+
+      CALLG FileNotAsSegment, 2, FileNumber, LogSegNumber'
+    octal_definition: 37B9 + 413B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 195
+  line: 8371
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_413B_FileNotAsSegment.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: LogSegmentNumber
+      note: >-
+        Genuinely OPTIONAL, as the manual field says. The handler requires only
+        FileNumber; with one argument it disconnects whichever segment the file
+        is mapped to, and with two it requires the named segment to be the one
+        the file is actually mapped to (else 174B).
+      verified: true
+
+  return_contract:
+    success: >-
+      K flag cleared; the file's segment-mapping bookkeeping is cleared. The file
+      itself stays OPEN, per the manual.
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (no args)'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (file not mapped as a segment; or the named segment is not the one it is mapped to)'
+
+  observed_calls:
+    - caller: 'CAT-500 (cat-cat5-b06.dom)'
+      params:
+        LogSegmentNumber: 0
+      expectation: >-
+        Observed while 412B FSCNT was still failing to write its OUT parameter:
+        CAT-500's 413B disconnect arrived with LogSegmentNumber=0 and MISMATCHED
+        the real segment. That was a downstream symptom of the 412B OUT-parameter
+        defect, not a 413B defect - the caller was passing back the stale 0 it
+        had read from the unwritten OUT cell.
+      note: 'See 412B_FileAsSegment.yaml emulation.discrepancies. Commit 73ac594.'
+
+  verified:
+    - claim: 'The file is NOT closed by this call, and CloseFile disconnects automatically.'
+      evidence: >-
+        Both are manual statements; the handler leaves the open-file entry in use
+        and clears only mapped_as_segment / mapped_segment_no /
+        segment_access_type.
+
+  unverified:
+    - >-
+      INCOMPLETE - this handler is BOOKKEEPING-ONLY and known to be so. It clears
+      flags. It does NOT (a) write the segment's pages back to the file when the
+      file was mapped WRITABLE, nor (b) free the segment / capability that 412B
+      allocated. This is explicitly flagged as outstanding in
+      nd500x/docs/HANDOFF_412B_FSCNT_FileAsSegment.md
+      ("STILL TODO ... 413B FSCDNT: still only clears flags"). It has been
+      survivable only because CAT-500's input mapping is read-only.
+    - >-
+      Consequence of the above: after 413B the physical pages and the domain's
+      data capability LEAK, and a subsequent 412B on the same logical segment
+      number sees state 412B's own allocator - not 413B - has to reconcile.
+    - >-
+      The carve for 413B was NOT usable as a contract source for the same reason
+      as 412B (routing proven; body semantics unverified). The argument and error
+      contract here is manual-based plus caller-observed.
+    - >-
+      Whether real SINTRAN errors at all when the named segment does not match
+      the file's mapping (nd500x returns 174B) is not established.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - carve: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/413B-FileNotAsSegment/
+      note: 'Routing only; body semantics unverified (same caveat as 412B).'
+    - doc: nd500x/docs/HANDOFF_412B_FSCNT_FileAsSegment.md
+      note: 'Section "STILL TODO" records the missing write-back + free.'
+    - commit: '73ac594 (nd500x) - the 412B OUT-parameter fix that also explains 413B''s observed mismatch'

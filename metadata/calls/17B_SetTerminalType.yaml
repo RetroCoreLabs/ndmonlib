@@ -1,0 +1,179 @@
+octal: 17B
+name: SetTerminalType
+short_names:
+- MSTTY
+description: 'Sets the type of a terminal. The terminal type tells SINTRAN III how to handle a particular
+  terminal. A wrong terminal type normally distorts the screen. The function keys cannot be used.
+
+
+  - Appendix H lists the terminal types.
+
+  - Public background users may only set the terminal type for their own terminal. A background program
+  must be run from user SYSTEM or RT to set the terminal type for another terminal.'
+see_also:
+- GetTerminalType
+- '@SET-TERMINAL-TYPE'
+parameters:
+- name: DeviceNumber
+  type: INTEGER2
+  io: I
+  description: The logical device number of the terminal. Use 1 for your own terminal in background programs.
+- name: TerminalType
+  type: INTEGER2
+  io: I
+  description: The terminal type. See appendix H for terminal types.
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNumber, TerminalType : INTEGER2;
+
+      ...
+
+      SetTerminalType(DeviceNumber, TerminalType);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 DeviceNumber COMP.
+
+      01 TerminalType COMP.
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "SetTerminalType" USING DeviceNumber, TerminalType.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNumber, TerminalType
+
+      ...
+
+      Monitor Call(''SetTerminalType'', DeviceNumber, TerminalType)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER : DeviceNumber, TerminalType\n...\nON ROUTINEERROR DO\n    IF ErrCode <> 0 THEN ...\n\
+      ENDON\n\nMonitor_Call('SetTerminalType', DeviceNumber, TerminalType)"
+  assembly_500:
+    available: true
+    code: 'DeviceNumber : W BLOCK 1
+
+      TerminalType : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      SetTerminalType : EQU 37B9 + 17B
+
+      ...
+
+      CALLG SetTerminalType, 2, DeviceNumber, TerminalType
+
+      IF K GO ERROR
+
+      ...
+
+
+      ERROR : W1 =: ErrCode             %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 17B
+  mac:
+    available: true
+    code: 'LDT DEVNO        %Logical device number.
+
+      LDA TYPE         %Terminal type number.
+
+      MON 17           %Monitor call SetTerminalType.
+
+      JMP ERROR        %Error return from monitor call.
+
+      ...              %Normal return.
+
+      ERROR, ...       %Error number in register A.
+
+      ...
+
+
+      DEVNO, ...
+
+      TYPE, ...
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 17
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 477
+  line: 21767
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: stub
+  nd500x_handler: nd500x/src/libmon/handlers/mon_17B_SetTerminalType.c
+  last_updated: '2026-07-17'
+
+  stub_behaviour: >-
+    ACCEPT-AND-IGNORE SUCCESS NO-OP - SAY SO. 17B MSTTY validates nothing and stores
+    nothing: the emulated console has no ND-specific terminal-type behaviour to
+    configure. Consequence worth knowing: a 17B MSTTY followed by a 16B MGTTY does
+    NOT read back the type that was set - 16B always answers 0.
+
+  parameter_notes:
+    - name: TerminalType
+      note: >-
+        Read as a 32-bit word (ND-500 INTEGER = W) despite the manual typing it
+        INTEGER2, then discarded.
+      verified: true
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), startup'
+      expectation: 'Called during startup terminal configuration; only needs not to fail.'
+      note: >-
+        Before this handler existed the auto-generated stub returned error -1 and the
+        linker crashed in startup device configuration. Commit 940ba39.
+
+  return_contract:
+    success: 'K flag cleared.'
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 CALLG args)'
+
+  verified:
+    - claim: 'The linker proceeds past its startup with the accept-and-ignore no-op.'
+      evidence: 'Commit 940ba39: "17B MSTTY (SetTerminalType): accept-and-ignore success no-op."'
+
+  unverified:
+    - >-
+      THE PRIVILEGE RULE IS NOT ENFORCED. The manual says "Public background users
+      may only set the terminal type for their own terminal. A background program
+      must be run from user SYSTEM or RT to set the terminal type for another
+      terminal." nd500x does not check the user and never returns a privilege error.
+      Which error code real SINTRAN returns for that violation is unknown - do not
+      guess one.
+    - >-
+      No terminal type is validated against Appendix H (which we do not hold), so an
+      illegal type is accepted silently.
+    - >-
+      THE CARVE WAS NOT MINED FOR THIS ENTRY. A carve folder exists at
+      .../L-VSX-500/re/mon-analysis/17B-SetTerminalType/ and has not been read in.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'

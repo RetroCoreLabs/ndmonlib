@@ -1,0 +1,143 @@
+# SINTRAN III Monitor Call: OpenFileByIndex
+# Octal: 351B
+# Sourced from: ND-860230-7A-EN SINTRAN III Release Information M-Version,
+#   section 3.2.1 (IOPEN MON 351), pages 28-30.
+
+octal: 351B
+name: OpenFileByIndex
+short_names:
+- IOPEN
+description: >-
+  Open a file by its directory, user and file-object indexes (or return those
+  indexes). The caller may specify either the directory/user/file-object indexes
+  or a file name and file type. If both are given, the file system verifies that
+  the indexes match the file name and type. On success the open-file number is
+  returned in A and the resolved indexes in the D-register buffer. Introduced in
+  the M-version.
+notes:
+- >-
+    NEW in the M-version (ND-860230-7A-EN section 3.2.1). Usable from ND-500/5000
+    programs (M-version pages 31-32).
+- >-
+    ND-100 register convention: D = address of a double-word index buffer;
+    X = address of a file-name/file-type buffer; A = address of a default
+    file-type buffer; T = file access mode. On return A = open-file number,
+    error return via JMP.
+- >-
+    Index buffer (D-register): word 1 most-significant byte = directory index,
+    word 1 least-significant byte = user index, word 2 = file object index. If
+    BOTH words are -1, the file-name/file-type parameters apply and the indexes
+    are returned in this buffer.
+- >-
+    Access mode (T-register) spans three ranges matching existing open calls:
+    0-11B (as MON OPEN, MON 50), 40B-51B (as MON SCROP, MON 235), and
+    100B-111B (as MON DOPEN, MON 220). Within each range the low codes are:
+    0/40B/100B sequential write; 1/41B/101B sequential read; 2/42B/102B random
+    read or write; 3/43B/103B random read only; 4/44B/104B sequential read or
+    write; 5/45B/105B sequential write append; 6/46B/106B random read/write
+    common on contiguous; 7/47B/107B random read common on contiguous; 10B/50B/
+    110B random read/write on contiguous; 11B/51B/111B random read + write append
+    for RFILE/WFILE.
+- >-
+    The default file type (A-register buffer) is used only when the file name in
+    the X-register buffer omits the type, and must not include the leading colon.
+- >-
+    Rules: available to all users with sufficient access to the file. If both file
+    name and file-system indexes are specified, the file system verifies that they
+    match.
+see_also:
+- OpenFile
+- DirectOpen
+- SCRATCHOPEN
+parameters:
+- name: IndexBuffer
+  type: INTEGER
+  io: I/O
+  description: >-
+    D-register: address of a double-word buffer. Word 1 MSB = directory index,
+    word 1 LSB = user index, word 2 = file object index. If both words are -1,
+    the file-name parameters are used and the resolved indexes are returned here.
+- name: FileNameBuffer
+  type: BYTES
+  io: I
+  description: >-
+    X-register: address of buffer holding the file name (and optionally file
+    type). Ignored when the index buffer supplies valid indexes.
+- name: DefaultTypeBuffer
+  type: BYTES
+  io: I
+  description: >-
+    A-register: address of buffer holding the default file type (no leading
+    colon), used only when the file name omits a type.
+- name: AccessMode
+  type: INTEGER
+  io: I
+  description: >-
+    T-register: file access mode. 0-11B (OPEN range), 40B-51B (SCROP range),
+    100B-111B (DOPEN range).
+- name: OpenFileNumber
+  type: INTEGER
+  io: O
+  description: 'A-register on return: the open-file number.'
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: ''
+  cobol:
+    available: false
+    code: ''
+    notes: ''
+  fortran:
+    available: false
+    code: ''
+    notes: ''
+  planc:
+    available: false
+    code: ''
+    notes: ''
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 351B
+    notes: >-
+      MON IOPEN is usable from ND-500/5000 programs (M-version pages 31-32); the
+      release doc does not give an explicit ND-500 CALLG argument layout here.
+  mac:
+    available: true
+    code: |-
+      LDA  (INDEX
+      COPY SA DD      % D = address of index list
+      LDX  (FNAME     % X = address of file name buffer
+      LDA  (FTYPE     % A = address of default file type buffer
+      LDT  ACCES      % T = access mode
+      MON  351        % IOPEN
+      JMP  ERROR      % error return
+      % normal return: A = open file number, D-buffer = resolved indexes
+      % INDEX, 1       % MSB = directory index, LSB = user index
+      %        2       % second word = file object index
+      % FNAME, 'EXAMPL:SYMB'
+      % FTYPE, 'DATA'
+      % ACCES, 3
+    mon_number: 351
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: >-
+    ND-860230-7A-EN SINTRAN III Release Information M-Version, section 3.2.1
+    (IOPEN MON 351), pages 28-30
+  page: 28
+  line: 1266
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-30'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false
+  method: SINTRAN release-doc (M-version) extraction

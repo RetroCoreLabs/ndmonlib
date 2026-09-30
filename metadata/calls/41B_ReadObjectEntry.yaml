@@ -1,0 +1,326 @@
+octal: 41B
+name: ReadObjectEntry
+short_names:
+- ROBJE
+description: 'Gets information about an opened file. An object entry describes each file. It contains
+  the file name, the access rights, the date last opened for read and write, the size, and more. See the
+  file system description in the SINTRAN III System Supervisor (ND-830003). You specify the file number.
+
+
+  - There is one object entry for each version of a file.
+
+  - The device number location in the object entry contains the logical device number and the unit number
+  where the mass-storage file resides. The logical device number is placed in bit 11-0. The unit number
+  in bit 15-12. The location contains the logical device number for peripheral files.'
+see_also:
+- GetObjectEntry
+- SetObjectEntry
+parameters:
+- name: FileNumber
+  type: WORD
+  io: I
+  description: The file number. See OpenFile.
+- name: Buff
+  type: BYTES[64]
+  io: O
+  description: The 64 byte object entry buffer (output). See appendix C.
+examples:
+  pascal:
+    available: true
+    code: 'FileNumber : INTEGER2;
+
+      Buff : ARRAY [0..1] OF RECORD...END;
+
+      ...
+
+      ReadObjectEntry(FileNumber, Buff);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 FileNumber COMP.
+
+      01 Buff.
+
+      02 array COMP OCCURS 32 TIMES.
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "ReadObjectEntry" USING FileNumber, Buff.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER FileNumber
+
+      INTEGER Buff(32)
+
+      ...
+
+      Monitor_Call(''ReadObjectEntry'', FileNumber, Buff(1))
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: 'INTEGER : FileNumber
+
+      BYTES : Buff(0:63)
+
+      ...
+
+      ON ROUTINEERROR DO
+
+      IF ErrCode > 0 THEN ...
+
+      ENDON
+
+      Monitor_Call(''ReadObjectEntry'', FileNumber, Buff(0))'
+  assembly_500:
+    available: true
+    code: 'FileNumber : W BLOCK 1
+
+      Buff : H BLOCK 40B
+
+      ErrCode : W BLOCK 1
+
+      ReadObjectEntry : EQU 37B9 + 41B
+
+      ...
+
+      CALLG ReadObjectEntry, 2, FileNumber, Buff
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 41B
+  mac:
+    available: true
+    code: 'LDT FILNO %File number returned from earlier open.
+
+      LDA {BUFF %Address of buffer to receive object entry.
+
+      MON 41 %Monitor call ReadObjectEntry.
+
+      JMP ERROR %Error return from monitor call.
+
+      ... %Normal return.
+
+      ERROR, ... %Error number in register A.
+
+      ...
+
+      FILNO, ...
+
+      BUFF, 0
+
+      *+40/ %Make a 32 words large buffer.
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 41
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 401
+  line: 18205
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_41B_ReadObjectEntry.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: FileNumber
+      note: >-
+        Read as a 32-bit WORD on the ND-500. The value ROUTES by device class,
+        not only to open files - see device_classes below.
+      verified: false
+
+  device_classes:
+    note: >-
+      nd500x routes FileNumber by class before doing anything else. The class
+      boundaries are attributed to SINTRAN Appendix B in the handler comment;
+      the appendix itself has NOT been re-read in this pass, so treat the
+      terminal ranges as attributed-but-unchecked.
+    classes:
+      - range_octal: '0-77'
+        range_decimal: '0-63'
+        meaning: 'Character devices -> synthetic terminal ObjectEntry'
+        status: implemented
+      - range_octal: '100-177'
+        range_decimal: '64-127'
+        meaning: 'Open mass-storage files -> open-file-table lookup'
+        status: implemented
+      - range_octal: '2000-2077'
+        range_decimal: '1024-1087'
+        meaning: 'Terminals 65-128 -> synthetic terminal ObjectEntry'
+        status: implemented
+      - range_octal: '2700-2777'
+        range_decimal: '1472-1535'
+        meaning: 'Terminals 129-192 -> synthetic terminal ObjectEntry'
+        status: implemented
+      - range_octal: '3000-3077'
+        range_decimal: '1536-1599'
+        meaning: 'Terminals 193-256 -> synthetic terminal ObjectEntry'
+        status: implemented
+      - range_octal: 'all others'
+        meaning: 'unsupported -> error 030B (24 decimal) No such device name'
+        status: implemented
+
+  object_entry_layout:
+    size_bytes: 64
+    note: >-
+      The layout nd500x serialises. Attributed in the handler comment to SINTRAN
+      III System Supervisor (ND-830003) Appendix C and ND-60052-04-EN NORD FILE
+      SYSTEM section 3.1.4. IMPORTANT: the MIDDLE FIELDS ARE KNOWN TO BE
+      BYTE-SHIFTED in our implementation (see discrepancies) - do NOT treat this
+      table as a proven on-the-wire layout.
+    fields:
+      - offset: 0
+        size: 2
+        name: Header
+        note: 'bit 15=Used, 14=Write, 13=Reserved, 12=Modified'
+      - offset: 2
+        size: 16
+        name: ObjectName
+        note: '0x27 (apostrophe) terminated'
+      - offset: 18
+        size: 4
+        name: Type
+        note: 'file type / extension, 0x27 terminated'
+      - offset: 22
+        size: 2
+        name: NextVersion
+      - offset: 24
+        size: 2
+        name: PrevVersion
+      - offset: 26
+        size: 2
+        name: AccessBits
+        note: 'Public / Friend / Own'
+      - offset: 28
+        size: 2
+        name: FileType
+        note: 'T/P/S/I/C/A/M/L flags'
+      - offset: 30
+        size: 2
+        name: DeviceNumber
+      - offset: 32
+        size: 2
+        name: '(reserved)'
+      - offset: 34
+        size: 2
+        name: ObjectIndex
+        note: 'UserIndex << 8 | EntryOffset'
+      - offset: 36
+        size: 2
+        name: CurrentOpenCount
+      - offset: 38
+        size: 2
+        name: TotalOpenCount
+      - offset: 40
+        size: 4
+        name: DateCreated
+      - offset: 44
+        size: 4
+        name: LastDateOpenedForRead
+      - offset: 48
+        size: 4
+        name: LastDateOpenedForWrite
+      - offset: 52
+        size: 4
+        name: PagesInFile
+      - offset: 56
+        size: 4
+        name: BytesInFile
+        note: 'stored as value-1'
+      - offset: 60
+        size: 4
+        name: FilePointer
+        note: 'block pointer'
+
+  return_contract:
+    success: 'K flag cleared; 64 bytes written to Buff.'
+    errors:
+      - code: 24
+        octal: 030B
+        meaning: 'No such device name (FileNumber in no supported class)'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number (mass-storage class, not open)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+
+  verified:
+    - claim: 'The PagesInFile field is correct.'
+      evidence: >-
+        nd500x/docs/MON_COMPLETENESS_MATRIX.md row 41B:
+        "page-count field correct; middle fields byte-shifted (DEFERRED, NC only
+        reads pages)". NC is the only observed consumer and reads only the page
+        count, which is why the shift was survivable.
+    - claim: 'The object-entry dates honour the pinned clock.'
+      evidence: >-
+        With ND500X_PIN_CLOCK set, 41B ROBJE file dates are taken from the pinned
+        instant and OVERRIDE the host stat times, so a full NC run is
+        bit-reproducible. Commit 4fa340a.
+
+  unverified:
+    - >-
+      The synthetic terminal/character-device ObjectEntries are FABRICATED. The
+      names ("TERMINAL", "INPUT", "OUTPUT", "ERROR-LOG", "DEVICE-n",
+      "TERMINAL-n") are emulator inventions, not carved or manual values.
+    - >-
+      The class boundaries above are attributed to SINTRAN Appendix B in a source
+      comment; the appendix has not been re-read to confirm them.
+    - >-
+      The 64-byte layout is attributed to ND-830003 Appendix C / ND-60052-04-EN
+      3.1.4 in a source comment; neither was re-read in this pass, and the
+      implementation is known to disagree with itself (below).
+    - >-
+      The "BytesInFile stored as value-1" convention is recorded in the handler
+      comment but not independently confirmed.
+    - >-
+      Access rights, version links and open counts are not meaningfully
+      populated.
+
+  discrepancies:
+    - was: >-
+        The nd500x-emitted object entry is a faithful 64-byte SINTRAN object
+        entry.
+      is: >-
+        It is NOT. The MIDDLE FIELDS ARE BYTE-SHIFTED. The defect is KNOWN and
+        DEFERRED, because the only observed consumer (NC) reads only the page
+        count, which lands correctly. Anyone relying on any other field must fix
+        the layout first.
+      evidence: >-
+        nd500x/docs/MON_COMPLETENESS_MATRIX.md row 41B, status
+        PARTIAL.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: 'SINTRAN III System Supervisor (ND-830003), Appendix C'
+      note: 'Attributed source of the 64-byte layout (not re-read in this pass).'
+    - doc: 'ND-60052-04-EN NORD FILE SYSTEM, section 3.1.4'
+      note: 'Attributed source of the object-entry structure (not re-read in this pass).'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 41B - PARTIAL, middle fields byte-shifted.'
+    - commit: '4fa340a (nd500x) - object-entry dates routed through the pinnable clock'

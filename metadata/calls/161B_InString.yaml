@@ -1,0 +1,139 @@
+# SINTRAN III Monitor Call: InString
+# Octal: 161B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 161B
+name: InString
+short_names:
+- INSTR
+description: Reads a string of characters from a peripheral device, e.g. a terminal.
+notes:
+- Background programs wait if there are no characters in the device buffer. RT programs continue.
+- All parameters are fetched and returned via the alternative page table.
+- You are advised to use the faster InputString on the ND-500.
+- Appendix F contains an ASCII table.
+see_also:
+- InputString
+- In8AndFlag
+- InUpTo8Bytes
+- In8Bytes
+- In4x2Bytes
+- and OutString
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number of a peripheral device. See appendix B.
+- name: TextRead
+  type: STRING
+  io: O
+  description: Buffer to receive the string of characters read.
+- name: NoOfBytes
+  type: INTEGER
+  io: I
+  description: Maximum number of characters to read.
+- name: Terminator
+  type: INTEGER
+  io: I
+  description: Terminating character. Input stops when this character is read.
+- name: ReturnStatus
+  type: INTEGER
+  io: O
+  description: |-
+    16-bit status word. -1=parameter error. Bits 15:14 indicate:
+    0=max chars read, 1=terminator read, 2=not terminated (RT only), 3=device error.
+    Bits 13:0 contain count of chars read (if bits 15:14 are 0, 1, or 2).
+examples:
+  pascal:
+    available: true
+    code: |-
+      pascal
+      DeviceNo, NoOfBytes, Terminator, ReturnStatus : INTEGER2;
+      TextRead : PACKED ARRAY [0..255] OF CHAR;
+      ...
+      InString(DeviceNo, TextRead, NoOfBytes, Terminator, ReturnStatus);
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP.
+      01 TextRead PIC X(256).
+      01 NoOfBytes COMP.
+      01 Terminator COMP.
+      01 ReturnStatus COMP.
+      ...
+      MONITOR-CALL "InString" USING DeviceNo, TextRead, NoOfBytes,
+                                Terminator, ReturnStatus.
+  fortran:
+    available: true
+    code: |-
+      fortran
+      INTEGER DeviceNo, NoOfBytes, Terminator, ReturnStatus
+      CHARACTER TextRead*256
+      ...
+      Monitor_Call('InString', DeviceNo, TextRead(1:256), NoOfBytes,
+       C                       Terminator, ReturnStatus)
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, NoOfBytes, Terminator, ReturnStatus
+      BYTES : TextRead(0:255)
+
+      Monitor_Call(‘InString’. DeviceNo, TextRead, NoOfBytes, &
+      Terminator, ReturnStatus)
+  assembly_500:
+    available: true
+    code: |-
+      | DeviceNo   | : W BLOCK 1     |
+      |------------|-----------------|
+      | TextRead   | : STRING 4000B  |
+      | NoOfBytes  | : W BLOCK 1     |
+      | Terminator | : W BLOCK 1     |
+      | ReturnStatus | : W BLOCK 1   |
+      | InString   | : EQU 37B9 + 161B |
+
+      CALLG InString, 4, DeviceNo, TextRead, NoOfBytes, Terminator
+      IF K GO Error
+      W1 := ReturnStatus %Status is returned in W1 register.
+
+      Error.
+    octal_definition: 37B9 + 161B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR  %Load register A with address of parameter list.
+      MON 161  %Monitor call InString.
+      STA STAT %Store status returned.
+
+      | STAT. 0 |                       |
+      |---------|-----------------------|
+      | PAR,    | DEVNO %Logical device number |
+      | TEXT    | %String read.         |
+      | COUNT   | %Maximum number of characters to be read. |
+      | TERM    | %Terminator character. |
+
+      DEVNO,
+      TEXT, 0 \
+      **+50/ %Make a string of 80 characters.
+      COUNT, 120 %To read maximum 80 characters.
+      TERM, @' %Terminate reading when @ is read.
+
+
+      ND-100 and ND-500 All users All programs
+    mon_number: 161
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 323
+  line: 14575
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

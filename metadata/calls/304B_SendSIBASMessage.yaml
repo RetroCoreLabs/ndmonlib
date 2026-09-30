@@ -1,0 +1,82 @@
+# SINTRAN III Monitor Call: SendSIBASMessage
+# Octal: 304B
+# Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (section 2.14).
+octal: 304B
+name: SendSIBASMessage
+short_names:
+- MAPSIB
+- MAPS1B
+description: >-
+  Sends a request message to the SIBAS database system (SIBAS inter-process
+  communication carried through RT-common). Internal-use call (manual section
+  2.14). Contract is RE-derived from the labelled handler body.
+notes:
+- >-
+    Internal-use monitor call (manual section 2.14); not intended for user programs.
+- >-
+    Handler MAPSIB at RP-P2-MONCALLS.NPL:1745 - SIBAS IPC via RT-common. VERIFIED
+    (labelled handler body read).
+- >-
+    COLLISION RESOLVED: the manual section 2.14 table prints BOTH 'Performance PERF
+    304B' and 'SendSIBASMessage MAPS1B 304B' against 304B. The NPL source shows 304
+    = SendSIBASMessage (MAPSIB); Performance is really 344B (MOPERFORMANCE,
+    MP-P2-PERF-CODE.NPL:685). The manual '304' for Performance is an OCR/table error.
+- >-
+    Short name printed MAPS1B in the manual is an OCR variant of the source label
+    MAPSIB.
+- >-
+    Caller signature (CALLG/register contents) is not confirmed from the available
+    source.
+see_also:
+- GetSIBASMessage
+- AnswerSIBAS
+parameters: []
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 304B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (section 2.14)
+  handler: >-
+    RP-P2-MONCALLS.NPL:1745 (MAPSIB)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

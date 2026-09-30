@@ -1,0 +1,225 @@
+octal: 317B
+name: ExecuteCommand
+short_names:
+- UECOM
+description: 'Executes a SINTRAN III command. Specify the command name and the parameters as a text string.
+
+
+  - An error message is output if an error occurs. The program does not terminate.
+
+  - Some commands may destroy your program. Commands which affect your program’s memory area should be
+  used with care.
+
+  - Some commands have output, e.g. @LIST-FILES. This is displayed on the terminal.
+
+  - Use SuspendProgram to wait a second between two ExecuteCommands which depend on each other, e.g. CreateFile
+  and OpenFile.
+
+  - It may be advisable to use @enable-escape before this call, to avoid having problems terminating some
+  commands.'
+notes:
+- >-
+    Version history: M-version increased the maximum length of the command buffer
+    from 104 characters to 150 characters
+    (ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md:1093).
+see_also:
+- CallCommand
+- SetCommandBuffer. CallCommand terminates the program if an error occurs
+parameters:
+- name: Command
+  type: STRING
+  io: I
+  description: SINTRAN III command string to execute (up to 35 chars).
+examples:
+  pascal:
+    available: true
+    code: 'Command : PACKED ARRAY [0..34] OF CHAR;
+
+      ...
+
+      ExecuteCommand(Command);'
+  cobol:
+    available: true
+    code: '01 Command    PIC X(35).
+
+      ...
+
+      MONITOR-CALL "ExecuteCommand" USING Command.'
+  fortran:
+    available: true
+    code: 'CHARACTER Command*35
+
+      ...
+
+      Monitor_Call(''ExecuteCommand'', Command(1:35))'
+  planc:
+    available: true
+    code: 'BYTES : Command(0:35)
+
+      ...
+
+      Monitor_Call(''ExecuteCommand'', Command)'
+  assembly_500:
+    available: true
+    code: 'Command : STRING 35
+
+      ExecuteCommand : EQU 37B9 + 317B
+
+      ...
+
+      CALLG ExecuteCommand, 1, Command'
+    octal_definition: 37B9 + 317B
+  mac:
+    available: true
+    code: '|        |                         |
+
+      |--------|-------------------------|
+
+      | LDA    | (CMND                 | %Address of string with SINTRAN command. |
+
+      | MON    | 317                   | %Monitor call ExecuteCommand.            |
+
+      | ...    |                       |                                          |
+
+      | CMND,  | ''CLOSE-FILE 102''      | %Execute CLOSE-FILE 102.                 |
+
+
+
+      | ND-100 and ND-500 | All users | Background programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 181
+  line: 7809
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: stub
+  nd500x_handler: nd500x/src/libmon/handlers/mon_317B_ExecuteCommand.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    STUB - SAY SO. nd500x DECODES the command string correctly and then DOES
+    NOTHING WITH IT: it logs the name and returns success. No SINTRAN command is
+    executed, no subsystem is invoked. Callers therefore believe their command
+    ran when it did not.
+
+  parameter_notes:
+    - name: Command
+      note: >-
+        THE DESCRIPTOR - the hard-won fact. NC and the other VDM front-ends pass
+        the command as a [Length:4][Pointer:4] DESCRIPTOR, not inline text: arg0
+        points at {maxlen, cmd_ptr, ...} and the command text lives AT cmd_ptr,
+        terminated by 0x27 ("'"). mon_read_sintran_string read the descriptor
+        struct directly, saw first byte 0x00, and returned "". nd500x now tries
+        mon_read_descriptor_string() first and falls back to the inline read.
+        12B SETCM uses the SAME layout.
+      verified: true
+    - name: Command
+      note: >-
+        An argument-layout probe is left in the handler, gated on the environment
+        variable ND500X_UECOM_DUMP: it dumps the raw descriptor words, 64 bytes
+        at the descriptor address, and 64 bytes at each of the first three words
+        it points to.
+      verified: true
+
+  observed_calls:
+    - caller: 'NC C front-end (nc-a06.dom) - three invocations per compile'
+      params:
+        Command: "'NC-A', then 'CAT-CAT5-B', then 'NC-A'"
+      expectation: >-
+        NC is a VDM front-end: it parses C, writes machine-independent "CAT code"
+        into the always-open scratch file (SINTRAN file number 0100 octal = 64
+        decimal, SCRATCHnn:DATA), and then invokes the shared BACK-END CODE
+        GENERATOR as a SINTRAN command through this call. By SINTRAN command
+        abbreviation (Users Guide ND-60.050.06 line 1563: "-" separates parts,
+        each abbreviated if unambiguous), 'NC-A' resolves to NC-A06 (the driver
+        itself, nc-a06.dom) and 'CAT-CAT5-B' to the CAT-500 code generator
+        (ND-archive/500/CAT5-CAT/cat-cat5-b06.dom, "CAT-500 - Version B06 -
+        1988-01-05", 280957 bytes).
+      note: >-
+        THIS STUB IS WHY BOUT.NRF WAS ALWAYS 0 BYTES. It was never an
+        emulator or MON-contract bug - it was a MISSING BACK-END. Both emulators
+        stub 317B, so the code generator never runs and the scratch file is never
+        turned into an object. On an older code path the same gap surfaced as the
+        0x080241FC "T1-B" crash (NC walking a stale pass-record because the pass
+        never ran). Commit 15ca5e9; docs/CAT500_UECOM_CSHARP_HANDOFF.md Part A.
+
+  return_contract:
+    success: >-
+      K flag cleared - UNCONDITIONALLY, whether or not anything ran. The manual
+      says an error message is output on error and the program does NOT
+      terminate, so the caller has no reliable way to notice the stub.
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 1 argument supplied)'
+
+  verified:
+    - claim: 'MON 317B dispatches via MCTAB to the L07 worker UECOM.'
+      evidence: >-
+        Carve L-VSX-500 317B-ExecuteCommand/README.md - the whole chain (GOTAB
+        slot, MFELL level switch, MCTAB slot, UECOM worker body) is byte-verified.
+        MCTAB slot (segment 044-S3IDPIT, byte offset 2238) = 050701B = UECOM;
+        UECOM worker body 050701B-050725B in 003-S3CP (byte offset 17282).
+        Reproduced: dd if=044-S3IDPIT.bin bs=1 skip=2238 count=2 -> 51 c1.
+        This folder is the reference that established the MCTAB dispatch model
+        for ALL MON calls.
+    - claim: 'The command arrives as a [len][ptr] descriptor, 0x27-terminated.'
+      evidence: >-
+        Live capture from NC: the three commands decode as 'NC-A',
+        'CAT-CAT5-B', 'NC-A' only via the descriptor read; the direct read gave
+        "". Commit 15ca5e9. NC unchanged by the fix: clean MON 0B LEAVE at instr
+        1902382.
+    - claim: 'CAT-CAT5-B is the code generator, and it runs under nd500x.'
+      evidence: >-
+        cat-cat5-b06.dom validated under nd500x (harness
+        nd500x/test/diag_domload.c): loads, entry 0x08000004,
+        issues TIME/TUSED/RSIO/GSWSP/ROBJE/SETBS/RMAX/SMAX, prints its banner and
+        "Cat-500:" prompt, then reads commands via 503B DVINST. Its strings
+        confirm the role: "code generation : ok", "can't open CAT file", "can't
+        map scratch file into memmory", "can't write to object file",
+        "inline-assembler not implemented for NRF output".
+
+  unverified:
+    - >-
+      NESTED EXECUTION IS NOT IMPLEMENTED on either emulator. The handler
+      comment states it plainly: "Command execution (nested subsystem invocation,
+      e.g. the CAT-500 back-end "CAT-CAT5-B") is not yet performed here".
+    - >-
+      The nd500x registry marks this call MON_STATUS_VALIDATED. That status is
+      about DISPATCH REGISTRATION, not about the call doing its work - it is a
+      stub. Do not read the registry status as a correctness claim.
+    - >-
+      The UECOM worker body IS carved (050701B-050725B) but was not decoded for
+      this note, so what SINTRAN actually does with the command - and what it
+      returns - is unread.
+    - >-
+      The manual's 35-character command limit (per the nd500x registry parameter
+      text) is not enforced; the handler reads up to 256 bytes.
+    - >-
+      The manual warnings "some commands may destroy your program" and "some
+      commands have output ... displayed on the terminal" have no emulator
+      analogue.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/317B-ExecuteCommand/README.md'
+      note: >-
+        MCTAB[317B] = UECOM = 050701B. This folder is the canonical reference for
+        the corrected MCTAB dispatch model (cross-referenced by every other
+        call''s CORRECTED header).
+    - doc: nd500x/docs/CAT500_UECOM_CSHARP_HANDOFF.md
+      note: 'Part A - why BOUT.NRF was 0 bytes; the VDM front-end/back-end architecture.'
+    - doc: 'ND-60.050.06 SINTRAN III Users Guide'
+      note: 'Line 1563 - command abbreviation: "-" separates parts, each abbreviated if unambiguous.'

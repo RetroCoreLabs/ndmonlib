@@ -1,0 +1,158 @@
+# SINTRAN III Monitor Call: SetObjectEntry
+# Octal: 216B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 216B
+name: SetObjectEntry
+short_names:
+- DWOBJ
+description: 'Changes the description of a file. An object entry describes each file. It contains the
+  file name, the access rights, the date it was last opened for read and write, the size, and more. You
+  may use GetObjectEntry to read an object entry, change parts of it, then write it back with SetObjectEntry.
+
+
+  - You specify the directory index, the user index, and the object index.
+
+  - There is one object entry for each version of a file.
+
+  - Only user SYSTEM can change the object entry of a file without read or write access to the file.
+
+  - On the ND-100 you may access files on remote computer systems if the computers are connected through
+  a COSMOS network.'
+see_also:
+- GetObjectEntry
+- GetAllFileIndexes
+- and @CHANGE-OBJECT-ENTRY
+parameters:
+- name: Buffer
+  type: INTEGER2[32]
+  io: I
+  description: The 64 byte object entry. See appendix C.
+- name: DirIndex
+  type: INTEGER2
+  io: I
+  description: The directory index. See GetAllFileIndexes.
+- name: UserIndex
+  type: INTEGER2
+  io: I
+  description: The user index. See GetAllFileIndexes.
+- name: ObjectIndex
+  type: INTEGER2
+  io: I
+  description: The object index. See GetAllFileIndexes.
+- name: SystemId
+  type: STRING
+  io: I
+  description: Remote system identification if bit 7 in DirIndex is set.
+examples:
+  pascal:
+    available: true
+    code: 'Buff : ARRAY [0..1] OF RECORD...END;
+
+      DirIndex, UserIndex, ObjectIndex : INTEGER2;
+
+      ...
+
+      SetObjectEntry(Buff, DirIndex, UserIndex, ObjectIndex);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: "01 Buff.\n   02 array COMP OCCURS 32 TIMES.\n01 DirIndex COMP.\n01 UserIndex COMP.\n01 ObjectIndex\
+      \ COMP.\n01 RemoteFlag COMP.\n01 RemoteSystem PIC X(64).\n01 ErrCode COMP.\n...\nMONITOR-CALL \"\
+      SetObjectEntry\" USING Buff, DirIndex, UserIndex, ObjIndex,\n                                  \
+      \   RemoteFlag, RemoteSystem.\nCALL \"CbError\" USING ErrCode.\nIF ErrCode NOT = 0 GO ..."
+  fortran:
+    available: true
+    code: "INTEGER Buff(32)\nINTEGER DirIndex, UserIndex, ObjIndex, RemoteFlag\nCHARACTER RemoteSystem*64\n\
+      ...\nMonitor_Call('SetObjectEntry', Buff(1), DirIndex, UserIndex, ObjIndex,\n             RemoteFlag,\
+      \ RemoteSystem(1:64))\nIF (ErrCode .NE. 0) THEN ..."
+  planc:
+    available: true
+    code: "BYTES : Buff(0:63)\nINTEGER : DirIndex, UserIndex, ObjIndex, RemoteFlag\nBYTES : RemoteSystem(0:63)\n\
+      ...\nON ROUTINEERROR DO\n  IF ErrCode > 0 THEN ...\nENDON\nMonitor_Call('SetObjectEntry', Buff(0),\
+      \ DirIndex, UserIndex, ObjIndex,&\n  RemoteFlag, RemoteSystem)"
+  assembly_500:
+    available: true
+    code: 'Buff : H BLOCK 32
+
+      DirIndex : W BLOCK 1      %SysId used if bit 7 is set to 1.
+
+      UserIndex : W BLOCK 1
+
+      ObjIndex : W BLOCK 1
+
+      SysId : STRING 20B        %Dummy if not remote system
+
+      ErrCode : W BLOCK 1
+
+      SetObjectEntry : EQU 3789 + 216B
+
+      ...
+
+      CALLG SetObjectEntry, 5, Buff, DirIndex, UserIndex, ObjIndex, SysId
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode     %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 216B
+  mac:
+    available: true
+    code: 'LDA   (REMID)             %Remote identification in register D.
+
+      COPY  SA DD               %Used if bit 15 in register X is set.
+
+      LDA   (BUFF)              %Address of buffer containing source object entry.
+
+      LDT   INDEX               %Left byte: Dir. index, right byte: User index.
+
+      LDX   OBJIX               %Object index.
+
+      MON   216                 %Monitor call SetObjectEntry.
+
+      JMP   ERROR               %Error return from monitor call.
+
+      ...                       %Normal return.
+
+      ERROR, ...                %Error number in register A.
+
+      ...
+
+      BUFF, 0                   %
+
+      *+40/                     %Make a buffer of 32 words.
+
+      INDEX, ...                %Set bit 15 if remote file.
+
+      OBJIX, ...
+
+      REMID, 0                  %Remote system identification string.
+
+      *+32/                     %Space for the string.
+
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+
+      |-------------------|-----------|--------------|'
+    mon_number: 216
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 453
+  line: 20643
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

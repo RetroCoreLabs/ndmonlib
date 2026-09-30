@@ -1,0 +1,104 @@
+# SINTRAN III Monitor Call: SetEscLocalChars
+# Octal: 227B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 227B
+name: SetEscLocalChars
+short_names:
+- MSDAE
+description: You can terminate most programs with the ESCAPE key. A LOCAL key has a similar function. It terminates a connection to a remote computer in a network. This monitor call allows you to select other keys for these functions.
+notes:
+- The local function is only used by COSMOS.
+- Appendix F shows the ASCII values of the characters.
+see_also:
+- SetEscapeHandling
+- GetEscLocalChars
+- OnEscLocalChars
+- OffEscLocalChars
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number. See appendix B. Only used by RT programs. Your own terminal is always used in background program.
+- name: DisconnectChar
+  type: INTEGER
+  io: I
+  description: The local character.
+- name: EscapeChar
+  type: INTEGER
+  io: I
+  description: The escape character.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNo, DisconnectChar, EscapeChar : INTEGER2;
+      ...
+      SetEscLocalChar(DeviceNo, DisconnectChar, EscapeChar);
+    mon_number: null
+    notes: ''
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP.
+      01 DisconChar COMP.
+      01 EscapeChar COMP.
+      ...
+      MONITOR-CALL "SetEscLocalChar" USING DeviceNo, DisconChar, EscapeChar.
+    mon_number: null
+    notes: ''
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo, DisconChar, EscapeChar
+      ...
+      Monitor_Call('SetEscLocalChar', DeviceNo, DisconChar, EscapeChar)
+    mon_number: null
+    notes: ''
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, DisconnectChar, EscapeChar
+      ...
+      Monitor_Call('SetEscLocalChar', DeviceNo, DisconnectChar, EscapeChar)
+    mon_number: null
+    notes: ''
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNo : W BLOCK 1
+      DisconnectChar : W BLOCK 1
+      EscapeChar : W BLOCK 1
+      SetEscLocalChar : EQU 37B9 + 227B
+      ...
+      CALLG SetEscLocalChar, 3, DeviceNo, DisconnectChar, EscapeChar
+    octal_definition: 37B9 + 227B
+  mac:
+    available: true
+    code: |-
+      LDT DEVNO                 %Logical device number.
+      LDA CHAR                  %Left byte: disconnect char,
+                                % right byte: escape char.
+      MON 227                   %Monitor call SetEscLocalHandling.
+      ...
+      DEVNO, ...
+      CHAR, ...
+    mon_number: 227
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 20249
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true

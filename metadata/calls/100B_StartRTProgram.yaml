@@ -1,0 +1,89 @@
+# SINTRAN III Monitor Call: StartRTProgram
+# Octal: 100B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 100B
+name: StartRTProgram
+short_names:
+- RT
+description: |-
+  Starts an RT program. The program is moved to the execution queue. It is executed according to its priority.
+
+  - The program may be in the execution queue. Then it restarts as soon as it terminates.
+  - You can terminate RT programs with StopRTProgram.
+see_also:
+- StartupTime
+- StartupInterval
+- DelayStart
+- and @RT
+parameters:
+- name: RTProgram
+  type: INTEGER
+  io: I
+  description: Address of RT description. Use 0 for your own RT description address.
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTProgram : INTEGER2;
+      ...
+      StartRTProgram(RTProgram);
+  cobol:
+    available: true
+    code: |-
+      01 RTProgram COMP.
+      ...
+      MONITOR-CALL "StartRTProgram" USING RTProgram.
+  fortran:
+    available: true
+    code: |-
+      INTEGER RTProgram
+      ...
+      Monitor_Call('StartRTProgram', RTProgram)
+  planc:
+    available: true
+    code: |-
+      INTEGER : RTProgram
+      ...
+      Monitor_Call('StartRTProgram', RTProgram)
+  assembly_500:
+    available: true
+    code: |-
+      RTProgram : W BLOCK 1
+      StartRTProgram : EQU 37B9 + 100B
+      ...
+      CALLG StartRTProgram, 1, RTProgram
+    octal_definition: 37B9 + 100B
+  mac:
+    available: true
+    code: |-
+      |        |            |                                                  |
+      |--------|------------|--------------------------------------------------|
+      | LDA    | (PAR       | %Load register A with address of parameter list. |
+      | MON    | 100        | %Monitor call StartRTProgram.                    |
+      | ...    |            |                                                  |
+      | PAR,   | RTPRO      | %Address of RT description.                      |
+      | ...    |            |                                                  |
+      | RTPRO, |            |                                                  |
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+      |-------------------|-------------------------|-------------|
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 485
+  line: 22126
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

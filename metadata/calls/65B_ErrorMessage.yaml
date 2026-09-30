@@ -1,0 +1,85 @@
+# SINTRAN III Monitor Call: ErrorMessage
+# Octal: 65B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 65B
+name: ErrorMessage
+short_names:
+- QERMS
+description: |-
+  Displays a file system error message. Appendix A shows the messages connected to each error number. The error number is input. The program terminates.
+
+  - The error message is displayed on the terminal. RT programs write it to the error device. The error device is normally the console.
+  - Do not input error number 0.
+see_also:
+- GetErrorMessage
+- WarningMessage. WarningMessage writes out the error message without terminating the program
+parameters:
+- name: ErrNumber
+  type: INTEGER
+  io: I
+  description: Error number of message to display. Do not input error number 0.
+examples:
+  pascal:
+    available: true
+    code: |-
+      ErrNumber : INTEGER2;
+      ...
+      ErrorMessage(ErrNumber);
+  cobol:
+    available: true
+    code: |-
+      01 ErrNumber COMP.
+      ...
+      MONITOR-CALL "ErrorMessage" USING ErrNumber.
+  fortran:
+    available: true
+    code: |-
+      INTEGER ErrNumber
+      ...
+      Monitor_Call('ErrorMessage', ErrNumber)
+  planc:
+    available: true
+    code: |-
+      INTEGER : ErrNumber
+      ...
+      Monitor_Call('ErrorMessage', ErrNumber)
+  assembly_500:
+    available: true
+    code: |-
+      ErrNumber : W BLOCK 1
+      ErrorMessage : EQU 37B9 + 65B
+      ...
+      CALLG ErrorMessage, 1, ErrNumber
+      IF K GO Error
+      ...
+      Error, ...
+    octal_definition: 37B9 + 65B
+  mac:
+    available: true
+    code: |-
+      LDA ERRNO     %Error number of message to be printed.
+      MON 65        %Monitor call ErrorMessage.
+      ...
+      ERRNO, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 65
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 171
+  line: 7403
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

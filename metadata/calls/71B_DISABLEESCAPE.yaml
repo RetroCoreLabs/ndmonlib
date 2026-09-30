@@ -1,0 +1,174 @@
+# SINTRAN III Monitor Call: DISABLEESCAPE
+# Octal: 71B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 71B
+name: DisableEscape
+short_names:
+- DESCF
+description: The ESCAPE key on the terminal normally terminates a program. This is called user break. This monitor call disables the escape function.
+notes:
+- The escape function is enabled again by EnableEscape.
+- The escape function is enabled when you log out.
+- When escape function is disabled, the escape character is treated as any other character.
+see_also:
+- EnableEscape
+- SetEscapeHandling
+- '@DISABLE-ESCAPE-FUNCTION'
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: The terminal's logical device number. This parameter is ignored for background programs. Your own terminal is always selected.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber : INTEGER2;
+      ...
+      EscapeDisable(DeviceNumber); [Note routine name.]
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNumber COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "DisableEscape" USING DeviceNumber.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNumber
+      ...
+      Monitor_Call('DisableEscape', DeviceNumber)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNumber
+      ...
+      Monitor_Call('DisableEscape', DeviceNumber)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNumber : W BLOCK 1
+      DisableEscape : EQU 37B9 + 71B
+      ...
+      CALLG DisableEscape, 1, DeviceNumber
+    octal_definition: 37B9 + 71B
+  mac:
+    available: true
+    code: |-
+      LDT DEVNO      %Logical device number.
+      MON 71         %Monitor call DisableEscape.
+      ...
+      DEVNO, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 71
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 6699
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_71B_DisableEscape.c
+  last_updated: '2026-07-17'
+
+  health_note: >-
+    71B DESCF IS FINE. It is backed by real per-device state, not a no-op, and its
+    effect is observable in the 1B input path. Recorded explicitly because it sat
+    under suspicion during the linker investigation and was cleared.
+
+  parameter_notes:
+    - name: DeviceNumber
+      note: >-
+        Read as a 32-bit word. Device 0 is NORMALISED TO 1 ("own terminal") - note
+        this is the OPPOSITE of 1B InByte, where device 0 means the command buffer.
+        The manual's own rule is that a background program always uses its own
+        terminal and the device number selects the terminal only for RT programs.
+      verified: false
+
+  return_contract:
+    success: 'K flag cleared.'
+    errors: []
+
+  verified:
+    - claim: >-
+        71B/72B drive REAL per-device state, inherited from the SINTRAN terminal input
+        datafield structure 5TTIFIELD: TerminalState gains escape_inhibited
+        (DFLAG.5IESC, default = escape ENABLED), escape_set, and escape_char (VESCAPE,
+        default 033B / 0x1B).
+      evidence: >-
+        Commit 68e290d, nd500x/src/libmon/mon_terminal_state.h -
+        accessors mon_set/get_escape_enabled, mon_set/get_escape_char,
+        mon_is_escape_break.
+    - claim: >-
+        THE STATE IS ACTUALLY CONSUMED, which is what makes this more than a no-op:
+        with escape DISABLED the escape character passes through 1B InByte as ORDINARY
+        INPUT DATA; with escape ENABLED the same byte is treated as a USER BREAK
+        (console->user_break() is invoked and the call returns error 3 / 003B).
+      evidence: >-
+        nd500x/src/libmon/handlers/mon_1B_InByte.c -
+        mon_is_escape_break(device_no, byte) gate. Commit 68e290d.
+    - claim: >-
+        THE DISPATCH PATH, byte-verified: MON 71B -> ENT14(072167B) -> GOTAB[71B] =
+        MFELL(072114B) -> CALLP(032201B) -> MCTAB[71B] = MCDES, i.e. MCTAB[71B] =
+        005711B = MCDES = 047020B, in segment 003-S3CP.
+      evidence: >-
+        dd if=044-S3IDPIT.bin bs=1 skip=1938 count=2 -> 4e 10. Carve
+        NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/71B-DisableEscape/README.md
+        (CORRECTED 2026-07-15).
+
+  unverified:
+    - >-
+      THE WORKER BODY IS NOT RECOVERABLE FROM THE CARVED BYTES, and the carve says so:
+      GOTAB[71B] = 121417B (byte-proven) points at the F1643 entry stub in overlay
+      025-S3IRPIT, but in this real SINTRAN L image THE 3-WORD F1643 STUB IS ALL ZERO
+      (runtime-populated pointer cells, bounded by NOWTS = 121422B), so the onward
+      transfer to the actual disable-escape routine is NOT byte-followable from a
+      static decode. The named ND-100 worker is not isolated in any carved segment (the
+      DESCF symbol resolves only to the ND-500 side) - the worker body is attached BY
+      NAME ONLY. So nd500x's escape model is built on the MANUAL plus the 5TTIFIELD
+      datafield structure, NOT on a carved worker.
+    - >-
+      Device 0 -> 1 normalisation is a CHOICE the handler makes; no manual text or
+      carve proves that real DESCF treats device 0 as "own terminal".
+    - >-
+      nd500x's DESCF NEVER FAILS - it validates nothing, not even that the device is a
+      terminal. Real DESCF's error returns (e.g. for a non-terminal device, or an RT
+      privilege violation) are unknown. Do not guess a code.
+    - >-
+      The manual's "The escape function is enabled when you log out" (see 72B) is not
+      modelled - there is no logout event in the emulator.
+    - >-
+      NO OBSERVED CALLER with a checked expectation. The 1B handler's comment names the
+      linker as a plausible DESCF caller ("If escape is DISABLED, e.g. the linker
+      called 71B DESCF"), but no trace in the evidence reviewed here records the linker
+      actually issuing 71B. Treat that as INFERENCE.
+    - >-
+      Both 71B and 72B still carry a stale "TODO: Implement" comment in their handler
+      headers despite being implemented in commit 68e290d, and are registered
+      MON_STATUS_IN_PROGRESS. The behaviour is real; the labels lag.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/71B-DisableEscape/README.md
+      note: 'Dispatch carve (MCTAB[71B] = MCDES) and the honest "worker body not recoverable" caveat.'

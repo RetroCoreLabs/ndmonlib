@@ -1,0 +1,209 @@
+# SINTRAN III Monitor Call: GetSystemInfo
+# Octal: 262B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 262B
+name: GetSystemInfo
+short_names:
+- CPUST
+description: Gets various system information. The system number, the CPU type, the SINTRAN III version,
+  the instruction set, the patch indicator, and the system generation time are returned.
+see_also: []
+parameters:
+- name: Number
+  type: INTEGER
+  io: I
+  description: A number. Should always be 0.
+- name: Buffer
+  type: ARRAY
+  io: O
+  description: A 24 byte (12 word) buffer receiving system information (CPU type, SINTRAN version, instruction set, etc.).
+examples:
+  pascal:
+    available: true
+    code: |-
+      Number : INTEGER2;
+      Buff : RECORD...END;
+      ...
+      GetSystemInfo(Number, Buff);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 Number COMP.
+      01 Buff.
+        02 array COMP OCCURS 12 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetSystemInfo" USING Number, Buff.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER Number
+      INTEGER Buff(12)
+      ...
+      Monitor_Call('GetSystemInfo', Number, Buff(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : Number
+      BYTES : Buff(0:23)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode >< 0 THEN ...
+      ENDON
+      Monitor_Call('GetSystemInfo', Number, Buff(0))
+  assembly_500:
+    available: true
+    code: |-
+      Number : W BLOCK 1
+      Buff : H BLOCK 14B
+      ErrCode : W BLOCK 1
+      GetSystemInfo : EQU 3789 + 262B
+      ...
+          CALLG GetSystemInfo, 2. Number, Buff
+          IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode                     %ErrorCode in W1 register.
+    octal_definition: 37B9 + 262B
+  mac:
+    available: true
+    code: |-
+      SAA  0         %Load register A with zero.
+      LDX  (BUFF     %Address of a 12-word long buffer.
+      MON  262       %Monitor call GetSystemInfo.
+      JMP  ERROR     %Error return from monitor call. (If A not 0.)
+      ...            %Normal return.
+      ERROR, ...     %Error number in register A.
+      ...
+
+      BUFF, 0
+      *+14/          %A 12-word long buffer.
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 262
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 285
+  line: 12655
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_262B_GetSystemInfo.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    The handler fills the whole 24-byte buffer, so the shape is right, but most
+    of the fields are FIXED CONSTANTS chosen to describe "an ND-500 running
+    SINTRAN III VSX-500 version L" - they are not read from any emulated system
+    table. The generation-time fields in particular are placeholders.
+
+  parameter_notes:
+    - name: Number
+      note: >-
+        IN parameter, a 32-bit word on ND-500 (W BLOCK). The manual says it
+        should always be 0. nd500x reads it, logs it, and IGNORES it - the same
+        buffer comes back for any value.
+      verified: true
+    - name: Buffer
+      note: >-
+        OUT parameter, 24 bytes = 12 ND-100 words. nd500x writes it BYTE BY BYTE
+        (ctx->write_byte), big-endian for the multi-byte fields, so the layout
+        does not change between ND-100 and ND-500 - this is a byte buffer, not an
+        array of ND-500 W words. OUT-PARAMETER DEFECT CLASS: the buffer IS the
+        result; returning SUCCESS without filling it is the failure shape that
+        cost days on 412B FSCNT (commit 73ac594) and 144B MAGTP function 0
+        (commit 6ad9c09).
+      verified: true
+
+  observed_calls:
+    - caller: 'nd500x guest programs (observed 2026-07-17)'
+      params:
+        Number: 0
+      expectation: >-
+        Returns SysType=500, OS=VSX-500, Version=L. nd500x MON log line:
+        "OUT: SysType=500, OS=VSX-500, Version=L".
+      note: >-
+        Concretely - bytes 6:7 = 500 decimal big-endian (0x01 0xF4), byte 8 = 5
+        (SINTRAN III VSX-500), byte 9 = ASCII 'L' (0x4C).
+
+  return_contract:
+    success: 'K flag cleared; 24 bytes written to Buffer.'
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 arguments supplied)'
+
+  verified:
+    - claim: 'MON 262B dispatches via MCTAB to the L07 worker CPUST in segment 006-S3FS.'
+      evidence: >-
+        Carve L-VSX-500 262B-GetSystemInfo/README.md: MCTAB slot (segment
+        044-S3IDPIT, byte offset 2180) = 063022B = CPUST; the worker is carved in
+        006-S3FS. Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=2180 count=2 -> 66 12.
+    - claim: 'The buffer is 12 words / 24 bytes.'
+      evidence: >-
+        Carve README: "Returns system information into a caller-supplied 12-word
+        (24-byte) buffer", matching the manual and the handler.
+    - claim: 'Bytes 2 and 3 (CPU type, instruction set) are legitimately 0 on an ND-500.'
+      evidence: >-
+        Audit recorded in nd500x/docs/HANDOFF_MON_COMPLETENESS.md:
+        "262B CPUST: fills 24-byte buffer (bytes 2/3=0; oracle says no ND-500
+        encoding)". The manual's CPU-type codes 2-5 are ND-100 variants.
+
+  unverified:
+    - >-
+      THE GENERATION TIME IS FABRICATED. Bytes 14:23 are hard-coded to
+      minutes=0, hours=0, day=1, month=1, year=1990. There is no real SINTRAN
+      generation event in the emulator. Do not treat these as data.
+    - >-
+      Bytes 0:1 report SYSTEM NUMBER 1 even though the input Number observed is
+      0. Whether the field echoes the requested number or names the running
+      system is not established from the manual or the carve.
+    - >-
+      Bytes 4:5 (microprogram version) and 12:13 (patch level indicator) are
+      hard-coded 0. Not verified as correct; simply unmodelled.
+    - >-
+      The 24-byte field layout in the handler header is the manual's, not read
+      out of the carved CPUST worker's stores. The CPUST worker body IS carved in
+      006-S3FS but was not decoded field by field for this note.
+    - >-
+      Byte 8 = 5 ("SINTRAN III VSX-500") and byte 9 = 'L' are chosen to match the
+      carved image's identity (L-VSX-500) - consistent, but the byte 8 code table
+      (1=VSE, 2=VSE-500, 3=RTP, 4=VSX, 5=VSX-500) is transcribed from the handler
+      header and was not re-read from a manual page for this note.
+
+  discrepancies:
+    - was: >-
+        Earlier carve version claimed the call was "misattributed": GOTAB[262B] =
+        066262B routing to an F1737 "compiler dispatch descriptor" in
+        025-S3IRPIT, with the F1737 -> CPUST hop unproven.
+      is: >-
+        An artefact of the disproven dispatch model. The real worker address
+        comes from MCTAB @ 005620B in segment 044-S3IDPIT: MCTAB[262B] = 063022B
+        = CPUST, byte-proven, and that worker IS carved in 006-S3FS.
+      evidence: >-
+        Carve CORRECTED 2026-07-13 header;
+        dd if=044-S3IDPIT.bin bs=1 skip=2180 count=2 -> 66 12.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/262B-GetSystemInfo/README.md'
+      note: 'MCTAB[262B] = CPUST = 063022B, worker carved in 006-S3FS.'
+    - doc: nd500x/docs/HANDOFF_MON_COMPLETENESS.md
+      note: 'Audit line: buffer filled, bytes 2/3 = 0, no ND-500 encoding per the oracle.'

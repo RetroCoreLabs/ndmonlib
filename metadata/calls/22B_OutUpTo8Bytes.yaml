@@ -1,0 +1,178 @@
+# SINTRAN III Monitor Call: OutUpTo8Bytes
+# Octal: 22B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 22B
+name: OutUpTo8Bytes
+short_names:
+- M8OUT
+description: Writes up to 8 characters to a device, e.g. a terminal or an internal device.
+notes:
+- You can only use this monitor call for terminals, TADs, internal devices, and synchronous modems.
+- The writing terminates when a character with value 0 is found. The 0 byte is not output.
+- Appendix F contains an ASCII table.
+- Standard Error Code is returned via ErrCode variable in high-level languages, or in W1 register for ASSEMBLY-500. The K flag indicates if an error occurred.
+see_also:
+- OutMessage
+- Out8Bytes
+- OutputString
+- OutString
+- OutNumber
+- OutByte
+- and InUpTo8Bytes
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number. Use 1 for your own terminal. File numbers are illegal.
+- name: OutData
+  type: STRING
+  io: I
+  description: The 8 characters to be written (writing stops at first 0 byte).
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNo : INTEGER2;
+      OutData : RECORD...END;
+      ...
+      OutUpTo8Bytes(DeviceNo, OutData);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP.
+      01 OutData PIC X(8).
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "OutUpTo8Bytes" USING DeviceNo, OutData.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo
+      CHARACTER OutData*8
+      ...
+      Monitor_Call('OutUpTo8Bytes', DeviceNo, OutData(1:8))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |2-
+          INTEGER : DeviceNo
+          BYTES : OutData(0:7)
+          ...
+          ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+          ENDON
+          Monitor_Call('OutUpTo8Bytes', DeviceNo, OutData)
+  assembly_500:
+    available: true
+    code: |2-
+          DeviceNo : W BLOCK 1
+          OutData : STRINGDATA 8
+          ErrCode : W BLOCK 1
+          OutUpTo8Bytes : EQU 37B9 + 22B
+          ...
+          CALLG OutUpTo8Bytes, 2, DeviceNo, OutData
+          IF K GO ERROR
+          ...
+          ERROR : W1 =: ErrCode               %ErrorCode in W1 register.
+    octal_definition: 37B9 + 22B
+  mac:
+    available: true
+    code: |2-
+          LDT  DEVNO           %Logical device address.
+          LDD  BYTES           %First 4 bytes to be written.
+          LDX  BYTES+2         %Next 2 bytes to be written.
+          COPY SX DL
+          LDX  BYTES+3         %Last 2 bytes to be written.
+          MON  22              %Monitor call OutUpTo8Bytes.
+          JMP  ERROR           %Error return from monitor call.
+          ...
+                                %Normal return.
+          ERROR, ...           %Error number in register A.
+          ...
+          DEVNO, ...
+          BYTES, 'HELLO!!!'
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 22
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 387
+  line: 17522
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_22B_OutUpTo8Bytes.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: OutData
+      note: >-
+        Taken as a RAW BYTE ADDRESS (arg_addresses[1]) and read byte by byte - NOT
+        as an ND-500 [Length][Pointer] descriptor and NOT as a 0x27-terminated
+        SINTRAN string. Contrast 32B OutMessage (descriptor) and 162B OutString
+        (descriptor in its 2-arg form). If a caller passes a descriptor here it will
+        print the descriptor bytes.
+      verified: true
+    - name: DeviceNo
+      note: '32-bit word. File numbers are rejected before anything is written.'
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; 0 to 8 bytes written.'
+    errors:
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (a file number was passed - the manual says file numbers are illegal)'
+      - code: 24
+        octal: 030B
+        meaning: 'No such device name (not a character device or terminal)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 CALLG args)'
+
+  verified:
+    - claim: >-
+        Writing stops at the first 0 byte and the 0 is NOT output; at most 8 bytes
+        are written.
+      evidence: >-
+        Implements the manual's own rule ("Writing terminates when a character with
+        value 0 is found. The 0 byte is not output.") - mon_22B_OutUpTo8Bytes.c
+        loop over i < 8 with break on b == 0.
+    - claim: >-
+        File numbers are rejected, per the manual's "Only for terminals, TADs,
+        internal devices, and synchronous modems. File numbers are illegal."
+      evidence: 'is_mass_storage_file(device_no) -> error 124 (174B), before any output.'
+
+  unverified:
+    - >-
+      NO OBSERVED CALLER. No traced program (NC, CAT-500, ND linker) issues 22B; they
+      use 504B DVOUTS / 162B OUTST. Implemented but NOT proven end to end.
+    - >-
+      Error 124 (174B Illegal parameter) for the file-number case is a CHOICE, not a
+      read value - the manual says file numbers are illegal but does not give the
+      code it returns.
+    - >-
+      TADs, internal devices and synchronous modems (the other device classes the
+      manual permits) are not modelled at all; nd500x accepts only character
+      devices and terminals and returns 24 (030B) for everything else.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'

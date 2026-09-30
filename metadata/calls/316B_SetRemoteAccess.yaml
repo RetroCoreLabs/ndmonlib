@@ -1,0 +1,105 @@
+octal: 316B
+name: SetRemoteAccess
+short_names:
+- SRLMO
+description: 'Switches remote file access on and off. The COSMOS network allows you to access files in
+  remote computers directly. Use DefaultRemoteSystem or QSET-DEFAULT-REMOTE-SYSTEM to specify a default
+  remote system. If a file does not exist in the local system, the default remote system is searched.
+  SetRemoteAccess switches this function on and off.
+
+
+  - You may include a remote system identification in the file name. Only the specified system is searched.
+
+  - This monitor call is only available with COSMOS.'
+see_also:
+- QSET-LOCAL-MODE or QSET-REMOTE-MODE
+parameters:
+- name: Mode
+  type: INTEGER2
+  io: I
+  description: Remote mode flag. Use 0 to switch remote mode off. Switch it on with 1.
+examples:
+  pascal:
+    available: true
+    code: 'Mode : INTEGER2;
+
+      ...
+
+      SetRemoteAccess(Mode);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 Mode COMP.
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "SetRemoteAccess" USING Mode.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER Mode
+
+      ...
+
+      Monitor Call(''SetRemoteAccess'', Mode)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: 'INTEGER : Mode
+
+      ...
+
+      ON ROUTINEERROR DO
+
+      &nbsp;&nbsp;&nbsp;&nbsp;IF ErrCode > 0 THEN ...
+
+      ENDON
+
+      Monitor_Call(''SetRemoteAccess'', Mode)'
+  assembly_500:
+    available: true
+    code: 'Mode : W BLOCK 1
+
+      SetRemoteAccess : EQU 37B9 + 316B
+
+      ...
+
+      CALLG SetRemoteAccess, 1, Mode'
+    octal_definition: 37B9 + 316B
+  mac:
+    available: true
+    code: 'LDA | MODE | %Local / Remote Flag.
+
+      --- | --- | ---
+
+      MON | 316 | %Monitor call SetRemoteAccess.
+
+      ... | ... | ...
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 465
+  line: 21202
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

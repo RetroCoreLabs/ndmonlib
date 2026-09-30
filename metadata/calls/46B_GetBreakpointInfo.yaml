@@ -1,0 +1,94 @@
+# SINTRAN III Monitor Call: GetBreakpointInfo
+# Octal: 46B
+# Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (section 2.14).
+# The manual lists this call name-only (internal use); contract below is RE-derived.
+octal: 46B
+name: GetBreakpointInfo
+short_names:
+- GBRK
+description: >-
+  ND-100 debug monitor call: get information on a debug breakpoint (manual section
+  2.14, short name GBRK). Part of the ND-100 debugger family (45/46/47/51) served
+  by the DEBUGGER / BRPNT handler bodies. Internal-use call.
+notes:
+- >-
+    Internal-use monitor call (manual section 2.14); not intended for user programs.
+- >-
+    One of the ND-100 debugger MON calls 45/46/47/51; the requester's mapping ties
+    46B (GBRK) to reading breakpoint information.
+- >-
+    Two readable handler bodies serve the ND-100 debug MON calls: DEBUGGER
+    (RP-P2-MONCALLS.NPL:2043), a 16-subfunction GOSW, and BRPNT (:1965), the
+    breakpoint-trap handler. VERIFIED (labelled handler bodies read).
+- >-
+    UNCERTAIN - the exact MON-number -> handler binding for 45/46/47/51 is NOT in the
+    NPL source tree; it lives in the absent monitor-level CALLPROC dispatch. Which of
+    these numbers selects DEBUGGER versus BRPNT cannot be confirmed from source.
+- >-
+    DEBUGGER subfunctions (index in caller's T-register GOSW): 0 GETDSEG, 1 PLAC1,
+    2 PSTART, 3 READLOC, 4 WRITLOC, 5 RELDSEG, 6 RTGDBSEG, 7 CHLGSEG, 8 RRGBLOCK,
+    9 WRGBLOCK, 10 STRRT, 13 DWPERMIT, 14 DWPROTECT, 15 PLREENTRANT.
+- >-
+    Caller signature (CALLG/T-register contents) is unverified; no confirmed parameter
+    block.
+see_also:
+- DefineBreakpoint
+- SetBreakpoint
+- DMACBreakpoint
+parameters:
+- name: SubFunction
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - DEBUGGER subfunction index (0..15) presumed passed in the
+    caller's T-register and dispatched through the 16-entry GOSW (see notes).
+    The exact caller convention is not confirmed from the available source.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 46B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: true
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (section 2.14)
+  handler: >-
+    RP-P2-MONCALLS.NPL:2043 (DEBUGGER), :1965 (BRPNT)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

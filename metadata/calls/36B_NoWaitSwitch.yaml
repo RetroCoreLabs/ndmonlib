@@ -1,0 +1,116 @@
+# SINTRAN III Monitor Call: NoWaitSwitch
+# Octal: 36B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 36B
+name: NoWaitSwitch
+short_names:
+- NOWT
+description: |-
+  Switches No Wait on and off. No Wait is useful for input from, and output to several devices simultaneously. In No Wait, the program does not wait for input or output to complete. Monitor calls like InByte return error code 3 instead.
+
+  - **SuspendProgram** or **WaitForRestart** may passivate the program afterwards. The program restarts when input or output to the device is completed.
+  - For performance reasons, use **TerminalNoWait** (TNOWAI, mon 307) rather than NoWaitSwitch.
+see_also:
+- InByte
+- OutByte
+- and TerminalNoWait
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: Logical device number of a character device. See appendix B.
+- name: IOFlag
+  type: INTEGER
+  io: I
+  description: Input or output flag. 0=input, 1=output.
+- name: WaitFlag
+  type: INTEGER
+  io: I
+  description: No Wait flag. 0=switch No Wait off, non-zero=switch it on.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber, IOFlag, WaitFlag : INTEGER2;
+      ...
+      NoWaitSwitch(DeviceNumber, IOFlag, WaitFlag);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNumber COMP.
+      01 IOFlag COMP.
+      01 WaitFlag COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "NoWaitSwitch" USING DeviceNumber, IOFlag, WaitFlag.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNumber, IOFlag, WaitFlag
+      ...
+      Monitor_Call('NoWaitSwitch', DeviceNumber, IOFlag, WaitFlag)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNumber, IOFlag, Waitflag
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode >< 0 THEN ...
+      ENDON
+      Monitor_Call('NoWaitSwitch', DeviceNumber, IOFlag, Waitflag)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNumber : W BLOCK 1
+      IOFlag : W BLOCK 1
+      WaitFlag : W BLOCK 1
+      ErrCode : W BLOCK 1
+      NoWaitSwitch : EQU 37B9 + 36B
+      ...
+      CALLG NoWaitSwitch, 3, DeviceNumber, IOFlag, WaitFlag
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode                      %ErrorCode in W1 register.
+    octal_definition: 37B9 + 36B
+  mac:
+    available: true
+    code: |-
+      LDA   (PAR                %Load register A with address of parameter list.
+      MON   36                  %Monitor call NoWaitSwitch.
+      JAF   ERROR               %Handle error if register A is non-zero.
+      ...
+      ERROR, ...                %Handle this error.
+      ...
+      PAR,  DEVNO               %Logical device number.
+      IOF                       %Input/output flag.
+      WAITFL                    %No Wait flag.
+      ...
+      DEVNO, ...
+      IOF, ...
+      WAITFL, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 36
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 359
+  line: 16159
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

@@ -1,0 +1,124 @@
+octal: 101B
+name: DelayStart
+short_names:
+- SET
+description: 'Starts an RT program after a specified time. The RT program is put in the time queue. It
+  is moved to the execution queue after the specified period.
+
+
+  - RT programs already in the time queue are reinserted according to the new specifications.
+
+  - AdjustClock and @CLADJ do not affect the specified period.
+
+  - A period less than or equal to 0 moves the RT program to the execution queue the next time the basic
+  time unit counter is incremented.'
+see_also:
+- '@SET'
+- StartupTime
+parameters:
+- name: RTProgram
+  type: INTEGER2
+  io: I
+  description: Address of the RT description. Use 0 for the calling program.
+- name: TimeUnits
+  type: INTEGER2
+  io: I
+  description: The number of time units to stay in the time queue.
+- name: UnitType
+  type: INTEGER2
+  io: I
+  description: Time unit type. 1=basic units (1/50s), 2=seconds, 3=minutes, 4=hours.
+examples:
+  pascal:
+    available: true
+    code: 'RTProgram, TimeUnits, UnitType : INTEGER2;
+
+      ...
+
+      DelayStart(RTProgram, TimeUnits, UnitType);'
+  cobol:
+    available: true
+    code: '01 RTProgram COMP.
+
+      01 TimeUnits COMP.
+
+      01 UnitType COMP.
+
+      ...
+
+      MONITOR-CALL "DelayStart" USING RTProgram, TimeUnits, UnitType.'
+  fortran:
+    available: true
+    code: 'INTEGER RTProgram, TimeUnits, UnitType
+
+      ...
+
+      Monitor_Call(''DelayStart'', RTProgram, TimeUnits, UnitType)'
+  planc:
+    available: true
+    code: 'INTEGER : RTProgram, TimeUnits, UnitType
+
+      ...
+
+      Monitor_Call(''DelayStart'', RTProgram, TimeUnits, UnitType)'
+  assembly_500:
+    available: true
+    code: 'RTProgram : W BLOCK 1
+
+      TimeUnits : W BLOCK 1
+
+      UnitType : W BLOCK 1
+
+      DelayStart : EQU 37B9 + 101B
+
+      ...
+
+      CALLG DelayStart, 3, RTProgram, TimeUnits, UnitType'
+    octal_definition: 37B9 + 101B
+  mac:
+    available: true
+    code: 'LDA  (PAR   %Load register A with address of parameter list.
+
+      MON  101    %Monitor call DelayStart.
+
+      ...
+
+
+      PAR,
+
+      RTPRO
+
+      TIME
+
+      BASE
+
+      ...
+
+
+      RTPRO, ...  %Address of RT description.
+
+      TIME,  ...  %Number of time units.
+
+      BASE,  ...  %Base time units.
+
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |'
+    mon_number: 101
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 135
+  line: 5816
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

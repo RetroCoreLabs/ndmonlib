@@ -1,0 +1,58 @@
+# SINTRAN III Monitor Call: ErrorReturn
+# Octal: 400B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 400B
+name: ErrorReturn
+short_names:
+- MACROE
+description: Terminates the program and sets an error code. The error code can be tested by the commands IF-ERROR-MACRO-STOP and IF-ERROR-FULL-STOP commands in the ND-500 Monitor. See the manual ND Linker User Guide and Reference Manual (ND-860289) for details about macros.
+notes: []
+see_also: []
+parameters: []
+examples:
+  pascal:
+    available: true
+    code: |-
+      ErrorReturn;
+  cobol:
+    available: true
+    code: |-
+      MONITOR-CALL "ErrorReturn".
+  fortran:
+    available: true
+    code: |-
+      Monitor_Call('ErrorReturn')
+  planc:
+    available: true
+    code: |-
+      Monitor_Call('ErrorReturn')
+  assembly_500:
+    available: true
+    code: |-
+      ErrorReturn : EQU 37B9 + 400B
+      ...
+      CALLG ErrorReturn, 0
+    octal_definition: 37B9 + 400B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 173
+  line: 7480
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

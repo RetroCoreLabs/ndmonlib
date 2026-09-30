@@ -1,0 +1,93 @@
+# SINTRAN III Monitor Call: PIOCFunction
+# Octal: 255B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 255B
+name: PIOCFunction
+short_names:
+- PIOCM
+description: PIOC is a programmable input and output processor primarily used in data communication to handle networks like X.25 and Ethernet. It is controlled via a monitor call from SINTRAN III. More details, functions, and examples are provided in the PIOC Software Guide (ND-860161). PIOC is based on an MC 68000 processor. A PLANC compiler is available for PIOC.
+notes:
+- See the PIOC Software Guide (ND-860161) for more details, functions, and examples.
+- 'Function number (0-7). Stored in the ND-100 T-register: 0: Reserve the ND-100 side of a slot. 1: Release the ND-100 side of a slot. 2: Send information to a PIOC-process. 3: Read a message from a PIOC-process. 4: Load segment into PIOC memory. 5: Unload all segments from PIOC memory. 6: Start the PIOC. 7: Stop the PIOC.'
+- 'Status code (octal): 1: Successful execution. 2: No answer from the PIOC ND-100 driver. -10: No privilege. This call may only be used by user SYSTEM, from an RT-program or from ring 2. -11: Function not allowed before the PIOC is started. -24: Illegal function code. -25: The slot is occupied by another process. -26: Illegal slot number. -27: Slot not reserved by you. -30: The mailbox is not empty so it cannot receive information. -31: The mailbox is empty. No message to fetch. -32: Illegal LDN. -33: The PIOC is not initiated. -34: The PIOC memory is not all fixed. 41: Space not available. 42: Illegal segment. 43: Segment not loaded. 44: Attempt to fix demand segment. 45: Attempt to fix too many pages. 46: Segment already fixed at different address.'
+see_also:
+- XMSGFunction
+- HDLCFunction
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical Device number. Specifies which PIOC module to access.
+- name: SlotNo
+  type: INTEGER
+  io: I
+  description: Slot number (1-8). Refers to the PIOC kick channel. Not applicable for functions 4, 5, 6, or 7.
+- name: FuncNo
+  type: INTEGER
+  io: I
+  description: Function number (0-7). Further details are on the following page.
+- name: Message
+  type: INTEGER
+  io: I
+  description: The message itself (2 bytes of information). Used by functions 2 and 3.
+- name: SegNo
+  type: INTEGER
+  io: I
+  description: Segment number to be loaded. Applicable for function 4.
+- name: PageNo
+  type: INTEGER
+  io: I
+  description: Page number where the loading should start. Applicable for function 4.
+- name: Status
+  type: INTEGER
+  io: O
+  description: Status code (octal). Further details are on the following page.
+examples:
+  pascal:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  cobol:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  fortran:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  planc:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  assembly_500:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 0
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

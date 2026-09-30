@@ -1,0 +1,186 @@
+# SINTRAN III Monitor Call: GetCurrentTime
+# Octal: 113B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 113B
+name: GetCurrentTime
+short_names:
+- CLOCK
+description: |-
+  Gets the current system time and date.
+
+  - The current system time is returned as basic time units, seconds, minutes, hours, day, month, and year.
+see_also:
+- GetBasicTime
+- AdjustClock
+- SetClock
+- and @DATCL
+parameters:
+- name: TimeBuffer
+  type: ARRAY
+  io: O
+  description: |-
+    Buffer to receive 7 integers containing:
+    [0] = basic time units (1/50th second)
+    [1] = seconds
+    [2] = minutes
+    [3] = hours
+    [4] = day
+    [5] = month
+    [6] = year
+examples:
+  pascal:
+    available: true
+    code: |-
+      TimeBuffer : record;
+      ...
+      GetCurrentTime(TimeBuffer);
+  cobol:
+    available: true
+    code: |-
+      01 TimeBuffer.
+         02 array COMP OCCURS 7 TIMES.
+         ...
+      MONITOR-CALL "GetCurrentTime" USING TimeBuffer.
+  fortran:
+    available: true
+    code: |-
+      INTEGER TimeBuffer(7)
+      ...
+      Monitor_Call('GetCurrentTime', TimeBuffer(1))
+  planc:
+    available: true
+    code: |-
+      INTEGER ARRAY : TimeBuffer(0:6)
+      ...
+      Monitor_Call('GetCurrentTime', TimeBuffer(0))
+  assembly_500:
+    available: true
+    code: |-
+      TimeBuffer : W BLOCK 7
+      GetCurrentTime : EQU 37B9 + 113B
+      ...
+      CALLG GetCurrentTime, 1, TimeBuffer
+    octal_definition: 37B9 + 113B
+  mac:
+    available: true
+    code: |-
+      | Instruction | Parameter | Comment                                      |
+      |-------------|-----------|----------------------------------------------|
+      | LDA         | (PAR      | %Load register A with address of parameter list. |
+      | MON         | 113       | %Monitor call GetCurrentTime.                 |
+      | ...         |           |                                              |
+      | PAR,        | CLOK      |                                              |
+      | ...         |           |                                              |
+      | CLOK, 0     |           | %Basic time units.                           |
+      |             | 0         | %Seconds.                                    |
+      |             | 0         | %Minutes.                                    |
+      |             | 0         | %Hours.                                      |
+      |             | 0         | %Day.                                        |
+      |             | 0         | %Month.                                      |
+      |             | 0         | %Year.                                       |
+
+
+      | ND-100 and ND-500 | All users | All programs |
+      |-------------------|-----------|--------------|
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 227
+  line: 9775
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_113B_GetCurrentTime.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    Fully implemented against a real clock source. By default it uses the host
+    localtime; with the environment variable ND500X_PIN_CLOCK set it uses a
+    pinned UTC instant so a whole compile run is bit-reproducible (commit
+    4fa340a). ND500X_PIN_CLOCK=1 pins to 1990-01-01 12:00:00 UTC (epoch
+    631195200) - the instant AGREED WITH the RetroCore C# emulator so both
+    produce an identical MON time stream for a cross-emulator checkpoint diff.
+    ND500X_PIN_CLOCK=<secs> pins to an arbitrary epoch.
+
+  parameter_notes:
+    - name: TimeBuffer
+      note: >-
+        OUT parameter, and the ONLY output - there is no W1 return. On ND-500
+        each of the 7 elements is a 32-bit word (W BLOCK), so the handler writes
+        at byte offsets +0, +4, +8, +12, +16, +20, +24 - a 28-byte buffer, not
+        the 14 bytes an ND-100 (H) reading would give. On ND-100 INTEGER is a
+        16-bit halfword; getting this wrong silently shifts every field.
+      verified: true
+    - name: TimeBuffer
+      note: >-
+        OUT-PARAMETER DEFECT CLASS - this call's entire result is its OUT
+        parameter. Returning SUCCESS without writing all 7 words is the failure
+        shape that cost days on 412B FSCNT (commit 73ac594) and 144B MAGTP
+        function 0 (commit 6ad9c09): the caller reads a stale cell and dies far
+        away. The write IS the contract.
+      verified: true
+    - name: 'TimeBuffer[0]'
+      note: >-
+        Basic time units SINCE MIDNIGHT, computed as
+        (hour*3600 + min*60 + sec) * 50. 50 basic time units per second (20 ms
+        each).
+      verified: true
+    - name: 'TimeBuffer[6]'
+      note: 'Year is the last two digits (tm_year % 100), e.g. 85 for 1985, 90 for 1990.'
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; 7 words written to TimeBuffer.'
+    errors:
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 1 argument supplied)'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (host time breakdown failed - an emulator-side guard)'
+
+  verified:
+    - claim: 'MON 113B dispatches via MCTAB to the L07 worker CLOCK in segment 003-S3CP.'
+      evidence: >-
+        Carve L-VSX-500 113B-GetCurrentTime/README.md: MCTAB slot (segment
+        044-S3IDPIT, byte offset 1974) = 040756B = CLOCK; CLOCK worker body
+        carved at 040756B-040765B in 003-S3CP (byte offset 9180). Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=1974 count=2 -> 41 ee.
+    - claim: 'The pinned clock makes a full NC run bit-reproducible.'
+      evidence: >-
+        Commit 4fa340a: "Verified: 6/6 fresh pinned runs bit-identical; full
+        ctest 18/18 pass." 113B is one of the calls routed through it.
+
+  unverified:
+    - >-
+      The CLOCK worker body is carved but was not decoded field by field for
+      this note, so the buffer layout above is the MANUAL's, cross-checked only
+      against the handler - not read from the carved worker's stores.
+    - >-
+      Whether real SINTRAN returns local time or UTC. nd500x uses host LOCALTIME
+      when unpinned and GMTIME when pinned (mon_clock_breakdown), so the two
+      modes can differ by the host's timezone offset. Not settled from a manual.
+    - >-
+      Not yet audited against the carve - listed under "NOT yet audited vs carve"
+      in nd500x/docs/HANDOFF_MON_COMPLETENESS.md.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/113B-GetCurrentTime/README.md'
+      note: 'MCTAB[113B] = CLOCK = 040756B, worker carved in 003-S3CP.'
+    - doc: nd500x/src/libmon/mon_clock.c
+      note: 'The pinnable clock source (ND500X_PIN_CLOCK), shared with 114B, 142B and 41B.'

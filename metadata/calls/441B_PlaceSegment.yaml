@@ -1,0 +1,117 @@
+# SINTRAN III Monitor Call: PlaceSegment
+# Octal: 441B
+# Sourced from: ND-860230-7A-EN SINTRAN III Release Information M-Version,
+#   section 5.9.1 (PLACE MON 441), page 39.
+
+octal: 441B
+name: PlaceSegment
+short_names:
+- PLACE
+description: >-
+  Place a program or data segment (ND-500/5000 only). Maps a portion of a file
+  (given by name, byte offset and byte size) onto a logical ND-500/5000 segment
+  with the specified logical type and attributes, and returns the segment number.
+  To disconnect the segment again, use MON ClearCapability (MON 424). Equivalent
+  to MON N500M (MON 60) function NEWPLACE (160B). Introduced in the M-version.
+notes:
+- >-
+    NEW in the M-version (ND-860230-7A-EN section 5.9.1). ND-500/5000 only.
+- 'Equivalent to MON N500M (MON 60) function NEWPLACE (160B). See [[60B]] N500M.'
+- >-
+    To disconnect the placed segment, use MON ClearCapability (MON 424).
+- >-
+    ND-500 CALLG convention (7 arguments):
+    CALLG 370000000441B,7,<file name>,<file offset>,<size>,<logical segment number>,
+    <logical type and attributes>,<SINTRAN III shared segment information>,
+    <returned segment number>.
+- >-
+    If logical segment number 0 is specified, the first free segment number is
+    used. The file name uses ND-500/5000 descriptor addressing and must include
+    the file type. File offset and size are in bytes.
+see_also:
+- N500M
+- ClearCapability
+- Attach500Segment
+parameters:
+- name: FileName
+  type: BYTES
+  io: I
+  description: >-
+    ND-500/5000 descriptor-addressed file name; must include the file type.
+- name: FileOffset
+  type: INTEGER
+  io: I
+  description: File offset in bytes.
+- name: Size
+  type: INTEGER
+  io: I
+  description: Size in bytes.
+- name: LogicalSegmentNumber
+  type: INTEGER
+  io: I
+  description: >-
+    Logical segment number; 0 means use the first free segment number.
+- name: LogicalTypeAndAttributes
+  type: INTEGER
+  io: I
+  description: Logical type and attributes for the segment.
+- name: SharedSegmentInfo
+  type: INTEGER
+  io: I
+  description: SINTRAN III shared segment information.
+- name: ReturnedSegmentNumber
+  type: INTEGER
+  io: O
+  description: >-
+    Returned segment number (written to the address given as the 7th argument).
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: ''
+  cobol:
+    available: false
+    code: ''
+    notes: ''
+  fortran:
+    available: false
+    code: ''
+    notes: ''
+  planc:
+    available: false
+    code: ''
+    notes: ''
+  assembly_500:
+    available: true
+    code: |-
+      % ND-500/5000 CALLG form.
+      CALLG 370000000441B,7,FILNAM,FILOFF,SIZE,LSEGNO,LTYPE,SHRINF,RETSEG
+      % LSEGNO = 0 -> first free segment number is used
+      % RETSEG receives the returned segment number
+    octal_definition: 370000000441B
+    notes: 'Equivalent to CALLG N500M function NEWPLACE (160B).'
+  mac:
+    available: false
+    code: ''
+    mon_number: 441
+    notes: 'ND-500/5000 only; invoked via CALLG, not a MAC MON on the ND-100.'
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: >-
+    ND-860230-7A-EN SINTRAN III Release Information M-Version, section 5.9.1
+    (PLACE MON 441), page 39
+  page: 39
+  line: 2351
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-30'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false
+  method: SINTRAN release-doc (M-version) extraction

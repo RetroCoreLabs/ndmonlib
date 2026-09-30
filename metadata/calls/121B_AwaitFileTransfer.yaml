@@ -1,0 +1,119 @@
+# SINTRAN III Monitor Call: AwaitFileTransfer
+# Octal: 121B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 121B
+name: AwaitFileTransfer
+short_names:
+- WAITF
+description: Checks that a data transfer to or from a mass-storage file is completed. The monitor call
+  is relevant to ReadFromFile and WriteToFile operations. These data transfers are carried out independently
+  of the CPU.
+notes:
+- You may specify that the program should wait if the transfer is not ready. It is set in the I/O wait
+  state.
+- A patch exists to permit AwaitFileTransfer to return status information from the last ReadFromFile or
+  WriteToFile. This is a non-standard patch, number 289, available on SINTRAN III VSX and VSX-500.
+- File number. See Openfile.
+- Wait flag. If 0, the program waits until the data transfer is completed. Other values return a value
+  showing the state of the transfer. Programs on the ND-500 do not wait.
+- 'State of transfer. Without patch 289: All error codes are from AwaitfileTransfer.'
+- 0 means that transfer is finished.
+- -1 means that transfer is not finished.
+- '> 0 are Standard Error Codes (see appendix A).'
+see_also:
+- AwaitTransfer
+parameters:
+- name: FileNumber
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: ReturnFlag
+  type: INTEGER
+  io: I
+  description: Wait flag. 0=wait until transfer complete. Other values=return immediately with status.
+- name: Status
+  type: INTEGER
+  io: O
+  description: |-
+    State of transfer:
+    0 = transfer finished
+    -1 = transfer not finished
+    > 0 = error code (see appendix A)
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber, ReturnFlag, Status : INTEGER2;
+      ...
+      AwaitFileTransfer(FileNumber, ReturnFlag, Status);
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 ReturnFlag COMP.
+      01 Status COMP.
+      ...
+      MONITOR-CALL "AwaitFileTransfer" USING FileNumber, ReturnFlag, Status.
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber, ReturnFlag, Status
+      ...
+      Monitor_Call('AwaitfileTransfer', FileNumber, ReturnFlag, Status)
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber, ReturnFlag, Status
+      ...
+      Monitor_Call('AwaitFileTransfer', FileNumber, ReturnFlag, Status)
+  assembly_500:
+    available: true
+    code: |-
+      FileNumber : W BLOCK 1
+      ReturnFlag : W BLOCK 1
+      Status : W BLOCK 1
+      AwaitFileTransfer : EQU 37B9 + 121B
+      ...
+      CALLG AwaitFileTransfer, 2, FileNumber, ReturnFlag
+      IF K GO Error
+      ...
+      Error, W1 =: Status %Status is returned in W1 register.
+    octal_definition: 37B9 + 121B
+  mac:
+    available: true
+    code: |-
+      LOA (PAR %Load register A with address of parameter list.
+      MON 121 %Monitor call AwaitFileTransfer.
+      STA STAT %Store returned status.
+      JAP ERROR %Handle error if STAT is greater than 0.
+      ...
+      ERROR, ... %Handle the error with error number in STAT.
+      ...
+      STAT, 0
+      PAR, FILNO %File number.
+      FLAG %Return flag.
+      ...
+      FILNO, ...
+      FLAG, 0
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+    mon_number: 121
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 87
+  line: 3510
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

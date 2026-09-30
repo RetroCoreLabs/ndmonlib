@@ -1,0 +1,122 @@
+# SINTRAN III Monitor Call: UELogin
+# Octal: 320B
+# Name CONFIRMED (UELOG/UELogin): reference manual ND-860228-2-EN line 2614,
+# the L-VSX-500 carve (mon-analysis/320B-UELogin), and direct confirmation.
+# Contract carved 2026-07-30 from the ND-500 caller side (FraTor tools) plus the
+# ND-100 worker carve. Worker body is byte-identified; the MON->worker dispatch
+# link and the argument MEANING remain UNVERIFIED (see notes).
+
+octal: 320B
+name: UELogin
+short_names:
+- UELOG
+description: >-
+  User Environment login (manual section 2.14) - logs a user into a User
+  Environment (UE). Part of the UE monitor-call cluster alongside UECOM (317B,
+  execute command) and UEADM (321B, administration). Per the K-version release
+  notes, UE-LOGIN is what populates the UE session identifier (UESID): after a UE
+  connect the logical device number is available immediately, but UESID stays zero
+  until UE-LOGIN is performed.
+notes:
+- Internal-use monitor call (manual section 2.14, name-only); part of the User
+  Environment subsystem (product ND-210518), a sibling of [[317B]] UECOM and
+  [[321B]] UEADM.
+- >-
+    Worker location (L-VSX-500 / L07 carve): the real ND-100 UELOG body is at
+    050726B in resident commoncode, inside the contiguous UE-* cluster
+    (UECHE=050544B, UECOM=050701B, UELOG=050726B). The ND-500 companion UELOG is
+    at 126036B. GOTAB[320]=112616B byte-resolves to DSI6 (device/interrupt code) -
+    that is a MISATTRIBUTED index target, NOT the login body; the true MON 320 ->
+    UELOG transfer runs through the uncarved resident CALLPROC/segment switch and
+    is UNVERIFIED. See tools/sintran-segment-carver/versions/L-VSX-500/re/
+    mon-analysis/320B-UELogin/.
+- >-
+    ND-500 calling convention (BYTE-PROVEN from the FraTor ND-500 tools - an
+    IDENTICAL wrapper in convert-dom-a03 @0802CB59 and linker-b01 @B004F42E):
+    CALLG UELOG,1,<word>  - exactly ONE CALLG argument. In both callers that word
+    is set to 0x24 (36 decimal) immediately before the call, and the caller first
+    builds a string (smove) and takes the address of an adjacent frame slot,
+    suggesting UELOG reads a small parameter block laid out in the caller frame.
+- >-
+    LOAD-BEARING: NO (in these tools). Both callers execute `clrk` (clear the K /
+    error flag) immediately after the call and return, DISCARDING the result. So a
+    benign success stub satisfies convert-dom and linker; correct UE-login
+    behaviour is only needed if a tool actually depends on the UE session.
+- >-
+    Argument MEANING is UNVERIFIED. The single word (observed 0x24) is not
+    confirmed to be a length, a user/session index, a subfunction, or a block
+    pointer; the manual is name-only and the ND-100 worker's arg contract was not
+    byte-provable (uncarved CALLPROC). Do not implement login semantics from a
+    guess - a success-returning stub is the safe emulator behaviour until a live
+    trace pins the contract.
+see_also:
+- UECommand
+- UEAdministration
+parameters:
+- name: Param
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED meaning. The single CALLG word; observed value 0x24 (36) in both
+    ND-500 callers. Possibly a length / session or user index / subfunction, or the
+    head of a caller-frame parameter block (a string + adjacent slot are set up
+    just before the call). Not confirmed.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Internal call; caller signature not fully verified.
+  cobol:
+    available: false
+    code: ''
+    notes: Internal call; caller signature not fully verified.
+  fortran:
+    available: false
+    code: ''
+    notes: Internal call; caller signature not fully verified.
+  planc:
+    available: false
+    code: ''
+    notes: Internal call; caller signature not fully verified.
+  assembly_500:
+    available: true
+    code: |-
+      % ND-500 CALLG form, byte-proven from convert-dom-a03 / linker-b01.
+      % (arg meaning UNVERIFIED - value 0x24 observed; result is discarded via clrk)
+      PARM  : W BLOCK 1          % single word, set to 44B (0x24) by both callers
+      UELOG : EQU 37000000320B   % UELOG = MON 320
+      ...
+      CALLG UELOG,1,PARM
+      % callers do: clrk ; ret   (result discarded)
+    octal_definition: 37B9 + 320B
+    notes: Result discarded by the caller (clrk); non-load-bearing in these tools.
+  mac:
+    available: false
+    code: ''
+    mon_number: 320
+    notes: ND-100 register contract not byte-provable (uncarved CALLPROC bridge).
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: true
+  system_programs: true
+source:
+  document: >-
+    Name: ND-860228-2-EN SINTRAN III Monitor Calls line 2614 (name-only) +
+    L-VSX-500 carve. UE session/UESID context: ND-60230-5-EN K-version line 12857.
+    ND-500 calling convention: FraTor disassemblies convert-dom-a03.asm:54158 and
+    linker-b01.asm:71019.
+  handler: >-
+    ND-100 UELOG=050726B (L07 commoncode); ND-500 companion UELOG=126036B;
+    dispatch link UNVERIFIED (GOTAB[320]=DSI6 misattributed).
+  page: 0
+  line: 2614
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-30'
+  version: '2.0'
+  validated: false
+  ocr_corrected: false
+  method: ND-500 caller-side carve + ND-100 worker carve reconciliation

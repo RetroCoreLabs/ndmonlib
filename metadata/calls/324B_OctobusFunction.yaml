@@ -1,0 +1,97 @@
+# SINTRAN III Monitor Call: OctobusFunction
+# Octal: 324B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 324B
+name: OctobusFunction
+short_names:
+- OCTIO
+description: Performs various functions on an old Octobus (earlier than version 3).
+see_also: []
+parameters:
+- name: FunctionCode
+  type: INTEGER2
+  io: I
+  description: 'Function number: 0=kick, 1=wait for kick, 5=read Octobus status, 6=Who am I.'
+- name: DeviceNo
+  type: INTEGER2
+  io: I
+  description: Logical device number.
+- name: Parameter
+  type: INTEGER2
+  io: IO
+  description: Function dependent parameter. Function 0 returns destination station. Function 5/6 return status value.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Not available
+  cobol:
+    available: false
+    code: ''
+    notes: Not available
+  fortran:
+    available: false
+    code: ''
+    notes: Not available
+  planc:
+    available: false
+    code: ''
+    notes: Not available
+  assembly_500:
+    available: true
+    code: |-
+      | Parameter   | Type     | Block | Description                                     |
+      |-------------|----------|-------|-------------------------------------------------|
+      | Func        | W        | BLOCK 1 |                                                 |
+      | DevNo       | W        | BLOCK 1 |                                                 |
+      | Par3        | W        | BLOCK 1 | May be destination station or return value.     |
+      | Status      | W        | BLOCK 1 |                                                 |
+      | OctobusFunction | EQU  | 37B9 + 324B |                                           |
+
+      CALLG OctobusFunction, 3, Func, DevNo, Par3
+      IF K GO Error
+      W1 =: Status
+      ...
+      Error, ...
+    octal_definition: ''
+  mac:
+    available: true
+    code: |-
+      LDA (PAR
+      %Load register A with address of parameter list.
+      MON 324
+      %Monitor call OctobusFunction.
+
+      PAR, FUNC
+      LDN
+      STAT
+
+      FUNC, O
+      %Function.
+      LDN, ...
+      %Logical device number.
+      STAT, ...
+      %Status.
+
+
+      | ND-100 and ND-500 | All users    | All programs |
+      |-------------------|--------------|--------------|
+    mon_number: 324
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 361
+  line: 16260
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

@@ -1,0 +1,114 @@
+octal: 231B
+name: ExpandFile
+short_names:
+- EXPFI
+description: 'Expands the file size. You use this monitor call to increase the size of contiguous and
+  allocated files. The space following the file on the disk must be free.
+
+
+  - Indexed files created with 0 pages may be expanded.
+
+  - Public users must have directory access to the file. User RT and SYSTEM can expand any file.'
+see_also:
+- CreateFile
+- '@EXPAND-FILE'
+parameters:
+- name: FileName
+  type: STRING
+  io: I
+  description: File name. It may be abbreviated, but this slows down execution.
+- name: NoOfPages
+  type: INTEGER2
+  io: I
+  description: Number of additional pages.
+examples:
+  pascal:
+    available: true
+    code: 'NoOfPages : LONGINT;
+
+      FileName : PACKED ARRAY [0..63] OF CHAR;
+
+      ...
+
+      ExpandFile(FileName, NoOfPages);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 NoOfPages COMP PIC S9(10).
+
+      01 FileName PIC X(64).
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "ExpandFile" USING FileName, NoOfPages.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER*4 NoOfPages
+
+      CHARACTER FileName*64
+
+      ...
+
+      Monitor_Call(''ExpandFile'', FileName(1:64), NoOfPages)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER4 : NoOfPages\nBYTES : FileName(0:63)\n...\nON ROUTINEERROR DO\n    IF ErrCode >‹ O\
+      \ THEN ...\nENDON\nMonitor_Call('ExpandFile', FileName, NoOfPages)"
+  assembly_500:
+    available: true
+    code: "NoOfPages : W BLOCK 1\nFileName : STRING 64\nErrCode : W BLOCK 1\nExpandFile : EQU 37B9 + 231B\n\
+      ...\n    CALLG ExpandFile, 2, FileName, NoOfPages\n    IF K GO ERROR\n    ...\nERROR : W1 =: ErrCode\
+      \          %ErrorCode in W1 register."
+    octal_definition: 37B9 + 231B
+  mac:
+    available: true
+    code: 'LDX    (FILE    %Address of file name string.
+
+      LDT    (PAGES   %Address of double word with number of pages.
+
+      MON    231      %Monitor call ExpandFile.
+
+      JMP    ERROR    %Error return from monitor call.
+
+      ...             %Normal return.
+
+      ERROR, ...      %Error number in register A.
+
+      ...
+
+      FILE,  ''EXAMPLE:SYMB''  %File name.
+
+      PAGES, ...             %A double word.
+
+      ...                    %
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 231
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 191
+  line: 8174
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

@@ -1,0 +1,224 @@
+# SINTRAN III Monitor Call: WriteToFile
+# Octal: 120B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 120B
+name: WriteToFile
+short_names:
+- WFILE
+description: 'Writes any number of bytes to a file. The read operation must start at the beginning of
+  a block. The file must be opened for random write access.
+
+
+  - The standard block size is 512 bytes. You can change this with SetBlockSize. The first block is number
+  0.
+
+  - You may use access code D for direct transfer. Then the block size must be a multiple of the page
+  size. The number of bytes to transfer must be a multiple of the block size. The data must be fixed contiguously
+  in memory.
+
+  - Peripheral files are always written to sequentially.
+
+  - Data transfer across segment or RT common limits is illegal as this would be likely to result in inconsistent
+  data.'
+see_also:
+- SetStartBlock
+- SetBlockSize
+- WriteDiskPage
+- WriteBlock
+- and ReadFromFile
+parameters:
+- name: FileNo
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: ReturnFlag
+  type: INTEGER2
+  io: I
+  description: Wait flag. 0=suspend until complete, non-zero=continue (use AwaitFileTransfer to check).
+- name: Buff
+  type: BYTES
+  io: I
+  description: Buffer containing data to be transferred.
+- name: BlockNo
+  type: INTEGER2
+  io: I
+  description: Block number to start writing from. Use -1 to write to the next block.
+- name: NoOfBytes
+  type: LONGINT
+  io: I
+  description: Number of bytes to be written.
+examples:
+  pascal:
+    available: true
+    code: 'FileNo, ReturnFlag, BlockNo : INTEGER;
+
+      NoOfBytes : LONGINT;
+
+      Buff : ARRAY [0..15] OF RECORD...END;
+
+      ...
+
+      WriteToFile(FileNo, ReturnFlag, Buff, BlockNo, NoOfBytes);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: "01 FileNo COMP. 01 ReturnFlag COMP.\n01 Buff.\n   02 array COMP OCCURS 256 TIMES.\n01 BlockNo\
+      \ COMP. 01 NoOfBytes COMP PIC S9(10).\n01 ErrCode COMP.\n...\nMONITOR-CALL \"WriteToFile\" USING\
+      \ FileNo, ReturnFlag, Buff,\n                                BlockNo, NoOfBytes.\nCALL \"CbError\"\
+      \ USING ErrCode.\nIF ErrCode NOT = 0 GO ..."
+  fortran:
+    available: true
+    code: "INTEGER FileNo, ReturnFlag, BlockNo\nINTEGER Buff(256)\nINTEGER*4 NoOfBytes\n...\nMonitor_Call('WriteToFile',\
+      \ FileNo, ReturnFlag, Buff(1),\n                             BlockNo, NoOfBytes)\nC IF (ErrCode\
+      \ .NE. 0) THEN ..."
+  planc:
+    available: true
+    code: "INTEGER : FileNo, ReturnFlag, BlockNo\nBYTES : Buff(0:511)\nINTEGER4 : NoOfBytes\n\n...\n\n\
+      ON ROUTINEERROR DO\n    IF ErrCode > 0 THEN ...\nENDON\n\nMonitor_Call('WriteToFile', FileNo, ReturnFlag,\
+      \ Buff(0), BlockNo, NoOfBytes)"
+  assembly_500:
+    available: true
+    code: 'FileNo : W BLOCK 1
+
+      ReturnFlag : W BLOCK 1
+
+      Buff : W BLOCK 256
+
+      BlockNo : W BLOCK 1
+
+      NoOfBytes : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      WriteToFile : EQU 3789 + 120B
+
+
+      ...
+
+
+      CALLG WriteToFile, 5, FileNo, ReturnFlag, Buff, BlockNo, NoOfBytes
+
+      IF K GO ERROR
+
+
+      ...
+
+
+      ERROR : W1 =: ErrCode       %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 120B
+  mac:
+    available: true
+    code: "LDA (PAR       %Load register A with address of parameter list.\nMON 120        %Monitor call\
+      \ WriteToFile.\nJAF ERROR      %Do error handling if register A is non-zero.\n\nERROR, ...     %Error\
+      \ number in register A.\n\n...\n\nPAR, FILNO     %File number returned from earlier open.\n    FLAG\
+      \       %Wait flag.\n    BUFF       %Buffer containing data to be written.\n    BLKNO      %Block\
+      \ number where writing is started.\n    COUNT      %Number of words to transfer.\n\n...\n\nFILNO,\
+      \ ...\nFLAG, ...\nBUFF, 0\n    *+1000/    %Make a buffer of 512 words, 4 blocks.\nBLKNO ...\nCOUNT,\
+      \ 0\n    1000       %Transfer 512 words.\n\n\n\nND-100 and ND-500 All users Background programs"
+    mon_number: 120
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 569
+  line: 26131
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_120B_WriteToFile.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: BlockNo
+      note: >-
+        As in 117B RFILE: the manual field says "Use -1 to write to the next
+        block", and the trap is the SIGN. BlockNo is a SIGNED halfword that
+        callers sign-extend to a word (PLANC emits H WCONV), so -1 arrives as
+        0xFFFFFFFF. Read unsigned it seeks past the end and every write fails.
+        -1 must mean "resume at the recorded position, do not seek by block".
+      verified: true
+    - name: 'all INTEGER parameters'
+      note: >-
+        On ND-500 every INTEGER parameter is a 32-bit WORD ('W BLOCK' in the
+        manual's assembly_500 examples), so nd500x reads all of them with word
+        accessors.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; data flushed to the host file; file position advanced.'
+    errors:
+      - code: 85
+        octal: 125B
+        meaning: 'Not open for random write'
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 97
+        octal: 141B
+        meaning: 'Transfer error (short host write)'
+      - code: 99
+        octal: 143B
+        meaning: 'No such block (seek failed)'
+      - code: 89
+        octal: 131B
+        meaning: 'No more buffer space'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (file connected as segment; negative BlockNo other than -1; size over the cap)'
+
+  verified:
+    - claim: 'WriteToFile is illegal on a file connected as a segment.'
+      evidence: >-
+        The manual states it; the handler enforces it (entry->mapped_as_segment
+        -> 174B).
+    - claim: 'Writing past the recorded end extends the file.'
+      evidence: >-
+        The handler advances object_entry.bytes_in_file when the new position
+        exceeds it, which is what 62B RMAX then reports.
+
+  unverified:
+    - >-
+      ReturnFlag (the wait flag) is read and logged but has no effect - every
+      write is synchronous and flushed. The non-zero "continue, then use
+      AwaitFileTransfer" path is not modelled.
+    - >-
+      "The write operation must start at the beginning of a block" is not
+      enforced.
+    - >-
+      Access code D (direct transfer) block-size/page-size constraints are not
+      enforced.
+    - >-
+      "Peripheral files are always written sequentially" is not modelled.
+    - >-
+      nd500x caps a single write at 65536 bytes (MAX_WRITE_SIZE) and returns 174B
+      above it. That cap is an emulator invention, not a documented SINTRAN
+      limit.
+    - >-
+      Unlike 117B RFILE, this handler does NOT write a transferred-count back to
+      NoOfBytes. Whether the real WFILE does a count write-back on a short write
+      has not been carved - the 117B success path (006-S3FS worker 102130B,
+      102433-102470) was carved but the WFILE counterpart was not.
+    - >-
+      WFILE's return contract has NOT been audited against the carve. The
+      completeness matrix records it as MATCH from a manual-based reading only.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 120B WFILE - "MATCH (prior)", manual-based.'

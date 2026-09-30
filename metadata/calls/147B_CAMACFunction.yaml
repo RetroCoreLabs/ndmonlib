@@ -1,0 +1,145 @@
+# Monitor Call: 147B CAMACFunction
+# Extracted from: ND-860228.2 EN (SINTRAN III Monitor Calls)
+# Source page: 100-101
+
+octal: 147B
+name: CAMACFunction
+short_names:
+- CAMAC
+description: |-
+  Operates the CAMAC, i.e. executes the NAF register. CAMAC is a standardized way to connect peripheral equipment to a computer.
+
+  NAF data looks like this:
+  ```
+  15   13     9 8     5 4    0
+  -----------------------------
+  |  Q  X  | STATION | SUBADDRESS | FUNCTION |
+  -----------------------------
+  ```
+
+  If Q=1 and/or X=1, then Q and X responses from the station are automatically checked.
+
+  A Control/Status register (COST register) holds some extra information. If the Function parameter is 3 (clear), the contents of COST are returned in the Value parameter. If Function=0 (read), data is returned in Value. For both these functions, parameter 2 must be >=0 on entry. If Function=1 (write) parameter 2 must be <0 before the call.
+
+  If bit 15 in Crate Number is set to 1, Value is treated as an integer instead of floating point.
+see_also:
+- AssignCAMACLAM
+- BCNAFCAMAC
+- BCNAF1CAMAC
+- CAMACIOInstruction
+- CAMACGLRegister
+parameters:
+- name: DataWord
+  type: INTEGER2
+  io: IO
+  description: Input of data if write, output if read.
+- name: RetStatus
+  type: INTEGER2
+  io: O
+  description: Return status (0 if OK, 24 if not OK).
+- name: CrateNo
+  type: INTEGER2
+  io: I
+  description: Crate number.
+- name: StationNo
+  type: INTEGER2
+  io: I
+  description: Station number.
+- name: Subaddress
+  type: INTEGER2
+  io: I
+  description: Subaddress.
+- name: Func
+  type: INTEGER2
+  io: I
+  description: |-
+    Function:
+    - 0 All registers - Read
+    - 1 All registers - Write
+    - 3 Selected Bit Clear
+    - 5 Selected Bit Set
+    - 7 Execute Dataway Cycle
+examples:
+  pascal:
+    available: true
+    code: |-
+      DataWord, RetStatus, CrateNo, StationNo, Subaddress, Func : INTEGER2;
+      ...
+      CAMACFunction(DataWord, RetStatus, CrateNo, StationNo, Subaddress, Func);
+  cobol:
+    available: true
+    code: |-
+      01 DataWord COMP.
+      01 RetStatus COMP.
+      01 CrateNo COMP.
+      01 StationNo COMP.
+      01 Subaddress COMP.
+      01 Func COMP.
+      ...
+      MONITOR-CALL "CAMACFunction" USING DataWord, RetStatus,
+      CrateNo, StationNo, Subaddress, Func.
+  fortran:
+    available: true
+    code: |-
+      INTEGER DataWord, RetStatus, CrateNo, StationNo, Subaddress, Func
+      ...
+      Monitor_Call('CAMACfunction', DataWord, RetStatus, CrateNo,
+                   StationNo, Subaddress, Func)
+  planc:
+    available: true
+    code: |-
+      INTEGER : DataWord, RetStatus, CrateNo, StationNo, Subaddress, Func
+      ...
+      Monitor_Call('CAMACfunction', DataWord, RetStatus, CrateNo, &
+                   StationNo, Subaddress, Func)
+  assembly_500:
+    available: true
+    code: |-
+      DataWord     : W BLOCK 1
+      RetStatus    : W BLOCK 1
+      CrateNo      : W BLOCK 1
+      StationNo    : W BLOCK 1
+      Subaddress   : W BLOCK 1
+      Func         : W BLOCK 1
+      ErrCode      : W BLOCK 1
+      CAMACfunction: EQU 37B9 + 147B
+      ...
+      CALLG CAMACfunction, 6, DataWord, RetStatus, CrateNo, &
+            StationNo, Subaddress, Func
+      IF K GO Error
+      ...
+      Error, W1 =: ErrCode
+  mac:
+    available: true
+    code: |-
+      LDT DATA   %Data if write.
+      LDA CRATE  %Crate number.
+      COPY SA DD
+      LDA CTRL   %Load register A.
+      MON 147    %Monitor call CAMACfunction.
+      STT DATA   %Store data if read.
+      STX STAT   %Store status.
+      ...
+      STAT, 0
+      DATA, ...
+      CRATE, ...
+      CTRL, ...  %CAMAC control: station number/subaddress/function.
+    mon_number: 147
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 100
+  line: 4091
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true
+  ocr_notes: Extracted from source document page 100-101

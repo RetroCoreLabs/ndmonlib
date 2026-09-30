@@ -1,0 +1,83 @@
+# SINTRAN III Monitor Call: ReleaseDir
+# Octal: 247B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 247B
+name: ReleaseDir
+short_names:
+- RLDIR
+description: Releases a directory. The directory must have been reserved with ReserveDir.
+see_also:
+- ReleaseResource
+parameters:
+- name: DirectoryIndex
+  type: INTEGER
+  io: I
+  description: Directory index. Use @LIST-DIRECTORIES to find the directory index.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DirectoryIndex : INTEGER2;
+      ...
+      RelDirectory(DirectoryIndex);      [Note routine name.]
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DirectoryIndex COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "ReleaseDir" USING DirectoryIndex.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DirectoryIndex
+      ...
+      Monitor_Call('ReleaseDir', DirectoryIndex)
+      IF (ErrCode .NE. 0) THEN ...
+  assembly_500:
+    available: true
+    code: |-
+      DirectoryIndex : W BLOCK 1
+      ErrCode : W BLOCK 1
+      ReleaseDir : EQU 3789 + 247B
+      ...
+      CALLG ReleaseDir, 1, DirectoryIndex
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode       %ErrorCode in W1 register.
+    octal_definition: 37B9 + 247B
+  mac:
+    available: true
+    code: |-
+      LDT DIRIX      %Directory index.
+      MON 247        %Monitor call ReleaseDir.
+      JMP ERROR      %Error return from monitor call.
+      ...            %Normal return.
+      ERROR, ...     %Error number in register A.
+      ...
+      DIRIX, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 247
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 409
+  line: 18533
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

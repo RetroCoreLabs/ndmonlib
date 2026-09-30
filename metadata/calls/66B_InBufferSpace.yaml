@@ -1,0 +1,133 @@
+octal: 66B
+name: InBufferSpace
+short_names:
+- ISIZE
+description: 'Gets the current number of bytes in the input buffer. Terminals and other character devices
+  place input in a buffer. All input monitor calls read from this buffer.
+
+
+  - Use ExecutionInfo to get the logical device number for terminals. You can specify 1 for your own terminal.
+
+  - The buffer size depends on the device.'
+see_also:
+- InBufferState
+- ClearInBuffer
+- OutBufferSpace
+parameters:
+- name: DeviceNumber
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B. Use 1 for your own terminal.
+- name: NoOfBytes
+  type: INTEGER2
+  io: O
+  description: Number of bytes in the input buffer (output, returned in W1).
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNumber, NoOfBytes : INTEGER2;
+
+      ...
+
+      BytesInBuffer(DeviceNumber, NoOfBytes);   [Note routine name.]
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 DeviceNumber COMP.
+
+      01 NoOfBytes COMP.
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "InBufferSpace" USING DeviceNumber, NoOfBytes.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNumber, NoOfBytes
+
+      ...
+
+      Monitor Call1(''InBufferSpace'', DeviceNumber, NoOfBytes)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: 'INTEGER : DeviceNumber, NoOfBytes
+
+      ...
+
+      ON ROUTINEERROR DO
+
+      &emsp;IF ErrCode > 0 THEN ...
+
+      ENDON
+
+      Monitor_Call(''InBufferSpace'', DeviceNumber, NoOfBytes)'
+  assembly_500:
+    available: true
+    code: 'DeviceNumber : W BLOCK 1
+
+      NoOfBytes : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      InBufferSpace : EQU 3789 + 66B
+
+      ...
+
+      CALLG InBufferSpace, i, DeviceNumber
+
+      IF K GO ERROR
+
+      W1 =: NoOfBytes %Result is returned in W1 register.
+
+      ...
+
+      ERROR : W1 =: ErrCode %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 66B
+  mac:
+    available: true
+    code: 'LDA DEVNO %Logical device number.
+
+      MON 66 %Monitor call InBufferSpace.
+
+      JMP ERROR %Error return from monitor call.
+
+      STA COUNT %Normal return, store number of bytes in inbuffer.
+
+      ...
+
+      ERROR, ... %Error number in register A.
+
+      ...
+
+      DEVNO, ...
+
+      COUNT, 0
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 66
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 315
+  line: 14153
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

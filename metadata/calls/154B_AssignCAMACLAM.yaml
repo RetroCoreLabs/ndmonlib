@@ -1,0 +1,115 @@
+# SINTRAN III Monitor Call: ASSIGNCAMACLAM
+# Octal: 154B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 154B
+name: AssignCAMACLAM
+short_names:
+- ASSIG
+description: Assigns a graded LAM in the CAMAC identification table to a logical device number in the logical number table. See CAMACFunction and CAMACGLRegister for more details.
+notes:
+- Remove the LAM by specifying logical device number -1.
+see_also:
+- CAMACFunction
+- BCNAFCAMAC
+- BCNAF1CAMAC
+- CAMACIOInstruction
+- CAMACGLRegister
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: Logical device number. See appendix B.
+- name: GradedLAMNumber
+  type: INTEGER
+  io: I
+  description: Graded LAM number. Use 0 for high priority on interrupt level 13.
+- name: CrateNumber
+  type: INTEGER
+  io: I
+  description: CAMAC crate number in the range 0:15.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber, GradedLAMNumber, CrateNumber : INTEGER2;
+      ...
+      AssignCAMACLAM(DeviceNumber, GradedLAMNumber, CrateNumber);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP.
+      01 GradedLAMNumber COMP.
+      01 CrateNo COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "AssignCAMACLAM" USING DeviceNo, GradedLAMNumber, CrateNo.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo, GradedLAMNumber, CrateNo
+      ...
+      Monitor Call('AssignCAMACLAM', DeviceNo, GradedLAMNumber, CrateNo)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, GradedLAMNumber, CrateNo
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode >< 0 THEN ...
+      ENDON
+      Monitor_Call('AssignCAMACLAM', DeviceNo, GradedLAMNumber, CrateNo)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNo : W BLOCK 1
+      GradedLAMNumber : W BLOCK 1
+      CrateNo : W BLOCK 1
+      ErrCode : W BLOCK 1
+      AssignCAMACLAM : EQU 37B9 + 154B
+      ...
+      CALLG AssignCAMACLAM, 3, DeviceNo, GradedLAMNumber, CrateNo
+          IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode              %ErrorCode in W1 register.
+    octal_definition: 37B9 + 154B
+  mac:
+    available: true
+    code: |-
+      LDT GRLAM      %Graded LAM.
+      LDA CRATE      %Crate number.
+      COPY SA DD
+      LDA DEVNO      %Logical device number.
+      MON 154        %Monitor call AssignCAMACLAM.
+      JAN ERROR      %Error if register A is negative.
+      ...
+      ERROR, ...     %Error number in register A.
+      ...
+      GRLAM, ...
+      DEVNO, ...
+      CRATE, ...
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+    mon_number: 154
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 104
+  line: 3228
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

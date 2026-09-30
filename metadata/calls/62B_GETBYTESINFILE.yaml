@@ -1,0 +1,169 @@
+# SINTRAN III Monitor Call: GETBYTESINFILE
+# Octal: 62B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 62B
+name: GetBytesInFile
+short_names:
+- RMAX
+description: Gets the number of bytes in a file. Only the bytes containing data are counted.
+notes:
+- The file must be open.
+- The number of bytes are only relevant to sequentially accessed files.
+see_also:
+- SetMaxBytes
+- GetBytesInFile
+- '@FILE-STATISTICS'
+parameters:
+- name: FileNumber
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: NoOfBytes
+  type: INTEGER4
+  io: O
+  description: Number of bytes in the file (32-bit value).
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber : INTEGER2;
+      NoOfBytes : LONGINT;
+      ...
+      GetBytesInFile(FileNumber, NoOfBytes);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 NoOfBytes COMP PIC S9(10).
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetBytesInFile" USING FileNumber, NoOfBytes.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber
+      INTEGER*4 NoOfBytes
+      ...
+      Monitor Call('GetBytesInFile', FileNumber, NoOfBytes)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER FileNumber
+      INTEGER4: NoOfBytes
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('GetBytesInFile', FileNumber, NoOfBytes)
+  assembly_500:
+    available: true
+    code: |-
+      FileNumber: W BLOCK 1
+      NoofBytes: W BLOCK 1
+      ErrCode: W BLOCK 1
+      GetBytesInFile: EQU 37B9 + 62B
+      ...
+      CALLG GetBytesInFile, 2, FileNumber, NoOfBytes
+          IF K GO ERROR
+      ...
+      ERROR: W1 := ErrCode              %ErrorCode in W1 register.
+    octal_definition: 37B9 + 62B
+  mac:
+    available: true
+    code: |-
+      LDT FILNO      %File number returned from earlier open.
+      MON 62         %Monitor call GetBytesInFile.
+      JMP ERROR      %Error return from monitor call.
+      STD BYTES      %Normal return, store the number of bytes obtained.
+      ...
+      ERROR,         %Error number in register A.
+      ...
+      FILNO,
+      ...
+      BYTES, O       %A double word
+      0              %
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 62
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 9664
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_62B_GetBytesInFile.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: NoOfBytes
+      note: >-
+        This is a real OUT PARAMETER and must be WRITTEN. nd500x writes the size
+        into arg 1 with a word write. (The OUT-parameter defect class - a handler
+        computing the right value and never writing the caller's slot - is what
+        broke 412B FSCNT and 511B DVIO; do not repeat it here.)
+      verified: true
+    - name: NoOfBytes
+      note: >-
+        INTEGER4 on the ND-500 = a single 32-bit word, and the handler writes one
+        word. Note the contrast with 11B TIME, where the carve shows a DOUBLE
+        word return - so "INTEGER4 = one word" is NOT a safe blanket rule across
+        MON calls.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; the byte count written to NoOfBytes (arg 1) when the caller supplied it.'
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+
+  verified:
+    - claim: 'The size reported is the live host file size, not a cached value.'
+      evidence: >-
+        The handler seeks the host file to END, takes ftell, and restores the
+        previous position; the cached object_entry.bytes_in_file is only the
+        fallback when there is no host handle.
+
+  unverified:
+    - >-
+      The manual says "Only the bytes containing data are counted". nd500x
+      reports the whole host file length. For a file that was pre-allocated by
+      221B CreateFile (NoOfPages > 0) these differ - the pre-allocated tail would
+      be counted. Not proven either way against the carve.
+    - >-
+      Whether the real RMAX also returns the count in W1 (in addition to the OUT
+      parameter) is not established; nd500x writes only the parameter slot.
+    - >-
+      62B has not been re-audited against the carve in the current pass; the
+      completeness matrix marks it "(prior audit)".
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 62B RMAX.'

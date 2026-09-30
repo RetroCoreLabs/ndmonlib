@@ -1,0 +1,138 @@
+# SINTRAN III Monitor Call: DataTransfer
+# Octal: 131B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 131B
+name: DataTransfer
+short_names:
+- ABSTR
+description: |-
+  Transfers data between physical memory and a mass-storage device, e.g. a disk or magnetic tape. You may perform various device control functions. This monitor call is mainly used by the operating system itself. For more details, refer to the ND-100 SCSI Reference Guide, ND-12.048.
+
+  - With SINTRAN III/VSX, the monitor call and the parameters must reside on a fixed segment on protection ring 2. With SINTRAN III/VSE, the monitor call and parameters must reside in resident memory.
+  - The physical memory area must be contiguous. Older versions of magnetic tapes or disk controllers cannot cross physical memory bank boundaries of 128 Kbytes. These magnetic tapes have ND numbers less than ND-537. The disks have ND numbers less than ND-559.
+  - If you write code to be independent of whether it is run on SINTRAN III VSE or VSX, you are advised to use TransferData (EXABS, mon 335).
+see_also:
+- TransferData
+- ReadFromFile
+- WriteToFile. TransferData allows you to use any page table
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number. See appendix B.
+- name: Func
+  type: INTEGER
+  io: I
+  description: Function code. See the tables on the following pages.
+- name: MemoryAddr
+  type: INTEGER
+  io: I
+  description: Physical memory address (32-bit).
+- name: BlockAddr
+  type: INTEGER
+  io: I
+  description: Block address on the disk. See the tables on the following pages.
+- name: NoOfBlocks
+  type: INTEGER
+  io: I
+  description: Number of blocks to transfer.
+- name: Stat
+  type: INTEGER
+  io: O
+  description: Error code returned in W1. Negative if error. Contains a hardware status.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNo, Func, BlockAddr, NoOfBlocks, Stat : INTEGER2;
+      MemoryAddr : LONGINT;
+      ...
+      DataTransfer(DeviceNo, Func, MemoryAddr, BlockAddr, NoOfBlocks, Stat);
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP.
+      01 Func COMP.
+      01 BlockAddr COMP.
+      01 NoOfBlocks COMP.
+      01 Stat COMP.
+      01 MemoryAddr COMP PIC S9(10).
+      ...
+      MONITOR-CALL "DataTransfer" USING DeviceNo, Func, MemoryAddr, BlockAddr, NoOfBlocks, Stat.
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo, Func, BlockAddr, NoOfBlocks, Stat
+      INTEGER*4 MemoryAddr
+      ...
+      Monitor_Call('DataTransfer', DeviceNo, Func, MemoryAddr, BlockAddr, NoOfBlocks, Stat)
+
+
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, Func, BlockAddr, NoOfBlocks, Stat
+      INTEGER4 : MemoryAddr
+
+      Monitor_Call('DataTransfer', DeviceNo, Func, MemoryAddr, & BlockAddr, NoOfBlocks, Stat)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNo : W BLOCK 1
+      Func : W BLOCK 1
+      MemoryAddr : W BLOCK 1  %ND-100 memory address.
+      BlockAddr : W BLOCK 1
+      NoOfBlocks : W BLOCK 1
+      Stat : W BLOCK 1
+      DataTransfer : EQU 37B9 + 131B
+
+      CALLG DataTransfer, 5, DeviceNo, Func, MemoryAddr, &
+      BlockAddr, NoOfBlocks
+
+      IF K GO Error
+
+      Error, W1 =: Stat
+    octal_definition: 37B9 + 131B
+  mac:
+    available: true
+    code: |-
+      | Code  | Description                                  |
+      |-------|----------------------------------------------|
+      | LDT   | DEVNO %Logical device number.                |
+      | LDA   | (PAR %Load register A with address of parameter list. |
+      | MON   | 131 %Monitor call DataTransfer.              |
+      | JAN   | ERROR %Error if register A is negative.      |
+
+      %Continue with processing.
+      %Error number in register A.
+
+      | Variable | Description                           |
+      |----------|---------------------------------------|
+      | DEVNO    | ...                                   |
+      | PAR      | FUNC %Function code etc.              |
+      | DMEM     | %Memory address.                      |
+      | BLOCK    | %Block address.                       |
+      | NOBLK    | %Number of blocks to transfer.        |
+
+      % ... indicates continuation of descriptions, more variables, or other details.
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 127
+  line: 5428
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

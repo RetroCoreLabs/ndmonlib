@@ -1,0 +1,104 @@
+# SINTRAN III Monitor Call: WRITESCRATCHFILE
+# Octal: 6B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 6B
+name: WriteScratchFile
+short_names:
+- WDISK
+description: Writes randomly to the scratch file. One block is transferred. There is one scratch file
+  connected to each terminal. It is opened for random read and write access when you log in. Its file
+  number is 100B.
+notes:
+- The standard block size is 512 bytes. You can change this with SetBlockSize. The first block is number
+  0.
+see_also:
+- WriteBlock
+- WriteToFile
+- and ReadScratchFile
+parameters:
+- name: BlockNumber
+  type: INTEGER
+  io: I
+  description: Block number to start writing to. First block is 0.
+- name: Buffer
+  type: ARRAY
+  io: I
+  description: Buffer address containing data to write (256 words / 512 bytes).
+examples:
+  pascal:
+    available: true
+    code: |-
+      BlockNumber : INTEGER2;
+      Buffer : ARRAY [0..15] OF RECORD...END;
+      ...
+      WriteScratchFile(BlockNumber, Buffer);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 BlockNumber COMP.
+      01 Buffer.
+         02 array COMP OCCURS 256 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "WriteScratchFile" USING BlockNumber, Buffer.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER BlockNumber
+      INTEGER Buffer(256)
+      ...
+      Monitor Call('WriteScratchFile', BlockNumber, Buffer(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : BlockNumber
+      BYTES : Buffer(0:511)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('WriteScratchFile', BlockNumber, Buffer(0))
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      LDT  BLKNO   %Block number to be written into.
+      LDX  (BUFF   %Address of buffer containing data to be written.
+      MON  6       %Monitor call WriteScratchFile.
+      JMP  ERROR   %Error return from monitor call.
+      ...          %Normal return.
+      ERROR, ...   %Error number in register A.
+      ...
+      BLKNO, ...
+      BUFF, 0
+      *+400/       %Make a buffer of 256 words, 1 block.
+
+
+      | ND-100 | All users | Background programs |
+    mon_number: 6
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 567
+  line: 26031
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

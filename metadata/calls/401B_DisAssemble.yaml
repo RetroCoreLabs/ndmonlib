@@ -1,0 +1,98 @@
+octal: 401B
+name: DisAssemble
+short_names:
+- DIASS
+description: Disassembles one machine instruction on the ND-500. Output is the instruction in ASSEMBLY-500
+  language. See the manual ND-500 ASSEMBLER Reference Manual (ND-860113).
+notes:
+- The returned string is truncated if it contains more characters than given in the last parameter.
+- Causes an error return in ND-500 if called from a standard domain started directly from SINTRAN III.
+see_also: []
+parameters:
+- name: ProgPointer
+  type: INTEGER2
+  io: I
+  description: Program address.
+- name: ReturnString
+  type: STRING
+  io: O
+  description: The assembly instruction as text.
+- name: MaxNoOfChar
+  type: INTEGER2
+  io: I
+  description: Maximum number of characters in the assembly instruction.
+examples:
+  pascal:
+    available: true
+    code: 'ProgPointer, MaxNoOfChar : LONGINT;
+
+      ReturnString : PACKED ARRAY [0..79] OF CHAR;
+
+      ...
+
+      DisAssemble(ProgPointer, ReturnString, MaxNoOfChar);'
+  cobol:
+    available: true
+    code: '01 ProgPointer COMP.
+
+      01 MaxNoOfChar COMP.
+
+      01 ReturnString PIC X(100).
+
+      ...
+
+      MONITOR-CALL "DisAssemble" USING ProgPointer, ReturnString, MaxNoOfChar.'
+  fortran:
+    available: true
+    code: 'INTEGER ProgPointer, MaxChar
+
+      CHARACTER RetString*80
+
+      ...
+
+      Monitor_Call(''DisAssemble'', ProgPointer, RetString(1:80), MaxChar)'
+  planc:
+    available: true
+    code: 'INTEGER : ProgPointer, MaxNoOfChar
+
+      BYTES : ReturnString(0:79)
+
+      ...
+
+      Monitor_Call(''DisAssemble'', ProgPointer, ReturnString, MaxNoOfChar)'
+  assembly_500:
+    available: true
+    code: 'ProgPointer : W BLOCK 1
+
+      MaxNoOfChar : W BLOCK 1
+
+      ReturnString : STRINGDATA
+
+      DisAssemble : EQU 37B9 + 401B
+
+      ...
+
+      CALLG DisAssemble, 3, ProgPointer, ReturnString, MaxNoOfChar'
+    octal_definition: 37B9 + 401B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 159
+  line: 6917
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

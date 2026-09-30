@@ -1,0 +1,158 @@
+# SINTRAN III Monitor Call: FileSystemFunction
+# Octal: 327B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 327B
+name: FileSystemFunction
+short_names:
+- FSMTY
+description: Multifunction monitor call to make sure that an uncontrolled system stop does not leave the file system inconsistent. The file index block of an open file is written back to the disk.
+notes:
+- This monitor call is particularly useful for SIBAS and ISAM applications.
+- >-
+    Introduced in the J-version and EXTENDED in each subsequent version. Function
+    is selected in the T-register (ND-100) or as the first CALLG argument (ND-500).
+    Complete function table (octal function codes), from the SINTRAN release docs
+    (ndfs-extensions.md section 3, cross-referenced to J/K/L/M release information):
+- '  1  WRBIX  - write back index blocks of an open file (J-version).'
+- '  2  return block size of an open file, in words (K-version).'
+- '  3  get full file name of an open file (K-version).'
+- >-
+    '  4  get file/device info - returns TYPRING, status, and the SINTRAN III
+    open-file/device number. IDENTICAL to MON 45 GTYPR (K-version). See
+    [[45B]] GetTypeRing.'
+- '  5  internal use by ND only (L-version).'
+- '  6  get next open file on a directory - iterate open files (L-version).'
+- '  7  set a directory available for general use (L-version).'
+- '  10 set a directory unavailable for general use (L-version).'
+- '  11 get next file matching a string - name pattern matching (L-version).'
+- '  12 get EXSECURITY value - the SINTRAN III EXSECURITY system variable (L-version).'
+- '  13 reset the file-modified bit in the object entry (M-version).'
+- >-
+    Status word returned by function 4: bit 0 = file open for write; bit 1 =
+    spooling file or terminal/TAD.
+- >-
+    Earlier note "Only function 1 is available on ND-100" reflects the J-version;
+    functions 2-13 were added J->M and functions 2/3/4 are usable from ND-500
+    programs (the FraTor ND-500 tools call function 3 via gate 0xF80000D7).
+see_also:
+- OpenFile
+parameters:
+- name: FuncCode
+  type: INTEGER
+  io: I
+  description: 'Function code. 1 = write back to disk the index block of an open file. 2 = return the block size of an opened file. 3 = get full file name of an opened file. 4 = get information about a file or device. (More details on page 190.)'
+- name: FileNo
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: Param2
+  type: INTEGER
+  io: I/O
+  description: 'Parameter 2. Block size if function code 2. Buffer to receive file name if function code 3. If function code 4: TYPRING, status, SINTRAN III open-file number or device number.'
+- name: Param3
+  type: BYTES
+  io: I/O
+  description: Parameter 3. Buffer (64 bytes or 26 words). Used for file name or other data depending on function code.
+examples:
+  pascal:
+    available: true
+    code: |-
+      FuncCode, FileNo : INTEGER2;
+      ...
+      FileSystemFunction(FuncCode, FileNo);
+      IF ErrCode <> 0 THEN ...
+    mon_number: null
+    notes: ''
+  cobol:
+    available: true
+    code: |-
+      01 FuncCode COMP.
+      01 FileNo COMP.
+      01 Param2 COMP.
+      01 Param3 X PIC (64).
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "FileSystemFunction" USING FuncCode, FileNo, Param3, Param2.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+    mon_number: null
+    notes: ''
+  fortran:
+    available: true
+    code: |-
+      INTEGER FuncCode, FileNo, Param2
+      CHARACTER Param3*64
+      ...
+      Monitor_Call('FileSystemFunction', FuncCode, FileNo, Param3, Param2)
+      IF (ErrCode .NE. 0) THEN ...
+    mon_number: null
+    notes: ''
+  planc:
+    available: true
+    code: |-
+      INTEGER : FuncCode, FileNo, Param2
+      BYTES : Param3(0:63)
+      ...
+      ON ROUTINEERROR DO
+        IF ErrCode <> 0 THEN ...
+      ENDON
+      Monitor_Call('FileSystemFunction', FuncCode, FileNo, Param3, Param2)
+    mon_number: null
+    notes: ''
+  assembly_500:
+    available: true
+    code: |-
+      Func1Code : W DATA 1              %Various function codes.
+      Func2Code : W DATA 2
+      Func3Code : W DATA 3
+      FileNo : W BLOCK 1
+      BlockSize : W BLOCK 1
+      FileName : STRING 200B
+      ErrCode : W BLOCK 1
+      FileSystemFunction : EQU 37B9 + 327B
+      ...
+      CALLG FileSystemFunction, 2, Func1Code, FileNo
+      IF K GO Error
+      CALLG FileSystemFunction, 3, Func2Code, FileNo, BlockSize
+      IF K GO Error
+      CALLG FileSystemFunction, 3, Func3Code, FileNo, FileName
+      IF K GO Error
+      ...
+      Error, W1 := ErrCode
+    octal_definition: 37B9 + 327B
+  mac:
+    available: true
+    code: |-
+      LDT FUNC    %Load register T with the function code.
+      LDA FILNO   %Load register A with the file number.
+      LDX (BUFF   %Load register X with buffer address.
+      MON 327     %Monitor call FileSystemFunction.
+      JMP ERROR   %Error return.
+      STA PAR2    %Returned parameter 2 if func = 2.
+      ...
+      ERROR, ...
+      FUNC, 1     %Only function 1 is available on ND-100.
+      FILNO, ...
+      BUFF, 0     %Buffer of 26 words.
+      *+26/
+      PAR2, 0     %Block size.
+    mon_number: 327
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 8436
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

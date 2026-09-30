@@ -1,0 +1,78 @@
+# SINTRAN III Monitor Call: GetAddressArea
+# Octal: 222B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 222B
+name: GetAddressArea
+short_names:
+- GBSIZ
+description: Gets the size of your address area. Your address area may consist of one or two 128 Kbyte areas. This depends on the size of the background segments.
+notes:
+- The size of the background segment is defined when SINTRAN III is generated for your computer.
+see_also:
+- '@CHANGE-BACKGROUND-SEGMENT-SIZE'
+parameters:
+- name: SegmentSize
+  type: INTEGER
+  io: O
+  description: 'The size of the address area. 100B means one 128 Kbyte address area. 200B means two 128 Kbyte address areas, one for instructions and one for data.'
+examples:
+  pascal:
+    available: true
+    code: |-
+      SegmentSize : INTEGER2;
+      ...
+      GetAddressArea (SegmentSize);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 SegmentSize COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetAddressArea" USING SegmentSize.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER SegmentSize
+      ...
+      Monitor_Call('GetAddressArea', SegmentSize)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : SegmentSize
+      ...
+      Monitor_Call('GetAddressArea', SegmentSize)
+  assembly_500:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  mac:
+    available: true
+    code: |-
+      MON 222                  %Monitor call GetAddressArea.
+      STA SIZE, 0              %Store returned size of background segment.
+      ...
+    mon_number: 222
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: true
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 9381
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

@@ -1,0 +1,217 @@
+# SINTRAN III Monitor Call: GetScratchSegment
+# Octal: 422B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 422B
+name: GetScratchSegment
+short_names:
+- GSWSP
+description: Connects an empty data segment to the user's domain and reserves space for it on the swap file. The segment is assigned the default name "SCRATCH-SEGMENT:DSEG".
+notes: []
+see_also:
+- ClearCapability
+parameters:
+- name: SizeInBytes
+  type: INTEGER
+  io: I
+  description: Segment size in bytes.
+- name: LogSegmentNo
+  type: INTEGER
+  io: I
+  description: Logical segment number to use. Use 0 for system to select first available free segment.
+- name: RetLogSegmentNo
+  type: INTEGER
+  io: O
+  description: Returns the logical segment number actually selected.
+examples:
+  pascal:
+    available: true
+    code: |-
+      SizeInBytes, LogSegmentNo, RetLogSegmentNo : LONGINT;
+      ...
+      GetScratchSegment(SizeInBytes, LogSegmentNo, RetLogSegmentNo);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 SizeInBytes COMP.
+      01 LogSegmentNo COMP.
+      01 RetLogSegmentNo COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetScratchSegment" USING SizeInBytes, LogSegmentNo, RetLogSegmentNo.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER SizeInBytes, LogSegmentNo, RetLogSegmentNo
+      ...
+      Monitor_Call('GetScratchSegment', SizeInBytes, LogSegmentNo, RetLogSegmentNo)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : SizeInBytes, LogSegmentNo, RetLogSegNo
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode >< 0 THEN ...
+      ENDON
+      Monitor_Call('GetScratchSegment', SizeInBytes, LogSegmentNo, RetLogSegNo)
+  assembly_500:
+    available: true
+    code: |-
+      SizeInBytes : W BLOCK 1
+      LogSegmentNo : W BLOCK 1
+      RetLogSegmentNo : W BLOCK 1
+      ErrCode : W BLOCK 1
+      GetScratchSegment : EQU 37B9 + 422B
+      ...
+      CALLG GetScratchSegment, 3, SizeInBytes, LogSegmentNo, RetLogSegmentNo
+          IF K GO ERROR
+      ...
+      ERROR : W1 := ErrCode              %ErrorCode in W1 register.
+    octal_definition: 37B9 + 422B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 12147
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_422B_GetScratchSegment.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    HEALTHY. This is the call to copy when implementing a segment-returning MON
+    call. It does real work through the host allocate_segment callback (a genuine
+    MMU/PST-backed scratch segment), and it WRITES ITS OUT PARAMETER. Contrast
+    412B FSCNT, which was bookkeeping-only and did NOT write its OUT parameter -
+    see the defect-class note below.
+
+  parameter_notes:
+    - name: RetLogSegmentNo
+      note: >-
+        OUT PARAMETER - AND THIS IS THE WHOLE POINT. nd500x writes it with
+        mon_write_param_word(ctx, 2, assigned_segment) whenever arg_count >= 3.
+        THE OUT-PARAMETER DEFECT CLASS: a handler that returns SUCCESS without
+        writing its OUT/IO parameter causes failures that surface TENS OF
+        THOUSANDS of instructions later, in a completely unrelated place.
+        Confirmed instances: 412B FSCNT (commit 73ac594 - the caller read 0 from
+        the stale cell, addressed segment 0, read zeros 67 times at vaddr
+        0x00000000, never touched the real mapping at 0x20000000, and failed with
+        "*ERROR* can't generate code" WITHOUT EVER READING ITS INPUT) and 144B
+        MAGTP function 0 (commit 6ad9c09 - the linker''s tables stayed blank, it
+        walked blank memory as records, computed a bogus pointer 0x40404040, took
+        a protect violation, and the symptom appeared ~83000 instructions later
+        as a stack overflow). If a call has an OUT or IO parameter, the write IS
+        the contract. 422B GSWSP is the reference for doing it right - commit
+        73ac594 fixed 412B by making it write "like 422B GSWSP''s
+        mon_write_param_word".
+      verified: true
+    - name: 'SegmentSize / LogSegmentNo / RetLogSegmentNo'
+      note: >-
+        On ND-500 all three INTEGER parameters are 32-bit words (W BLOCK).
+        SegmentSize is in BYTES. LogSegmentNo = 0 asks the system to pick the
+        first available free segment.
+      verified: true
+    - name: RetLogSegmentNo
+      note: >-
+        The handler header says it is "only written if LogSegmentNo was 0", but
+        the code writes it UNCONDITIONALLY whenever a third argument is present.
+        Writing it always is the safer behaviour and nothing has been observed to
+        object; the header text is the stale one.
+      verified: true
+
+  observed_calls:
+    - caller: 'CAT-500 code generator (cat-cat5-b06.dom), startup'
+      params:
+        LogSegmentNo: 0
+      expectation: >-
+        Returns AssignedSeg=2 (observed 2026-07-17). CAT-500 issues GSWSP as part
+        of its fixed startup sequence (11B TIME, 114B TUSED, 143B RSIO, 422B
+        GSWSP, 41B ROBJE, 76B SETBS, 62B RMAX, 73B SMAX, 504B DVOUTS, 503B
+        DVINST) before its banner and "Cat-500:" prompt.
+      note: >-
+        Audited clean: "422B GSWSP: segment mapping clean"
+        (docs/HANDOFF_MON_COMPLETENESS.md); "422B GSWSP uses the real
+        allocate_segment callback (genuine MMU-backed scratch segment - not a
+        blocker)" (docs/CAT500_UECOM_CSHARP_HANDOFF.md Part C).
+
+  return_contract:
+    success: >-
+      K flag cleared; RetLogSegmentNo written with the assigned logical segment
+      number; the segment is connected to the caller''s domain and MMU-backed.
+    errors:
+      - code: -1
+        octal: null
+        meaning: >-
+          NOT a SINTRAN code. Internal guard when the host allocate_segment
+          callback is absent.
+      - code: null
+        octal: null
+        meaning: >-
+          On allocation failure the handler passes the CALLBACK''S return code
+          straight through to mon_set_error. Those values are host-internal and
+          are NOT the SINTRAN Appendix A codes.
+
+  verified:
+    - claim: 'nd500x allocates a real MMU/PST-backed segment and reports its number.'
+      evidence: >-
+        Handler calls ctx->allocate_segment(cpu, machine, 0xFF, requested_segment,
+        segment_size, &assigned_segment) - 0xFF is the sentinel for "use the
+        current domain", which the callback reads from cpu->CED. Observed
+        AssignedSeg=2 for CAT-500. Audited "segment mapping clean".
+    - claim: '422B is the model for the OUT-parameter contract.'
+      evidence: >-
+        Commit 73ac594 and docs/MON_CSHARP_SYNC_HANDOFF.md PART C: "412B FSCNT:
+        return the assigned SegmentNo through the OUTPUT arg slot (like 422B
+        GSWSP''s mon_write_param_word), not the deprecated W1/error-code channel".
+
+  unverified:
+    - >-
+      NO CARVED WORKER EXISTS FOR THIS CALL. 422B belongs to the ND-500 monitor
+      family (410B-427B) dispatched through the S3SM5 numeric vector table, and
+      its vector slot is EMPTY: slot 0x0284 = 0x0000, byte-proven, in segment
+      030-S3SM5 (load base 40000B). The actual servicing point is NOT LOCATED.
+      The carve folder deliberately contains no .ASM and no .pseudo.c - "there is
+      no worker in any carved segment ... Fabricating one would be wrong". The
+      short name GSWSP appears in no carved segment''s symbol table.
+    - >-
+      Therefore SINTRAN''s real error codes for this call are UNKNOWN. nd500x
+      returns host callback codes, which are certainly not them.
+    - >-
+      The default segment name "SCRATCH-SEGMENT:DSEG" the manual documents is not
+      modelled - nd500x names nothing.
+    - >-
+      "Reserves space for it on the swap file" has no emulator analogue; there is
+      no swap file.
+    - >-
+      The handler does not check arg_count before reading arguments 0 and 1.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/422B-GetScratchSegment/README.md'
+      note: >-
+        Documents the ABSENCE: S3SM5 vector slot 0x0284 = 0x0000 (byte-proven),
+        servicing point NOT LOCATED, no worker body anywhere.
+    - doc: nd500x/docs/CAT500_UECOM_CSHARP_HANDOFF.md
+      note: 'Part C - GSWSP is clean; the CAT-500 blocker is 412B FSCNT, not this call.'
+    - doc: nd500x/docs/HANDOFF_MON_COMPLETENESS.md
+      note: 'Audit line: "422B GSWSP: segment mapping clean".'

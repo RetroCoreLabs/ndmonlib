@@ -1,0 +1,164 @@
+octal: 114B
+name: GetTimeUsed
+short_names:
+- TUSED
+description: 'Gets the time you have used the CPU since you logged in. In batch jobs, you get the time
+  since you entered the job.
+
+
+  - The CPU time used is given in basic time units. A basic time unit is 1/50th of a second.
+
+  - Can also be used from RT-programs.'
+see_also:
+- '@TIME-USED'
+parameters:
+- name: TimeUsed
+  type: LONGINT
+  io: O
+  description: CPU time used in basic time units (1/50s). Output returned in W1 register.
+examples:
+  pascal:
+    available: true
+    code: 'TimeUsed : LONGINT;
+
+      ...
+
+      GetTimeUsed(TimeUsed);'
+  cobol:
+    available: true
+    code: '01 TimeUsed COMP PIC S9(10).
+
+      ...
+
+      MONITOR-CALL "GetTimeUsed" USING TimeUsed.'
+  fortran:
+    available: true
+    code: 'INTEGER*4 TimeUsed
+
+      ...
+
+      Monitor_Call(''GetTimeUsed'', TimeUsed)'
+  planc:
+    available: true
+    code: 'INTEGER4 : TimeUsed
+
+      ...
+
+      Monitor_Call(''GetTimeUsed'', TimeUsed)'
+  assembly_500:
+    available: true
+    code: 'TimeUsed : W BLOCK 1
+
+      GetTimeUsed : EQU 37B9 + 114B
+
+      ...
+
+      CALLG GetTimeUsed, 0
+
+      W1 =: TimeUsed           %Result is returned in W1 register.'
+    octal_definition: 37B9 + 114B
+  mac:
+    available: true
+    code: 'MON     114   %Monitor call GetTimeUsed.
+
+      STD     TIME  %Store CPU time.
+
+      ...
+
+      TIME, 0       %A double word.
+
+      0             %
+
+
+
+
+      | **ND-100 and ND-500** | **All users**   | **Background programs** |
+
+      |-----------------------|-----------------|------------------------|'
+    mon_number: 114
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 293
+  line: 13039
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_114B_GetTimeUsed.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    Returns elapsed CPU time in basic time units (1/50 s) from mon_clock. Two
+    modes (commit 4fa340a): unpinned = real host CLOCK_MONOTONIC elapsed since
+    session start; ND500X_PIN_CLOCK set = ALWAYS 0, so the run is
+    bit-reproducible. A guest that waits for TUSED to advance would spin forever
+    in pinned mode - no observed program does.
+
+  parameter_notes:
+    - name: TimeUsed
+      note: >-
+        Returned in W1/I1 ONLY. Unlike 11B, the nd500x handler does NOT also
+        write a parameter word. The manual types it LONGINT; nd500x returns a
+        32-bit value.
+      verified: true
+
+  observed_calls:
+    - caller: 'CAT-500 code generator (cat-cat5-b06.dom), startup'
+      params: {}
+      expectation: >-
+        Part of CAT-500's fixed startup sequence (11B TIME, 114B TUSED, 143B
+        RSIO, 422B GSWSP, 41B ROBJE, 76B SETBS, 62B RMAX, 73B SMAX, 504B DVOUTS,
+        503B DVINST) before its banner and "Cat-500:" prompt. It does not appear
+        to act on the value; a pinned 0 does not stop it.
+      note: 'Source: nd500x/docs/CAT500_UECOM_CSHARP_HANDOFF.md Part C.'
+
+  return_contract:
+    success: 'K flag cleared; TimeUsed in W1 (I1). 0 when the clock is pinned.'
+    errors: []
+
+  verified:
+    - claim: 'MON 114B dispatches via MCTAB to the L07 worker TUSED in segment 003-S3CP.'
+      evidence: >-
+        Carve L-VSX-500 114B-GetTimeUsed/README.md: MCTAB slot (segment
+        044-S3IDPIT, byte offset 1976) = 041303B = TUSED; TUSED worker body
+        carved at 041303B-041373B in 003-S3CP (byte offset 9606). Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=1976 count=2 -> 42 c3.
+
+  unverified:
+    - >-
+      nd500x measures HOST wall time (CLOCK_MONOTONIC), not emulated CPU time.
+      The manual says "the time you have used the CPU". These are different
+      quantities; on a fast host the emulator reports far less than a real
+      ND-500 would, and the number moves with host load.
+    - >-
+      "Time since you logged in" / "since you entered the job" has no emulator
+      analogue - the baseline is the session start
+      (mon_clock_reset_session / mon_reset_session_time).
+    - >-
+      An audited but NOT-APPLIED correction is recorded in
+      nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md PART C: "114B
+      TUSED: optional byte-proven entry arg-check that returns error selector 147
+      on mismatch." nd500x performs no argument check at all. The selector 147
+      has not been cross-checked against the Appendix A error table here.
+    - >-
+      The TUSED worker body is carved but was not decoded for this note.
+    - >-
+      Not yet audited against the carve - listed under "NOT yet audited vs carve"
+      in nd500x/docs/HANDOFF_MON_COMPLETENESS.md.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/114B-GetTimeUsed/README.md'
+      note: 'MCTAB[114B] = TUSED = 041303B, worker carved in 003-S3CP.'
+    - doc: nd500x/src/libmon/mon_clock.c
+      note: 'mon_clock_tused_basic_units() - returns 0 when pinned.'

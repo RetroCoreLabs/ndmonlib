@@ -1,0 +1,147 @@
+octal: 213B
+name: GetDirUserIndexes
+short_names:
+- MUIDI
+description: 'Gets a directory index and a user index. You have to specify a directory name and a user
+  name.
+
+
+  - Use ExecutionInfo to get the user index and the directory index of the user executing a program.'
+see_also:
+- GetDirNameIndexes
+- GetUserIndex
+- and GetAllFileIndexes
+parameters:
+- name: UserName
+  type: STRING
+  io: I
+  description: Directory and user name string (up to 16 chars), e.g. 'A-HANSEN'.
+- name: DirIndex
+  type: INTEGER
+  io: O
+  description: Directory index.
+- name: UserIndex
+  type: INTEGER
+  io: O
+  description: User index.
+examples:
+  pascal:
+    available: true
+    code: 'UserName : PACKED ARRAY [0..15] OF CHAR;
+
+      DirIndex, UserIndex : INTEGER2;
+
+      ...
+
+      GetDirUserIndexes(UserName, DirIndex, UserIndex);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01  UserName  PIC X(16).
+
+      01  DirIndex  COMP.
+
+      01  UserIndex COMP.
+
+      01  ErrCode   COMP.
+
+      ...
+
+      MONITOR-CALL "GetDirUserIndexes" USING UserName, DirIndex, UserIndex.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'CHARACTER  UserName*16
+
+      INTEGER    DirIndex, UserIndex
+
+      ...
+
+      Monitor Call(''GetDirUserIndexes'',UserName(1:16),DirIndex,UserIndex)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "BYTES : UserName(0:15)\nINTEGER : DirIndex, UserIndex\n...\nON ROUTINEERROR DO\n    IF ErrCode\
+      \ >< 0 THEN ...\nENDON\nMonitor_Call('GetDirUserIndexes', UserName, DirIndex, UserIndex)"
+  assembly_500:
+    available: true
+    code: 'UserName : STRINGDATA ''A-HANSEN''''''
+
+      DirIndex : W BLOCK 1
+
+      UserIndex : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      GetDirUserIndexes : EQU 37B9 + 213B
+
+
+      CALLG GetDirUserIndexes, 3, UserName, DirIndex, UserIndex
+
+      IF K GO ERROR
+
+
+      ERROR : W1 =: ErrCode
+
+      %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 213B
+  mac:
+    available: true
+    code: 'LDX (USER
+
+      %Address of string with directory and user name.
+
+      MON 213
+
+      %Monitor call GetDirUserIndexes.
+
+      JMP ERROR
+
+      %Error return from monitor call.
+
+      STT INDEX
+
+      %Normal return, store indexes.
+
+
+      ERROR, ...
+
+      %Error number in register A.
+
+
+      USER, ''A-HANSEN''
+
+      %Obtain indexes for A-HANSEN.
+
+      INDEX, 0
+
+      %Left byte: dir index. Right byte: user index.
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+
+      |-------------------|-----------|--------------|'
+    mon_number: 213
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 237
+  line: 10358
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

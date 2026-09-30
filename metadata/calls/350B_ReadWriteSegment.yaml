@@ -1,0 +1,117 @@
+# SINTRAN III Monitor Call: ReadWriteSegment
+# Octal: 350B
+# Sourced from: ND-860230-6-EN SINTRAN III Release Information L-Version, section
+#   3.2.2 (RWSEG MON 350) and section 10.7.3 (RWSEG available for ND-500 programs).
+
+octal: 350B
+name: ReadWriteSegment
+short_names:
+- RWSEG
+description: >-
+  Read or write a single location on a segment or in physical memory. A parameter
+  list (pointed to by the A-register) selects read/write, the segment or memory
+  bank, the address within it, and the value to write. Restricted to background
+  programs running on user SYSTEM. Introduced in the L-version. Primarily a
+  debugging aid.
+notes:
+- >-
+    NEW in the L-version (ND-860230-6-EN section 3.2.2). Also made available for
+    ND-500 programs (section 10.7.3, MON RWSEG is available for ND-500 programs).
+- >-
+    ND-100 register convention: A = address of the 4-word parameter list PARLI.
+    PARLI = FUNC, SGBNK, ADDR, VALUE.
+- >-
+    FUNC: 0 = read, 1 = write. Bit 17B set = operate on physical memory; otherwise
+    operate on a segment. (Bit 17B is octal bit position 17, i.e. bit 15.)
+- >-
+    SGBNK = segment number (segment mode) or memory bank number (physical mode).
+    ADDR = address within the segment or bank. VALUE = value to write when
+    FUNC = 1; on a read (FUNC = 0) the value read is returned in VALUE.
+- 'Rules: only available for background programs running on user SYSTEM.'
+see_also:
+- ReadDiskPage
+- WriteDiskPage
+parameters:
+- name: ParamListAddr
+  type: INTEGER
+  io: I
+  description: >-
+    Address of the 4-word parameter list PARLI (FUNC, SGBNK, ADDR, VALUE), loaded
+    into the A-register before MON 350.
+- name: FUNC
+  type: INTEGER
+  io: I
+  description: >-
+    Function word (PARLI word 1). 0 = read, 1 = write. Bit 17B set = physical
+    memory; otherwise segment.
+- name: SGBNK
+  type: INTEGER
+  io: I
+  description: >-
+    Segment number (segment mode) or memory bank number (physical-memory mode)
+    (PARLI word 2).
+- name: ADDR
+  type: INTEGER
+  io: I
+  description: Address within the segment or bank (PARLI word 3).
+- name: VALUE
+  type: INTEGER
+  io: I/O
+  description: >-
+    Value to write when FUNC = 1; value read is returned here when FUNC = 0
+    (PARLI word 4).
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: ''
+  cobol:
+    available: false
+    code: ''
+    notes: ''
+  fortran:
+    available: false
+    code: ''
+    notes: ''
+  planc:
+    available: false
+    code: ''
+    notes: ''
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 350B
+    notes: >-
+      MON RWSEG is available for ND-500 programs (ND-860230-6-EN section 10.7.3);
+      no ND-500 CALLG argument layout is given in the release doc.
+  mac:
+    available: true
+    code: |-
+      LDA (PARLI    % A = address of parameter list
+      MON 350       % RWSEG
+      % PARLI, (FUNC   % function: 0=read, 1=write, bit 17B set = physical memory
+      %        SGBNK   % segment no. or memory bank no.
+      %        ADDR    % address within segment or bank
+      %        VALUE   % value to write (func=1) / value read (func=0)
+    mon_number: 350
+    notes: 'Only available for background programs on user SYSTEM.'
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    ND-860230-6-EN SINTRAN III Release Information L-Version, section 3.2.2
+    (RWSEG MON 350); section 10.7.3 (ND-500 availability)
+  page: 36
+  line: 1608
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-30'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false
+  method: SINTRAN release-doc (L-version) extraction
