@@ -406,7 +406,7 @@ def all_calls_page(calls):
     for o in sorted(calls, key=octal_value):
         c = calls[o]
         g = c["group"]
-        lines.append('<tr><td data-sort="%05d"><a href="../%s/"><code>%s</code></a></td>'
+        lines.append('<tr><td data-sort="%05d"><a href="%s/"><code>%s</code></a></td>'
                      '<td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
                          octal_value(o), o, o, octal_value(o), esc(c["name"]),
                          esc(c["short"]), badge(c["status"]), esc(g["title"])))
