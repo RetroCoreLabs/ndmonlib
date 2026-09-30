@@ -11,8 +11,10 @@
  * Parameters:
  *   [I] Command (STRING): SINTRAN III command to execute
  *
- * Note: This is a stub implementation that logs the command but doesn't execute it.
- * SINTRAN III command execution is not implemented.
+ * Note: the command is only executed when the frontend has registered a
+ * runner with mon_set_execute_command() and that runner knows the program.
+ * With no runner, or an unknown program, the command is logged and the call
+ * returns success without executing anything.
  *
  * Reference: SINTRAN III Monitor Calls (ND-860228.2 EN)
  */

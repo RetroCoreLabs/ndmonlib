@@ -8,8 +8,6 @@
  * Parameters:
  *   [I] FileNumber (INTEGER): input
  *   [I] BytePointer (INTEGER4): input
- *
- * AUTO-GENERATED STUB - Implementation required
  */
 
 #include "mon.h"

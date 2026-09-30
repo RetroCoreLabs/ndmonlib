@@ -9,8 +9,6 @@
  *   [I] DeviceNumber (INTEGER): input
  *   [O] NoInBuffer (INTEGER): output
  *   [O] NoUntilBreak (INTEGER): output
- *
- * AUTO-GENERATED STUB - Implementation required
  */
 
 #include "mon.h"

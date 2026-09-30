@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-28",
+  "generated": "2026-09-30",
   "generator": "tools/generate_mon_status.py",
   "source_of_truth": "src/core/mon_registry.c registration status",
   "total": 234,
@@ -208,12 +208,10 @@
       "handler": "mon_13B_ClearInBuffer",
       "source_file": "src/handlers/mon_13B_ClearInBuffer.c",
       "loc": 14,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "Clears a device input buffer. Input from character devices, e.g. terminals, are temporarily stored i"
     },
     {
@@ -244,13 +242,10 @@
       "handler": "mon_16B_GetTerminalType",
       "source_file": "src/handlers/mon_16B_GetTerminalType.c",
       "loc": 31,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": true,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)",
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
-      ],
+      "notes": [],
       "description": "Gets the terminal type. The terminal type tells SINTRAN III how to handle a particular terminal. A w"
     },
     {
@@ -264,12 +259,10 @@
       "handler": "mon_17B_SetTerminalType",
       "source_file": "src/handlers/mon_17B_SetTerminalType.c",
       "loc": 20,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "Sets the type of a terminal. The terminal type tells SINTRAN III how to handle a particular terminal"
     },
     {
@@ -389,7 +382,7 @@
       "is_stub_body": false,
       "has_evidence": false,
       "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
+        "registered VALIDATED but the source says 'TODO' - check whether the call is complete"
       ],
       "description": "Gets the address of the calling program's RT description. Background programs get the RT description"
     },
@@ -782,7 +775,7 @@
       "is_stub_body": false,
       "has_evidence": false,
       "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
+        "registered VALIDATED but the source says 'TODO' - check whether the call is complete"
       ],
       "description": "Outputs a file system error message. Appendix A shows the messages connected to each error code. The"
     },
@@ -865,12 +858,10 @@
       "handler": "mon_71B_DisableEscape",
       "source_file": "src/handlers/mon_71B_DisableEscape.c",
       "loc": 12,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "The ESCAPE key on the terminal normally terminates a program. This is called user break. This monito"
     },
     {
@@ -884,12 +875,10 @@
       "handler": "mon_72B_EnableEscape",
       "source_file": "src/handlers/mon_72B_EnableEscape.c",
       "loc": 12,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "Enables the ESCAPE key on the terminal. The ESCAPE key normally terminates a program. This is called"
     },
     {
@@ -920,12 +909,10 @@
       "handler": "mon_74B_SetStartByte",
       "source_file": "src/handlers/mon_74B_SetStartByte.c",
       "loc": 40,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "Sets the next byte to be read or written in an opened mass-storage file.  - The bytes in a file are"
     },
     {
@@ -2112,12 +2099,10 @@
       "handler": "mon_214B_GetUserName",
       "source_file": "src/handlers/mon_214B_GetUserName.c",
       "loc": 31,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": true,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "Gets the name of a user. The user may be on a remote computer if the COSMOS network is installed. Th"
     },
     {
@@ -2202,9 +2187,7 @@
       "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
-      ],
+      "notes": [],
       "description": "Creates a file. The file may be indexed, contiguous, or allocated. Most files are indexed. The size"
     },
     {
@@ -3000,12 +2983,10 @@
       "handler": "mon_313B_InBufferState",
       "source_file": "src/handlers/mon_313B_InBufferState.c",
       "loc": 18,
-      "has_stub_marker": true,
+      "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "stale 'AUTO-GENERATED STUB' header comment (handler is implemented; comment can be removed)"
-      ],
+      "notes": [],
       "description": "Gets information about an input buffer. The current number of bytes in it, and the number of bytes u"
     },
     {
@@ -3073,9 +3054,7 @@
       "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
-      ],
+      "notes": [],
       "description": "Executes a SINTRAN III command. Specify the command name and the parameters as a text string.  - An"
     },
     {
@@ -3110,7 +3089,7 @@
       "is_stub_body": false,
       "has_evidence": true,
       "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
+        "registered VALIDATED but the source says 'NOT YET' - check whether the call is complete"
       ],
       "description": "User Environment administrator. Sub-function selector in arg[0], range [1..8]."
     },
@@ -3928,7 +3907,7 @@
       "is_stub_body": false,
       "has_evidence": false,
       "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
+        "registered VALIDATED but the source says 'PLACEHOLDER' - check whether the call is complete"
       ],
       "description": "Reads a string from a device, e.g. a terminal or an opened file. This monitor call provide a fast in"
     },
@@ -3946,9 +3925,7 @@
       "has_stub_marker": false,
       "is_stub_body": false,
       "has_evidence": false,
-      "notes": [
-        "registered VALIDATED but source contains caveat keywords (TODO/UNPROVEN/etc.) - verify completeness"
-      ],
+      "notes": [],
       "description": "Writes a string to a device, e.g. a terminal or an opened file.  - This is the most efficient way to"
     },
     {
