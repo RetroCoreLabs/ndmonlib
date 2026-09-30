@@ -75,6 +75,10 @@ examples:
       | ... | %Normal return. |
     mon_number: 341
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100
+    users: User RT and user SYSTEM
+    programs: RT programs
   nd100: true
   nd500: false
   user_programs: false

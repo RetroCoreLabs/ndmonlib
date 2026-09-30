@@ -67,6 +67,10 @@ examples:
     mon_number: 167
     notes: ''
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100
+    users: All users
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: true
