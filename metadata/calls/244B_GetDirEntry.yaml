@@ -79,17 +79,30 @@ examples:
     octal_definition: 37B9 + 244B
   mac:
     available: true
-    code: "LDT DIRIX        %Directory index.\nLDX (BUFF       %Buffer to receive directory entry.\nLDA\
-      \ (REMID      %Remote system identification in D register.\nCOPY SA DD      %Used only if bit 15\
-      \ in X register is set.\nMON 244         %Monitor call GetDirEntry.\nJMP ERROR       %Error return\
-      \ from monitor call.\n...\n                %Normal return.\n                %A-reg.=1 or 5 : disk\
-      \ has spare-track allocation.\n                %A-reg.=3 : no spare-track allocation.\nERROR, ...\
-      \      %Error number in register A.\n...\nDIRIX, ...      %Set bit 15 if remote system.\nBUFF, 0\
-      \         %\n*+30/           %24 word long buffer.\nREMID, 0        %Remote identification string.\n\
-      *+40/           %32 words for string.\n\n\n\n| ND-100 and ND-500 | User RT and user SYSTEM | All\
-      \ programs |"
+    code: |2-
+      LDT DIRIX        %Directory index.
+      LDX (BUFF       %Buffer to receive directory entry.
+      LDA (REMID      %Remote system identification in D register.
+      COPY SA DD      %Used only if bit 15 in X register is set.
+      MON 244         %Monitor call GetDirEntry.
+      JMP ERROR       %Error return from monitor call.
+      ...
+                      %Normal return.
+                      %A-reg.=1 or 5 : disk has spare-track allocation.
+                      %A-reg.=3 : no spare-track allocation.
+      ERROR, ...      %Error number in register A.
+      ...
+      DIRIX, ...      %Set bit 15 if remote system.
+      BUFF, 0         %
+      *+30/           %24 word long buffer.
+      REMID, 0        %Remote identification string.
+      *+40/           %32 words for string.
     mon_number: 244
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: User RT and user SYSTEM
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: true

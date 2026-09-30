@@ -65,16 +65,29 @@ examples:
     octal_definition: 37B9 + 272B
   mac:
     available: true
-    code: "LDT FILNO               %File number.\nLDA (FIRST              %Address of double word with\
-      \ first page.\nLDX (LAST               %Address of double word with last page.\nMON 272        \
-      \         %Monitor call DeletePage.\nJMP ERROR               %Error return from monitor call.\n\
-      STD NODEL               %Normal return, store the number of pages deleted.\n\nERROR, ...       \
-      \       %Error number in register A.\n...\nFILNO, ...\nFIRST, ...             %A double word.\n\
-      \    ...                %\nLAST, ...              %A double word.\n    ...                %\nNODEL,\
-      \ 0               %A double word.\n0                      %\n\n\n| ND-100 and ND-500 | All users\
-      \ | All programs |"
+    code: |2-
+      LDT FILNO               %File number.
+      LDA (FIRST              %Address of double word with first page.
+      LDX (LAST               %Address of double word with last page.
+      MON 272                 %Monitor call DeletePage.
+      JMP ERROR               %Error return from monitor call.
+      STD NODEL               %Normal return, store the number of pages deleted.
+
+      ERROR, ...              %Error number in register A.
+      ...
+      FILNO, ...
+      FIRST, ...             %A double word.
+          ...                %
+      LAST, ...              %A double word.
+          ...                %
+      NODEL, 0               %A double word.
+      0                      %
     mon_number: 272
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: false

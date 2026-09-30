@@ -79,9 +79,12 @@ examples:
       DIRIX, ...
 
 
-      ND-100 and ND-500 | User RT and user SYSTEM | All programs
     mon_number: 246
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: User RT and user SYSTEM
+    programs: All programs
   nd100: false
   nd500: false
   user_programs: true

@@ -365,16 +365,42 @@ def call_page(c, name_to_octal):
         lines.append("")
 
     compat = y.get("compatibility") or {}
-    if compat:
+    box = compat.get("manual_box") if isinstance(compat, dict) else None
+    flags = [(k, t) for k, t in COMPAT_TEXT if isinstance(compat, dict) and k in compat]
+    if box or flags:
         lines.append("## Compatibility")
         lines.append("")
-        lines.append("| " + " | ".join(t for k, t in COMPAT_TEXT if k in compat) + " |")
-        lines.append("|" + "|".join("---" for k, t in COMPAT_TEXT if k in compat) + "|")
-        lines.append("| " + " | ".join("Yes" if compat[k] else "No"
-                                       for k, t in COMPAT_TEXT if k in compat) + " |")
+    if box:
+        cols = [("machines", "Machines"), ("users", "Users"), ("programs", "Programs")]
+        lines.append("| " + " | ".join(t for k, t in cols if k in box) + " |")
+        lines.append("|" + "|".join("---" for k, t in cols if k in box) + "|")
+        lines.append("| " + " | ".join(cell(box[k]) for k, t in cols if k in box) + " |")
         lines.append("")
-        lines.append("As listed in the manual.")
+        lines.append("The manual's compatibility box for this call, word for word.")
         lines.append("")
+    if flags:
+        if box:
+            lines.append("Yes/no fields from the YAML extraction (not in the manual's words):")
+            lines.append("")
+        lines.append("| " + " | ".join(t for k, t in flags) + " |")
+        lines.append("|" + "|".join("---" for k, t in flags) + "|")
+        lines.append("| " + " | ".join("Yes" if compat[k] else "No" for k, t in flags) + " |")
+        lines.append("")
+        if box:
+            want = {"ND-100 and ND-500": (True, True), "ND-100": (True, False),
+                    "ND-500": (False, True)}.get(str(box.get("machines")))
+            have = (compat.get("nd100"), compat.get("nd500"))
+            if want and have != want:
+                lines.append('!!! warning "Disagreement"')
+                lines.append("    The manual box says **%s**, but the yes/no fields say "
+                             "ND-100 = %s, ND-500 = %s. The manual box is the source."
+                             % (esc(box["machines"]), "Yes" if have[0] else "No",
+                                "Yes" if have[1] else "No"))
+                lines.append("")
+        else:
+            lines.append("From the YAML extraction; this call's page in the manual "
+                         "had no compatibility box that was captured.")
+            lines.append("")
 
     examples = y.get("examples") or {}
     shown = [(k, t) for k, t in EXAMPLE_LANGS

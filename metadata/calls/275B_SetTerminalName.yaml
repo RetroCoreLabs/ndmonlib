@@ -74,10 +74,12 @@ examples:
       NAME, 'TERMINAL'                   %Set terminal name to TERMINAL.
 
 
-      | ND-100 and ND-500 | User SYSTEM | All programs |
-      |-------------------|-------------|--------------|
     mon_number: 275
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: User SYSTEM
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: false

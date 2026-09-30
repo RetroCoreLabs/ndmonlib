@@ -70,13 +70,21 @@ examples:
     octal_definition: 37B9 + 67B
   mac:
     available: true
-    code: "    LDT DEVNO                %Logical device number.\n    MON 67                   %Monitor\
-      \ call OutBufferSpace.\n    JMP ERROR                %Error return from monitor call.\n    STA COUNT\
-      \                %Normal return, store number of bytes.\nERROR,\n    ...                      %Error\
-      \ number in register A.\nDEVNO, ...\nCOUNT, 0                     %Number of bytes free space in\
-      \ outbuffer.\n\n\n| ND-100 and ND-500 | All users | All programs |\n|-------------------|-----------|--------------|"
+    code: |2-
+          LDT DEVNO                %Logical device number.
+          MON 67                   %Monitor call OutBufferSpace.
+          JMP ERROR                %Error return from monitor call.
+          STA COUNT                %Normal return, store number of bytes.
+      ERROR,
+          ...                      %Error number in register A.
+      DEVNO, ...
+      COUNT, 0                     %Number of bytes free space in outbuffer.
     mon_number: 67
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: false

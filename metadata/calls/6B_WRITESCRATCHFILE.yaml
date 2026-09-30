@@ -83,9 +83,12 @@ examples:
       *+400/       %Make a buffer of 256 words, 1 block.
 
 
-      | ND-100 | All users | Background programs |
     mon_number: 6
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100
+    users: All users
+    programs: Background programs
   nd100: true
   nd500: false
   user_programs: false

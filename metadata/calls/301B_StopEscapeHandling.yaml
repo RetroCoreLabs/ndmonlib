@@ -56,9 +56,12 @@ examples:
       | ...     | ...  |                                    |
 
 
-      | ND-100 | All users | Background programs |
     mon_number: null
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100
+    users: All users
+    programs: Background programs
   nd100: true
   nd500: false
   user_programs: false

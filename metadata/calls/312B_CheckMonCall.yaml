@@ -69,9 +69,12 @@ examples:
       ENTRY, 0 %Monitor call entry returned if implemented.
 
 
-      | ND-100 and ND-500 | All users | All programs |
     mon_number: 312
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: false

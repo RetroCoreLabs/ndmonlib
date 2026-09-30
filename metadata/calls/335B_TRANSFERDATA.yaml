@@ -113,9 +113,12 @@ examples:
       | NOBLK, 0:0| % |
 
 
-      ND-100 | User RT and user SYSTEM | RT programs
     mon_number: 335
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100
+    users: User RT and user SYSTEM
+    programs: RT programs
   nd100: false
   nd500: true
   user_programs: false
