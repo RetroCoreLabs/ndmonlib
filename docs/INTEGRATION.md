@@ -346,7 +346,7 @@ After successful integration:
 
 1. **Run the test suite** — `ctest` to validate integration
 2. **Use CARVING.md** — Identify + implement missing MON calls as needed
-3. **Regenerate docs** — `python3 tools/generate_mon_calls.py` to track progress
+3. **Regenerate docs** — `python3 tools/generate_mon_status.py` to track progress
 4. **Share with nd100x** — Same process for ND-100 emulator
 
 ---
@@ -358,9 +358,9 @@ After successful integration:
 | `include/ndmon/mon.h` | Main dispatcher API |
 | `include/ndmon/mon_types.h` | MonContext, callback types |
 | `include/ndmon/mon_errors.h` | SINTRAN error codes |
-| `src/handlers/*.c` | 230+ MON handler implementations |
-| `tools/generate_mon_calls.py` | Auto-generate documentation |
-| `metadata/mon_registry.json` | Handler metadata + status |
+| `src/core/mon_registry.c` | Registration and status of every MON call |
+| `src/handlers/*.c` | One handler per registered MON call |
+| `tools/generate_mon_status.py` | Generate status docs from the registry |
 
 ---
 

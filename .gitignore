@@ -34,9 +34,6 @@ __pycache__/
 dist/
 build/
 
-# Documentation
-docs/MON_CALLS.md
-
 # Temporary files
 *.tmp
 *.bak

@@ -63,6 +63,22 @@ static void test_registry_lookups(void) {
           "numbers past the 512-entry registry return NULL");
 }
 
+/* ---- registry count ------------------------------------------------------ */
+
+static void test_total_count(void) {
+    int entries = 0;
+    for (uint32_t n = 0; n < 512; n++) {
+        if (mon_get_entry(n)) entries++;
+    }
+    check(mon_get_total_count() == entries,
+          "total count equals the number of registered entries");
+
+    reg(fake_handler, MON_STATUS_VALIDATED);
+    check(mon_get_total_count() == entries + 1, "registering a new number adds 1 to the count");
+    reg(fake_handler, MON_STATUS_IN_PROGRESS);
+    check(mon_get_total_count() == entries + 1, "registering the same number again does not add to the count");
+}
+
 /* ---- default behaviour settings ----------------------------------------- */
 
 static void test_defaults(void) {
@@ -159,6 +175,7 @@ int main(void) {
     mon_init();
 
     test_registry_lookups();
+    test_total_count();
     test_not_implemented();
     test_in_progress();
     test_validated();
