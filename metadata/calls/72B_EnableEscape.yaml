@@ -73,9 +73,13 @@ examples:
       | DEVNO, ...  |                             |
 
 
-      | ND-100 and ND-500 | All users | All programs |'
+      '
     mon_number: null
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: All programs
   nd100: false
   nd500: false
   user_programs: true

@@ -58,21 +58,48 @@ examples:
       \ PrintFlag)"
   assembly_500:
     available: true
-    code: "FileNo : W BLOCK 1\nNoOfCopies : W BLOCK 1\nPrintFlag : W BLOCK 1\nUserText : STRINGDATA 'Printing\
-      \ file...'\nErrCode : W BLOCK 1\nCloseSpoolingFile : EQU 37B9 + 40B\n...\n  CALLG CloseSpoolingFile.\
-      \ 4, FileNo, UserText, NoOfCopies, PrintFlag\n  IF K GO ERROR\n  ...\nERROR : W1 =: ErrCode    \
-      \              %ErrorCode in W1 register.\n\n\n\n\nLDT FILNO                 %File number returned\
-      \ from earlier open.\nLDA NOCOP                 %Number of copies.\nCOPY SA D0\nLDA FLAG       \
-      \           %Condition flag.\nLDX (TEXT                 %Address of text to be sent to error device.\n\
-      MON 40                    %Monitor call CloseSpoolingFile.\nJMP ERROR                 %Error return\
-      \ from monitor call.\n...                       %Normal return.\nERROR, ...                %Error\
-      \ number in register A.\n...\nFILNO, ...\nTEXT, 'GUMMED LABELS'     %Message when the file is to\
-      \ be printed.\nNOCOP, ...\nFLAG, 0                   %Text is only written if required by\n    \
-      \                      % @DEFINE-SPOOLING-CONDITIONS.\n\n\n\n| ND-100 and ND-500 | All users | All\
-      \ programs |\n|-------------------|-----------|--------------|\n\nScanned by Jonny Oddene for Sintran\
-      \ Data © 2020"
+    code: |2-
+      FileNo : W BLOCK 1
+      NoOfCopies : W BLOCK 1
+      PrintFlag : W BLOCK 1
+      UserText : STRINGDATA 'Printing file...'
+      ErrCode : W BLOCK 1
+      CloseSpoolingFile : EQU 37B9 + 40B
+      ...
+        CALLG CloseSpoolingFile. 4, FileNo, UserText, NoOfCopies, PrintFlag
+        IF K GO ERROR
+        ...
+      ERROR : W1 =: ErrCode                  %ErrorCode in W1 register.
+
+
+
+
+      LDT FILNO                 %File number returned from earlier open.
+      LDA NOCOP                 %Number of copies.
+      COPY SA D0
+      LDA FLAG                  %Condition flag.
+      LDX (TEXT                 %Address of text to be sent to error device.
+      MON 40                    %Monitor call CloseSpoolingFile.
+      JMP ERROR                 %Error return from monitor call.
+      ...                       %Normal return.
+      ERROR, ...                %Error number in register A.
+      ...
+      FILNO, ...
+      TEXT, 'GUMMED LABELS'     %Message when the file is to be printed.
+      NOCOP, ...
+      FLAG, 0                   %Text is only written if required by
+                                % @DEFINE-SPOOLING-CONDITIONS.
+
+
+
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
     octal_definition: 37B9 + 40B
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: false

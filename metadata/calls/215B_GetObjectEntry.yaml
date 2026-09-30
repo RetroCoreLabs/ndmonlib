@@ -96,17 +96,34 @@ examples:
     octal_definition: 37B9 + 215B
   mac:
     available: true
-    code: "LDA (REMID      %Remote identification in register D.\nCOPY SA DD      %Set bit 15 in register\
-      \ T if remote file.\nLDA (BUFF       %Address of buffer for returned object entry.\nLDT INDEX  \
-      \     %Left byte: Dir index. Right byte: User index.\nLDX OBJIX       %Object index.\nMON 215  \
-      \       %Monitor call GetObjectEntry.\nJMP ERROR       %Error return from monitor call.\n...   \
-      \          %Normal return.\nERROR, ...      %Error number in register A.\n  ...\nBUFF, 0\n*+40/\
-      \           %Make a buffer of 32 words.\nINDEX, ...      %Set bit 15 if remote object entry.\nOBJIX,\
-      \ ...\nREMID, 0        %Remote identification string..\n*+40/           %Make a buffer of 32 words.\n\
-      \n\n\n| ND-100 and ND-500 | All users | All programs |\n|-------------------|-----------|--------------|\n\
-      \nScanned by Jonny Oddene for Sintran Data © 2020"
+    code: |2-
+      LDA (REMID      %Remote identification in register D.
+      COPY SA DD      %Set bit 15 in register T if remote file.
+      LDA (BUFF       %Address of buffer for returned object entry.
+      LDT INDEX       %Left byte: Dir index. Right byte: User index.
+      LDX OBJIX       %Object index.
+      MON 215         %Monitor call GetObjectEntry.
+      JMP ERROR       %Error return from monitor call.
+      ...             %Normal return.
+      ERROR, ...      %Error number in register A.
+        ...
+      BUFF, 0
+      *+40/           %Make a buffer of 32 words.
+      INDEX, ...      %Set bit 15 if remote object entry.
+      OBJIX, ...
+      REMID, 0        %Remote identification string..
+      *+40/           %Make a buffer of 32 words.
+
+
+
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
     mon_number: 215
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: All programs
   nd100: true
   nd500: true
   user_programs: true

@@ -74,9 +74,12 @@ examples:
       CMND, 'CLOSE-FILE 102'  %Execute @CLOSE-FILE 102
 
 
-      | ND-100 and ND-500 | All users | Background programs |
     mon_number: 70
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: Background programs
   nd100: true
   nd500: true
   user_programs: false

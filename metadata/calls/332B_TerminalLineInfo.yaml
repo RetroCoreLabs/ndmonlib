@@ -95,12 +95,24 @@ examples:
     octal_definition: 37B9 + 332B
   mac:
     available: true
-    code: "LDT LDN %Load register T with the logical device number.\nLDA FUNC %Load register A with function\
-      \ code.\nMON 332 %Monitor call TerminalStatus.\nSTA STAT %Returned status. Standard Error Code.\n\
-      STA LINFO %Returns here if function code = 2 and no\n         %errors have occurred.\n...\nLDN,\
-      \ 1\nFUNC, 0\nLINFO, 0\nSTAT, 0\n\n\n| ND-100 and ND-500 | All users | Background programs |"
+    code: |2-
+      LDT LDN %Load register T with the logical device number.
+      LDA FUNC %Load register A with function code.
+      MON 332 %Monitor call TerminalStatus.
+      STA STAT %Returned status. Standard Error Code.
+      STA LINFO %Returns here if function code = 2 and no
+               %errors have occurred.
+      ...
+      LDN, 1
+      FUNC, 0
+      LINFO, 0
+      STAT, 0
     mon_number: 332
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: All users
+    programs: Background programs
   nd100: true
   nd500: true
   user_programs: false
