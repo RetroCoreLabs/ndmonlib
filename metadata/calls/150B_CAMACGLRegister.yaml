@@ -77,6 +77,10 @@ examples:
       CRATE, ...  % or GL register.
     mon_number: 150
 compatibility:
+  manual_box:     # the manual's compatibility box, exact words
+    machines: ND-100 and ND-500
+    users: User RT and user SYSTEM
+    programs: RT programs
   nd100: true
   nd500: true
   user_programs: false

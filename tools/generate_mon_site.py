@@ -91,6 +91,13 @@ def cell(text):
     return esc(text).replace("|", "\\|").replace("\n", "<br>")
 
 
+def available_from(y):
+    """The 'programs' column of the manual's compatibility box, or None."""
+    compat = y.get("compatibility") or {}
+    box = compat.get("manual_box") if isinstance(compat, dict) else None
+    return box.get("programs") if isinstance(box, dict) else None
+
+
 def badge(reg_status):
     return '<span class="mon-status %s">%s</span>' % (STATUS_CSS[reg_status],
                                                       STATUS_TEXT[reg_status])
@@ -311,6 +318,11 @@ def call_page(c, name_to_octal):
     facts.append("Group: %s" % esc(group_txt))
     lines.append("%s &nbsp; %s" % (badge(c["status"]), " &middot; ".join(facts)))
     lines.append("")
+    avail = available_from(y)
+    lines.append("**Available from:** %s" % (
+        esc(avail) + " (manual compatibility box)" if avail
+        else "not known - no compatibility box captured from the manual"))
+    lines.append("")
     rel = handler_file(reg)
     if rel:
         lines.append("**Emulation source:** [`%s`](%s%s)" % (rel, SOURCE_URL, rel))
@@ -503,14 +515,15 @@ def all_calls_page(calls):
     lines.append("")
     lines.append('<table class="mon-all">')
     lines.append("<thead><tr><th>MON</th><th>Decimal</th><th>Name</th><th>Mnemonic</th>"
-                 "<th>ndmonlib status</th><th>Emulation source</th><th>Group</th></tr></thead><tbody>")
+                 "<th>ndmonlib status</th><th>Available from</th><th>Emulation source</th><th>Group</th></tr></thead><tbody>")
     for o in sorted(calls, key=octal_value):
         c = calls[o]
         g = c["group"]
         lines.append('<tr><td data-sort="%05d"><a href="%s/"><code>%s</code></a></td>'
-                     '<td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
+                     '<td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
                          octal_value(o), o, o, octal_value(o), esc(c["name"]),
-                         esc(c["short"]), badge(c["status"]), src_cell(c["reg"]), esc(g["title"])))
+                         esc(c["short"]), badge(c["status"]), esc(available_from(c["yaml"]) or "not known"),
+                         src_cell(c["reg"]), esc(g["title"])))
     lines.append("</tbody></table>")
     return "\n".join(lines) + "\n"
 
