@@ -180,8 +180,8 @@ For in-depth guide: [docs/CARVING.md](docs/CARVING.md)
 ```bash
 cd build
 ctest                         # All tests
-ctest -R "test_mon_file" -V   # Specific test
-ctest -R "test_dispatcher"    # Dispatcher tests
+ctest -R dispatcher -V        # One test, with its PASS/FAIL lines
+                              # Tests: dispatcher, params, file_table, mon_handlers
 ```
 
 ## Documentation
@@ -240,7 +240,7 @@ MIT License — See [LICENSE](LICENSE) for details.
 ```
 Lines of Code:     17,410 (handlers + core)
 MON calls:         234 registered (45 validated, 17 in progress, 172 stubs)
-Test Coverage:     Core 100%, Handlers 95%+
+Tests:             4 programs (dispatcher, params, file_table, mon_handlers); coverage not measured
 Build Time:        <1 second (native)
 ```
 

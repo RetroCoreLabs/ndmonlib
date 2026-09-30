@@ -14,6 +14,7 @@
  * cannot exercise it.
  */
 
+#include "unit/test_utils.h"
 #include "mon_file_table.h"
 #include "mon_config.h"
 #include <stdio.h>
@@ -21,13 +22,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-static int failures = 0;
-
-static void check(int cond, const char* what) {
-    printf("%s: %s\n", cond ? "PASS" : "FAIL", what);
-    if (!cond) failures++;
-}
 
 static char root[256];
 static char userdir[512];
@@ -51,7 +45,7 @@ static void write_seed_file(const char* name, size_t bytes) {
     FILE* f = fopen(path, "wb");
     if (!f) {
         printf("FAIL: could not create seed file %s\n", path);
-        failures++;
+        test_failures++;
         return;
     }
     for (size_t i = 0; i < bytes; i++) fputc('A' + (int)(i % 26), f);
@@ -64,7 +58,7 @@ static void write_through(int file_number, size_t bytes) {
     OpenFileEntry* entry = mon_file_table_get(file_number);
     if (!entry || !entry->host_file) {
         printf("FAIL: file %d has no host handle\n", file_number);
-        failures++;
+        test_failures++;
         return;
     }
     for (size_t i = 0; i < bytes; i++) fputc('z', entry->host_file);
@@ -174,8 +168,8 @@ static void test_console_pushback_is_reclaimable(void) {
 
     printf("== the ESCAPE poll's peeked byte can be reclaimed ==\n");
 
-    if (pipe(fds) != 0) { printf("FAIL: pipe() failed\n"); failures++; return; }
-    if (write(fds[1], "F", 1) != 1) { printf("FAIL: write to pipe failed\n"); failures++; return; }
+    if (pipe(fds) != 0) { printf("FAIL: pipe() failed\n"); test_failures++; return; }
+    if (write(fds[1], "F", 1) != 1) { printf("FAIL: write to pipe failed\n"); test_failures++; return; }
 
     saved_stdin = dup(STDIN_FILENO);
     dup2(fds[0], STDIN_FILENO);
@@ -209,6 +203,6 @@ int main(void) {
 
     teardown();
 
-    printf("%s\n", failures == 0 ? "All file table tests passed" : "FAILURES PRESENT");
-    return failures == 0 ? 0 : 1;
+    printf("%s\n", test_failures == 0 ? "All file table tests passed" : "FAILURES PRESENT");
+    return test_failures == 0 ? 0 : 1;
 }

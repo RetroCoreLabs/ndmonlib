@@ -170,11 +170,12 @@ grep -A 5 "412B" docs/MON_CALLS.md
 cd build
 cmake ..
 make
-ctest -R "test_mon_412B"
-git add ../src/handlers/mon_412B_FileSystemControl.c
-git add ../test/integration/test_mon_file_io.c
-git add ../metadata/mon_registry.json
-git add ../docs/MON_CALLS.md
+ctest -R mon_handlers -V      # handler tests live in test/integration/test_mon_handlers.c
+python3 ../tools/generate_mon_status.py   # refresh status docs and README tables
+git add ../src/handlers/mon_412B_FileAsSegment.c
+git add ../src/core/mon_registry.c
+git add ../test/integration/test_mon_handlers.c
+git add ../docs/mon-implementation-status.md ../metadata/mon_status.json ../README.md
 git commit -m "implement: MON 412B FSCNT (file system control)"
 ```
 
