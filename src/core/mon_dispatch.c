@@ -138,13 +138,14 @@ void mon_register_ex(
     entry->nd100_compat = 1;  /* Default to compatible */
     entry->nd500_compat = 1;
 
-    /* Free existing entry if any */
+    /* Replacing an existing entry does not add to the count */
     if (g_registry[mon_number]) {
         free(g_registry[mon_number]);
+    } else {
+        g_registry_count++;
     }
 
     g_registry[mon_number] = entry;
-    g_registry_count++;
 }
 
 /* =========================================================================

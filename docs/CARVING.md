@@ -6,7 +6,7 @@
 
 When a program fails with "Unimplemented MON XXB":
 
-1. **Identify** the MON number from logs → check `docs/MON_CALLS.md`
+1. **Identify** the MON number from logs → check `docs/mon-implementation-status.md`
 2. **Research** SINTRAN manual sections linked in the docs
 3. **Analyze** existing similar handlers for implementation patterns
 4. **Implement** by copying template and adding semantics
@@ -34,25 +34,23 @@ When a program fails with "Unimplemented MON XXB":
 ### From Automated Analysis
 
 ```bash
-# List all unimplemented MON calls:
-grep "NOT_IMPLEMENTED" docs/MON_CALLS.md | head -20
+# List all unimplemented MON calls (the "Stub" section):
+sed -n '/^## Stub/,$p' docs/mon-implementation-status.md | head -30
 
 # Check specific MON:
-python3 tools/analyze_mon_calls.py --mon 412B --full
+grep '`412B`' docs/mon-implementation-status.md
 ```
 
 ---
 
 ## Step 2: Research the MON Call Specification
 
-### Find in MON_CALLS.md
+### Find the registration
 
 ```bash
-# Quick lookup by MON number
-grep -A 30 "^### 412B" docs/MON_CALLS.md
+# Name, description, parameters and status as registered
+grep -n -A 12 '"412B"' src/core/mon_registry.c
 ```
-
-Output shows status, parameters, SINTRAN manual references.
 
 ### Consult SINTRAN Manual
 
@@ -65,31 +63,30 @@ Use the reference from metadata to find the official specification in the SINTRA
 ### Find Related Handlers
 
 ```bash
-# List file operation handlers
-python3 tools/analyze_mon_calls.py --class "File System" --implemented
+# Calls the manual groups under 2.9 File System Operations
+python3 -c "import json; g=json.load(open('metadata/mon_function_groups.json'))['groups']; print([x['calls'] for x in g if x['section']=='2.9'][0])"
 ```
 
 ### Examine Working Handler
 
 ```bash
 # Look at a validated handler as a pattern
-cat src/handlers/mon_420B_FileAttributes.c
+cat src/handlers/mon_50B_OpenFile.c
 ```
 
 ---
 
 ## Step 4: Implement the Handler
 
-### Copy Template
+### Open the Stub
 
-```bash
-cd ~/repos/ndmonlib
-cp src/handlers/MON_TEMPLATE.c src/handlers/mon_412B_FileSystemControl.c
-```
+Every registered call already has a stub file in `src/handlers/`, named after
+its handler function (for 412B: `src/handlers/mon_412B_FileAsSegment.c`).
+Replace the stub body, and remove the `AUTO-GENERATED STUB` header line.
 
 ### Edit Implementation
 
-Reference the SINTRAN manual and adapt the template:
+Reference the SINTRAN manual and write the handler:
 
 ```c
 /**
@@ -99,7 +96,7 @@ Reference the SINTRAN manual and adapt the template:
 #include <ndmon/mon.h>
 #include "../mon_file_table.h"
 
-MonResult mon_412B_FileSystemControl(MonContext* ctx) {
+MonResult mon_412B_FileAsSegment(MonContext* ctx) {
     if (ctx->arg_count != 0) {
         mon_set_error(ctx, SINTRAN_ERROR_WRONG_ARG_COUNT);
         return MON_ERROR;
@@ -128,7 +125,7 @@ void test_mon_412B_file_count_empty(void) {
     MonContext ctx = mock_cpu_context();
     ctx.arg_count = 0;
     
-    MonResult result = mon_412B_FileSystemControl(&ctx);
+    MonResult result = mon_412B_FileAsSegment(&ctx);
     
     assert_equals(result, MON_SUCCESS);
     assert_equals(ctx.get_i1(ctx.cpu), 0);
@@ -138,28 +135,22 @@ EOF
 
 ---
 
-## Step 6: Update Metadata & Regenerate Docs
+## Step 6: Update Status & Regenerate Docs
 
-### Edit metadata/mon_registry.json
+### Set the status in src/core/mon_registry.c
 
-Update the entry for MON 412B:
-```json
-{
-  "mon_number": "412B",
-  "status": "IN_PROGRESS",
-  "source_file": "src/handlers/mon_412B_FileSystemControl.c",
-  "test_cases": ["test_mon_412B_file_count_empty"],
-  "last_tested": "2026-07-23"
-}
-```
+Change the status in the call's `mon_register_ex(...)` block, for example
+`MON_STATUS_NOT_IMPLEMENTED` to `MON_STATUS_IN_PROGRESS` or
+`MON_STATUS_VALIDATED`. The dispatcher never calls a handler registered
+`MON_STATUS_NOT_IMPLEMENTED`.
 
 ### Regenerate Documentation
 
 ```bash
-python3 tools/generate_mon_calls.py
+python3 tools/generate_mon_status.py
 
 # Verify update
-grep -A 5 "412B" docs/MON_CALLS.md
+grep '`412B`' docs/mon-implementation-status.md
 ```
 
 ---
@@ -246,7 +237,5 @@ Before marking as VALIDATED:
 
 ## References
 
-- [docs/MON_CALLS.md](../docs/MON_CALLS.md) — Complete MON listing
-- [docs/HANDLER_DEVELOPMENT.md](../docs/HANDLER_DEVELOPMENT.md) — Handler patterns
-- [src/handlers/MON_TEMPLATE.c](../src/handlers/MON_TEMPLATE.c) — Template to copy
+- [mon-implementation-status.md](mon-implementation-status.md) — Complete MON listing with status
 - SINTRAN III Reference Manual (offline) — Authoritative spec
