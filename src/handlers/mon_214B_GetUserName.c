@@ -11,8 +11,6 @@
  *   [I] UserIndex (INTEGER): input
  *   [O] RemoteFlag (INTEGER): output
  *   [O] RemoteSystem (STRING): output
- *
- * AUTO-GENERATED STUB - Implementation required
  */
 
 #include "mon.h"

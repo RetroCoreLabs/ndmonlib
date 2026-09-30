@@ -8,8 +8,6 @@
  * Parameters:
  *   [I] DeviceNumber (INTEGER2): input
  *   [O] TerminalType (INTEGER2): output
- *
- * AUTO-GENERATED STUB - Implementation required
  */
 
 #include "mon.h"

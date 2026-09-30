@@ -18,7 +18,7 @@ It derives status from TWO independent signals and reconciles them:
   2. CROSS-CHECK - the handler .c file content:
         - "AUTO-GENERATED STUB - Implementation required" marker
         - the "not yet implemented" / mon_set_error(ctx, -1) stub body
-        - caveat keywords (TODO/FIXME/UNPROVEN/GUESS/unknown) that suggest a
+        - caveat keywords (upper-case TODO/FIXME/UNPROVEN/GUESS/HACK/NOT YET/PLACEHOLDER) that suggest a
           registered-as-working handler is really only partial
         - real code size (non-comment lines) and evidence markers
 
@@ -75,11 +75,10 @@ GROUP_COUNT_LAST = {"2.3"}
 
 STUB_MARKER = "AUTO-GENERATED STUB"
 # caveat keywords that mark a NON-stub handler as only partially trustworthy
+# Upper case only: lower-case "unknown" / "not yet" also occur in manual
+# text copied into handler headers (16B, 221B), where they are not caveats.
 CAVEAT_RE = re.compile(
-    r"\b(TODO|FIXME|UNPROVEN|GUESS(?:ED)?|HACK|not\s+yet|unknown|placeholder|"
-    r"stub implementation)\b",
-    re.IGNORECASE,
-)
+    r"\b(TODO|FIXME|UNPROVEN|GUESS(?:ED)?|HACK|NOT\s+YET|PLACEHOLDER)\b")
 # evidence-of-real-work markers
 EVIDENCE_RE = re.compile(
     r"\b(VALIDATED|CONFIRMED|tested|live probe|observed|EVIDENCE|carve)\b",
@@ -171,13 +170,16 @@ def analyze_handler(handler_name):
     has_generic_error = bool(re.search(r"mon_set_error\s*\(\s*ctx\s*,\s*-1\s*\)", code))
     has_success = "mon_set_success" in code
     is_stub_body = has_generic_error and not has_success
+    # Caveat words are looked for outside string literals only.
+    no_strings = re.sub(r'"(?:[^"\\\n]|\\.)*"', '""', src)
+    caveats = sorted({re.sub(r"\s+", " ", m) for m in CAVEAT_RE.findall(no_strings)})
     return {
         "file": os.path.relpath(path, REPO),
         "exists": True,
         "has_stub_marker": STUB_MARKER in src,   # header comment (may be stale)
         "is_stub_body": is_stub_body,            # actual stub code
         "loc": code_lines(src),
-        "has_caveat": bool(CAVEAT_RE.search(src)),
+        "caveats": caveats,
         "has_evidence": bool(EVIDENCE_RE.search(src)),
     }
 
@@ -187,12 +189,7 @@ STATUS_ORDER = ["VALIDATED", "IN_PROGRESS", "NOT_IMPLEMENTED"]
 STATUS_LABEL = {
     "VALIDATED": "Validated",
     "IN_PROGRESS": "In progress",
-    "NOT_IMPLEMENTED": "Stub (not implemented)",
-}
-STATUS_EMOJI = {
-    "VALIDATED": "OK",
-    "IN_PROGRESS": "WIP",
-    "NOT_IMPLEMENTED": "STUB",
+    "NOT_IMPLEMENTED": "Stub",
 }
 
 
@@ -214,15 +211,16 @@ def reconcile(rec, hf):
     elif reg == "NOT_IMPLEMENTED" and not hf["is_stub_body"] and hf["loc"] > 12:
         notes.append(
             "MISMATCH: registered NOT_IMPLEMENTED but handler has real code "
-            "(%d loc) - dispatcher skips it, so the code never runs" % hf["loc"])
+            "(%d code lines) - dispatcher skips it, so the code never runs" % hf["loc"])
     # Low severity: implemented handler that kept a stale stub header comment.
     if reg in ("VALIDATED", "IN_PROGRESS") and hf["has_stub_marker"] \
             and not hf["is_stub_body"]:
         notes.append("stale 'AUTO-GENERATED STUB' header comment (handler is "
                      "implemented; comment can be removed)")
-    if reg == "VALIDATED" and hf["has_caveat"]:
-        notes.append("registered VALIDATED but source contains caveat keywords "
-                     "(TODO/UNPROVEN/etc.) - verify completeness")
+    if reg == "VALIDATED" and hf["caveats"]:
+        notes.append("registered VALIDATED but the source says %s - check "
+                     "whether the call is complete"
+                     % " / ".join("'%s'" % c for c in hf["caveats"]))
     return reg, notes
 
 
@@ -280,14 +278,14 @@ def write_json(entries, counts, mismatches):
 
 
 def md_table(entries):
-    rows = ["| MON | Name | Status | LOC | Handler | Notes |",
-            "|-----|------|--------|-----|---------|-------|"]
+    rows = ["| MON | Name | Status | Code lines | Handler | Notes |",
+            "|-----|------|--------|------------|---------|-------|"]
     for e in entries:
         note = "; ".join(e["notes"]) if e["notes"] else ""
         note = note.replace("|", "\\|")
         rows.append("| `%s` | %s (%s) | %s | %d | `%s` | %s |" % (
             e["octal"], e["long_name"], e["short_name"] or "-",
-            STATUS_EMOJI[e["status"]], e["loc"],
+            STATUS_LABEL[e["status"]], e["loc"],
             e["handler"] or "-", note))
     return "\n".join(rows)
 
@@ -315,13 +313,37 @@ def write_md(entries, counts, mismatches):
     lines.append("| Status | Count | Share |")
     lines.append("|--------|-------|-------|")
     for s in STATUS_ORDER:
-        lines.append("| %s (%s) | %d | %.1f%% |" % (
-            STATUS_LABEL[s], STATUS_EMOJI[s], counts.get(s, 0), pct(counts.get(s, 0))))
+        lines.append("| %s | %d | %.1f%% |" % (
+            STATUS_LABEL[s], counts.get(s, 0), pct(counts.get(s, 0))))
     lines.append("| **Total** | **%d** | 100%% |" % total)
     lines.append("")
-    lines.append("Legend: **OK** = validated / working, **WIP** = in progress "
-                 "(partial), **STUB** = not implemented (dispatcher returns "
-                 "not-implemented without calling the handler).")
+    lines.append("Status values:")
+    lines.append("")
+    lines.append("- **Validated** - registered `MON_STATUS_VALIDATED`: tested "
+                 "and working.")
+    lines.append("- **In progress** - registered `MON_STATUS_IN_PROGRESS`: "
+                 "partly implemented.")
+    lines.append("- **Stub** - registered `MON_STATUS_NOT_IMPLEMENTED`: the "
+                 "dispatcher in `src/core/mon_dispatch.c` returns "
+                 "not-implemented without calling the handler.")
+    lines.append("")
+    lines.append("Table columns:")
+    lines.append("")
+    lines.append("- **MON** - monitor call number in octal (the `B` suffix "
+                 "means octal).")
+    lines.append("- **Name** - the call's name in the manual *SINTRAN III "
+                 "Monitor Calls* (ND-860228.2 EN), with its short mnemonic "
+                 "in parentheses.")
+    lines.append("- **Status** - see above.")
+    lines.append("- **Code lines** - number of lines in the handler's `.c` "
+                 "file that are neither blank nor comment lines. It includes "
+                 "`#include` lines, declarations and braces, so it is only a "
+                 "rough size: the stubs have 5 to 15, and it says nothing about "
+                 "whether the code is correct.")
+    lines.append("- **Handler** - the C function; its source is "
+                 "`src/handlers/<Handler>.c`.")
+    lines.append("- **Notes** - problems the generator found by comparing the "
+                 "registered status with the handler source.")
     lines.append("")
 
     if mismatches:
@@ -336,7 +358,7 @@ def write_md(entries, counts, mismatches):
 
     for s in STATUS_ORDER:
         bucket = [e for e in entries if e["status"] == s]
-        lines.append("## %s (%s) - %d" % (STATUS_LABEL[s], STATUS_EMOJI[s], len(bucket)))
+        lines.append("## %s - %d" % (STATUS_LABEL[s], len(bucket)))
         lines.append("")
         if bucket:
             lines.append(md_table(bucket))

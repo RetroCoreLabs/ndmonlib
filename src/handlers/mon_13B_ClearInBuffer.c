@@ -7,8 +7,6 @@
  *
  * Parameters:
  *   [I] DeviceNumber (INTEGER): input
- *
- * AUTO-GENERATED STUB - Implementation required
  */
 
 #include "mon.h"
