@@ -160,6 +160,14 @@ def assign_groups(calls):
     return result
 
 
+def handler_file(reg):
+    """Repo-relative path of the call's handler .c file, or None."""
+    if not reg or not reg["handler"]:
+        return None
+    rel = "src/handlers/%s.c" % reg["handler"]
+    return rel if os.path.exists(os.path.join(REPO, rel)) else None
+
+
 def handler_comments(handler):
     """The handler's own explanatory comments: every /* */ block of two or more
     lines, except the file header (manual text) and the stub marker."""
@@ -248,6 +256,12 @@ def call_page(c, name_to_octal):
     group_txt = g["title"] if g["section"] == "-" else "%s (manual section %s)" % (g["title"], g["section"])
     facts.append("Group: %s" % esc(group_txt))
     lines.append("%s &nbsp; %s" % (badge(c["status"]), " &middot; ".join(facts)))
+    lines.append("")
+    rel = handler_file(reg)
+    if rel:
+        lines.append("**Emulation source:** [`%s`](%s%s)" % (rel, SOURCE_URL, rel))
+    else:
+        lines.append("**Emulation source:** none - not registered in ndmonlib")
     lines.append("")
 
     if y.get("description"):
@@ -394,6 +408,13 @@ def call_page(c, name_to_octal):
     return "\n".join(lines) + "\n"
 
 
+def src_cell(reg):
+    rel = handler_file(reg)
+    if not rel:
+        return "-"
+    return '<a href="%s%s"><code>%s.c</code></a>' % (SOURCE_URL, rel, reg["handler"])
+
+
 def all_calls_page(calls):
     lines = ["# All MON calls", ""]
     lines.append("Every call in the manual *SINTRAN III Monitor Calls* (ND-860228.2 EN) "
@@ -402,14 +423,14 @@ def all_calls_page(calls):
     lines.append("")
     lines.append('<table class="mon-all">')
     lines.append("<thead><tr><th>MON</th><th>Decimal</th><th>Name</th><th>Mnemonic</th>"
-                 "<th>ndmonlib status</th><th>Group</th></tr></thead><tbody>")
+                 "<th>ndmonlib status</th><th>Emulation source</th><th>Group</th></tr></thead><tbody>")
     for o in sorted(calls, key=octal_value):
         c = calls[o]
         g = c["group"]
         lines.append('<tr><td data-sort="%05d"><a href="%s/"><code>%s</code></a></td>'
-                     '<td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
+                     '<td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
                          octal_value(o), o, o, octal_value(o), esc(c["name"]),
-                         esc(c["short"]), badge(c["status"]), esc(g["title"])))
+                         esc(c["short"]), badge(c["status"]), src_cell(c["reg"]), esc(g["title"])))
     lines.append("</tbody></table>")
     return "\n".join(lines) + "\n"
 
