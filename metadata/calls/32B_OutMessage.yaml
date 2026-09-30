@@ -1,0 +1,141 @@
+# SINTRAN III Monitor Call: OutMessage
+# Octal: 32B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 32B
+name: OutMessage
+short_names:
+- MSG
+description: Writes a message to the user's terminal. This is convenient for error messages in background
+  programs.
+notes:
+- The maximum string length is 512 characters.
+- Appendix F contains an ASCII table.
+see_also:
+- OutUpTo8Bytes
+- Out8Bytes
+- OutString
+- OutputString
+- OutNumber
+- and OutByte
+parameters:
+- name: Message
+  type: STRING
+  io: I
+  description: String message to write to user's terminal (max 512 characters).
+examples:
+  pascal:
+    available: true
+    code: |-
+      Message : PACKED ARRAY [0..79] OF CHAR;
+      ...
+      OutMessage(Message);
+  cobol:
+    available: true
+    code: |-
+      01 Message PIC X(100).
+      ...
+      MONITOR-CALL "OutMessage" USING Message.
+  fortran:
+    available: true
+    code: |-
+      CHARACTER Message*80
+      ...
+      Monitor_Call('OutMessage', Message(1:80))
+  planc:
+    available: true
+    code: |-
+      BYTES : Message(0:79)
+      ...
+      Monitor_Call('OutMessage', Message)
+  assembly_500:
+    available: true
+    code: |-
+      | Message                | STRINGDATA 'This is a test...' | %Message to be sent.        |
+      |------------------------|--------------------------------|-----------------------------|
+      | OutMessage             | EQU 37B9 + 32B                 |                             |
+      | CALLG OutMessage, 1, Message |                          |                             |
+    octal_definition: 37B9 + 32B
+  mac:
+    available: true
+    code: |-
+      LDX  (TEXT     %Address string to be sent to user's terminal.
+      MON  32        %Monitor call OutMessage.
+      ...
+      TEXT, 'THIS IS A TEXT'  %String to be written.
+
+
+      | ND-100 and ND-500 | All users | Background programs |
+      |-------------------|-----------|---------------------|
+    mon_number: 32
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 379
+  line: 17154
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_32B_OutMessage.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: Message
+      note: >-
+        Read as an ND-500 [Length:4][Pointer:4] DESCRIPTOR via
+        mon_read_descriptor_string(), NOT as an inline string. This is the
+        Pascal/FORTRAN calling convention. Capped at 512 characters.
+      verified: true
+
+  verified:
+    - claim: >-
+        32B takes a descriptor, not an inline string, and an auto-detecting reader is
+        the wrong tool for the job.
+      evidence: >-
+        Commit e54507d removed the unsafe auto-detect mon_read_string() and made
+        every caller declare its format explicitly, because auto-detection "could
+        misinterpret memory patterns". 32B was moved to mon_read_descriptor_string;
+        12B, 256B, 317B and 54B were moved to mon_read_sintran_string
+        (0x00/0x27/0xFF terminated). The same descriptor mistake was later found and
+        fixed independently in 317B UECOM (commit 15ca5e9 - the direct read saw the
+        descriptor struct's first byte 0x00 and produced "") and in 12B SETCM
+        (commit b615586). If a MON string comes out EMPTY, suspect the descriptor
+        first.
+    - claim: >-
+        SINTRAN messages already carry their own CR/LF terminators; the handler must
+        not add any.
+      evidence: >-
+        mon_32B_OutMessage.c: "Note: SINTRAN messages already contain \\r\\n
+        terminators, don't add extra" - the handler writes exactly the len bytes it
+        read.
+
+  unverified:
+    - >-
+      NO OBSERVED CALLER. No traced program (NC, CAT-500, ND linker) issues 32B.
+      Implemented but NOT proven end to end.
+    - >-
+      The 512-character cap is nd500x's own MAX_MESSAGE_LEN, matching the handler's
+      header note "max 512 characters". The scanned manual body in this YAML does not
+      state a maximum, so the limit is NOT confirmed from a primary source.
+    - >-
+      32B is documented as writing to "the user's terminal" specifically. nd500x
+      routes it to the single console with no device selection - there is no
+      per-user terminal concept to get wrong yet.
+    - >-
+      The handler never fails except on a missing argument: a descriptor that reads
+      as length 0 writes nothing and still returns success.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'

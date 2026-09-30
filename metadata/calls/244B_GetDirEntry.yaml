@@ -1,0 +1,108 @@
+octal: 244B
+name: GetDirEntry
+short_names:
+- GDIEN
+description: 'Gets information about a directory. The directory entry is returned. Appendix C describes
+  the file system in more detail.
+
+
+  - You may access directories on remote systems. The computers must be connected through a COSMOS network.'
+see_also:
+- GetDirUserIndexes
+- WriteDirEntry
+- GetUserEntry
+- and GetObjectEntry
+parameters:
+- name: DirectoryIndex
+  type: INTEGER2
+  io: I
+  description: The directory index. See GetDirUserIndexes. Set bit 7 if SysId is supplied.
+- name: DirEntry
+  type: INTEGER2[21]
+  io: O
+  description: The 42-byte directory entry. See appendix C.
+- name: Flag
+  type: INTEGER2
+  io: O
+  description: Flag indicating whether or not the disk has spare-track allocation.
+examples:
+  pascal:
+    available: true
+    code: 'DirectoryIndex, Flag : INTEGER2;
+
+      DirEntry : ARRAY [0..1] OF RECORD...END;
+
+      ...
+
+      GetDirEntry(DirectoryIndex, DirEntry, Flag);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: "01 DirectoryIndex COMP.\n01 Flag COMP.\n01 DirEntry.\n   02 array COMP OCCURS 24 TIMES.\n01\
+      \ RemoteFlag COMP.\n01 RemoteSystem PIC X(64).\n01 ErrCode COMP.\n...\nMONITOR-CALL \"GetDirEntry\"\
+      \ USING DirectoryIndex, DirEntry, Flag,\n                                 RemoteFlag, RemoteSystem)\n\
+      CALL \"CbError\" USING ErrCode.\nIF ErrCode NOT = 0 GO ..."
+  fortran:
+    available: true
+    code: "INTEGER DirectoryIndex, Flag, RemoteFlag\nCHARACTER RemoteSystem*64\nINTEGER DirEntry(24)\n\
+      ...\nMonitor_Call('GetDirEntry', DirectoryIndex, DirEntry(1), Flag,\n             RemoteFlag, RemoteSystem(1:16))\n\
+      C    IF (ErrCode .NE. 0) THEN ..."
+  planc:
+    available: true
+    code: "INTEGER : DirectoryIndex, Flag, RemoteFlag\nBYTES : DirEntry(0:47)\nBYTES : RemoteSystem(0:63)\n\
+      ...\nON ROUTINEERROR DO\n    IF ErrCode > 0 THEN ...\nENDON\nMonitor_Call('GetDirEntry', DirectoryIndex,\
+      \ DirEntry(0), Flag, RemoteFlag, &\nRemoteSystem)"
+  assembly_500:
+    available: true
+    code: 'DirectoryIndex : W BLOCK 1    %Bit 7 set if SysId is supplied.
+
+      Flag : W BLOCK 1
+
+      DirEntry : W ARRAY 25B
+
+      SysId : STRING 16  %Remote system name as an optional 4th parameter.
+
+      ErrCode : W BLOCK 1
+
+      GetDirEntry : EQU 37B9 + 244B
+
+      ...
+
+      CALLG GetDirEntry, 3, DirectoryIndex, DirEntry, Flag
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode         %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 244B
+  mac:
+    available: true
+    code: "LDT DIRIX        %Directory index.\nLDX (BUFF       %Buffer to receive directory entry.\nLDA\
+      \ (REMID      %Remote system identification in D register.\nCOPY SA DD      %Used only if bit 15\
+      \ in X register is set.\nMON 244         %Monitor call GetDirEntry.\nJMP ERROR       %Error return\
+      \ from monitor call.\n...\n                %Normal return.\n                %A-reg.=1 or 5 : disk\
+      \ has spare-track allocation.\n                %A-reg.=3 : no spare-track allocation.\nERROR, ...\
+      \      %Error number in register A.\n...\nDIRIX, ...      %Set bit 15 if remote system.\nBUFF, 0\
+      \         %\n*+30/           %24 word long buffer.\nREMID, 0        %Remote identification string.\n\
+      *+40/           %32 words for string.\n\n\n\n| ND-100 and ND-500 | User RT and user SYSTEM | All\
+      \ programs |"
+    mon_number: 244
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 233
+  line: 10118
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

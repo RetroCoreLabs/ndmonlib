@@ -1,0 +1,79 @@
+# SINTRAN III Monitor Call: CallSwapper
+# Octal: 510B
+# Reverse-engineered from SINTRAN III NPL source (MP-P2-N500.NPL).
+# The manual (section 2.14) lists this call name-only; contract below is RE-derived.
+
+octal: 510B
+name: CallSwapper
+short_names:
+- SWMC
+- SWAPMC
+description: >-
+  Monitor call to the ND-500 swapper. Packs a swapper trap/function code into the
+  ND-500 message TRAPN field and hands the message to the ND-500 swapper process
+  for servicing. Intended for ND subsystems only.
+notes:
+- Internal-use monitor call (manual section 2.14); not intended for user programs.
+- The NPL name SWMC means "monitor call to the swapper" (MP-P2-N500.NPL:2042-2043),
+  not "switch context".
+- Reverse-engineered from the level-12 handler SWMC in MP-P2-N500.NPL:2048-2051.
+- Handler builds TRAPN as (MSM510 << 8) OR (low byte of the caller's TRAPN), writes
+  it back to the message, then CALL 5ACTSWAPPER enqueues the message to the swapper.
+- Dispatched via the ND-500 level-12 GOSW table, index = 510B - 500B = 8.
+see_also:
+- GetTrapReason
+parameters:
+- name: TrapCode
+  type: INTEGER
+  io: IO
+  description: >-
+    Message field TRAPN. The low 8 bits supply the swapper trap/function code; the
+    handler ORs in the fixed swapper constant MSM510 (shifted left 8) and writes the
+    combined value back before enqueuing the message to the swapper.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 510B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: Reverse-engineered from SINTRAN III NPL source
+  handler: MP-P2-N500.NPL:2048-2051 (label SWMC); 5ACTSWAPPER at MP-P2-N500.NPL:2857+
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

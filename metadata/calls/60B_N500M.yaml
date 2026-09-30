@@ -1,0 +1,711 @@
+# SINTRAN III Monitor Call: N500M (ND-500 Monitor Function)
+# Octal: 60B
+# Extracted from: ND-60.136.04A ND-500 Loader Monitor
+#
+# =============================================================================
+# FOR NEWCOMERS TO NORSK DATA:
+# =============================================================================
+# The ND-500 is a 32-bit coprocessor that works alongside the 16-bit ND-100.
+# The ND-500 handles heavy computation but has NO direct I/O capability.
+# Every time the ND-500 needs to read a file, print something, or do any I/O,
+# it must ask the ND-100 to do it through MON 60.
+#
+# Communication uses:
+#   - 5MPM: Shared memory both CPUs can access (message buffers)
+#   - TAG-IN: Signal FROM ND-500 TO ND-100 (ND-500 sends requests)
+#   - TAG-OUT: Signal FROM ND-100 TO ND-500 (ND-100 sends responses)
+#
+# The TAG naming is from the 3022 interface card's perspective (in ND-100):
+#   TAG-IN = what comes IN to the 3022 = from ND-500
+#   TAG-OUT = what goes OUT of the 3022 = to ND-500
+#
+# See 60B_N500M_Hardware_Mapping.md for detailed TAG explanations.
+# =============================================================================
+
+octal: 60B
+name: N500M
+short_names:
+  - ND500Function
+  - N500MON
+
+description: |
+  ND-500 Monitor Function - The primary way ND-100 programs control the ND-500.
+
+  SIMPLE EXPLANATION:
+  MON 60 lets programs on the ND-100 (the main computer) control the ND-500
+  (a fast coprocessor). It's like a remote control for the ND-500.
+
+  TECHNICAL DETAILS:
+  This monitor call provides 67 subfunctions (0B through 142B octal) for:
+  - ND-500 register and memory access
+  - Process management and control
+  - Control store (microcode) operations
+  - Memory configuration
+  - Histogram and logging
+  - Domain management
+
+  The ND-500 Monitor is divided into three parts, ALL running on ND-100:
+  1. Part 1: Runs on page table 2 as subsystem "ND-500-MONITOR" (user interface)
+  2. Part 2: Runs on page table 0 (kernel, handles the actual work)
+  3. Part 3: ND-500 driver routine in resident memory (talks to hardware)
+
+  COMMUNICATION FLOW:
+  When ND-500 needs something from ND-100:
+  1. ND-500 writes request to shared memory (5MPM)
+  2. ND-500 signals via TAG-IN (code 8 = "I have a request")
+  3. ND-100 processes the request
+  4. ND-100 writes results to shared memory
+  5. ND-100 signals via TAG-OUT (code 16 = "Done!")
+  6. ND-500 reads results and continues
+
+  MON 60 uses Fortran-style parameter passing: the A-register points to a
+  parameter address list where the first word is the function code and
+  remaining parameters are 32-bit words or arrays.
+
+notes:
+  - "Version history: MON 60 (N500M) gained function 174B (LOIMM) to support the new ND-5830 and ND-5850 ND-5000 system types (SINTRAN-III-Release-History.md:458, table 4.2 - placed in the M-version column). UNVERIFIED: the release documentation names function 174B / LOIMM but gives no argument layout for it, so its parameter contract is not recorded here."
+  - "First parameter is always the 16-bit function code"
+  - "Remaining parameters depend on the function code"
+  - "Skip return indicates successful completion"
+  - "Direct return indicates an error occurred"
+  - "See 60B_N500M_Functions.md for complete subfunction reference"
+  - "Function codes range from 0B to 142B (octal)"
+
+see_also:
+  - "@ND-500-MONITOR command"
+  - "MON 407B (TPSTRA) - Returns stop reason from RUNN"
+  - "60B_N500M_Functions.md - Complete subfunction reference"
+
+references:
+  - "ND-60.136.04A ND-500 Loader Monitor (Chapter 10, pp. 192-195)"
+  - "ND-860228-2-EN SINTRAN III Monitor Calls (line 2601)"
+
+parameters:
+  - name: FunctionCode
+    type: INT
+    io: I
+    description: "Subfunction code (0B-142B). See 60B_N500M_Functions.md for complete list."
+
+  - name: Parameters
+    type: VARIES
+    io: IO
+    description: "Function-specific parameters. Can be 32-bit words, arrays, or strings depending on function code."
+
+  - name: ErrorCode
+    type: INT
+    io: O
+    description: "Error code returned on direct return. 0 = success."
+    implicit: true
+
+subfunctions:
+  # System Services (0B - 14B)
+  - code: 0B
+    name: RRREG
+    description: "Read single register"
+    params: "<reg.no> <value>"
+
+  - code: 1B
+    name: WRREG
+    description: "Write single register"
+    params: "<reg.no> <value>"
+
+  - code: 2B
+    name: RPROG
+    description: "Read program memory"
+    params: "<no.of bytes> <ND-500 addr> <data area> <bytes returned>"
+
+  - code: 3B
+    name: RDATA
+    description: "Read data memory"
+    params: "<no.of bytes> <ND-500 addr> <data area> <bytes returned>"
+
+  - code: 4B
+    name: WPROG
+    description: "Write program memory"
+    params: "<no.of bytes> <ND-500 addr> <data area>"
+
+  - code: 5B
+    name: WDATA
+    description: "Write data memory"
+    params: "<no.of bytes> <ND-500 addr> <data area>"
+
+  - code: 6B
+    name: PLACE
+    description: "Place segment"
+    params: "<file name> <segment base> <size in bytes> <segment type>"
+
+  - code: 7B
+    name: SWLOD
+    description: "Load swapper"
+    params: "<swapper segment name>"
+
+  - code: 10B
+    name: RRREG_BLOCK
+    description: "Read ND-500 registers (block)"
+    params: "<register block>"
+
+  - code: 11B
+    name: WRREG_BLOCK
+    description: "Write ND-500 registers (block)"
+    params: "<register block>"
+
+  - code: 12B
+    name: RUNN
+    description: "Start program execution"
+    params: "<stop reason> <returned trap info> <clear time used>"
+
+  - code: 13B
+    name: CNCFI
+    description: "Connect file"
+    params: "<file name> <access code> <default type> <connect no.> <returned connect no.>"
+
+  - code: 14B
+    name: CLSFI
+    description: "Close file"
+    params: "<file no.>"
+
+  # Process Management (15B - 37B)
+  - code: 15B
+    name: RESRV
+    description: "Reserve ND-500 process"
+    params: "<start addr. after escape> <version string of PTO>"
+
+  - code: 16B
+    name: RELIS
+    description: "Release ND-500 process"
+    params: "(none)"
+
+  - code: 17B
+    name: LISOP
+    description: "List open files"
+    params: "(none)"
+
+  - code: 20B
+    name: TIMUS
+    description: "Time used"
+    params: "(none)"
+
+  - code: 21B
+    name: WHO
+    description: "Who is on"
+    params: "(none)"
+
+  - code: 22B
+    name: ERRFL
+    description: "Set error flag"
+    params: "<value>"
+
+  - code: 23B
+    name: REACS
+    description: "Read Control Store"
+    params: "<CS addr.> <no of 16 bit words> <data-area>"
+
+  - code: 24B
+    name: WRICS
+    description: "Write Control Store"
+    params: "<CS addr.> <no of 16 bit words> <data-area>"
+
+  - code: 25B
+    name: MICST
+    description: "Start microprogram"
+    params: "<micro program start address>"
+
+  - code: 26B
+    name: DMEXAM
+    description: "Data memory examine"
+    params: "<addr.> <value>"
+
+  - code: 27B
+    name: DMDEP
+    description: "Data memory deposit"
+    params: "<addr.> <value>"
+
+  - code: 30B
+    name: PMEXAM
+    description: "Program memory examine"
+    params: "<addr.> <value>"
+
+  - code: 31B
+    name: PMDEP
+    description: "Program memory deposit"
+    params: "<addr.> <value>"
+
+  - code: 32B
+    name: ABSMR
+    description: "Absolute memory read"
+    params: "<no. of bytes> <ND-500 addr.> <data area> <bytes returned>"
+
+  - code: 33B
+    name: ABSMW
+    description: "Absolute memory write"
+    params: "<no. of bytes> <ND-500 addr.> <data area>"
+
+  - code: 34B
+    name: MSTOP
+    description: "Stop microprogram"
+    params: "(none)"
+
+  - code: 35B
+    name: MSTCL
+    description: "Master clear"
+    params: "(none)"
+
+  - code: 37B
+    name: LDCS
+    description: "Load control store"
+    params: "<CS addr> <no of words> <file name>"
+
+  # Memory Management (40B - 61B)
+  - code: 40B
+    name: DEFM
+    description: "Define memory configuration"
+    params: "<start page> <no. of memory parts> <part array>"
+
+  - code: 41B
+    name: RSTAT
+    description: "Read communication status"
+    params: "<status (bits 16:31 ND-500, bits 0:15 ND-100)> <MAR>"
+
+  - code: 43B
+    name: SPRES
+    description: "Reserve for special use"
+    params: "(none)"
+
+  - code: 44B
+    name: SPREL
+    description: "Release after special use"
+    params: "(none)"
+
+  - code: 45B
+    name: DEFSW
+    description: "Define swap file"
+    params: "<file name>"
+
+  - code: 47B
+    name: DELSW
+    description: "Delete swap file"
+    params: "<file name>"
+
+  - code: 50B
+    name: TESTF
+    description: "Test function"
+    params: "<I1> <I2> <I3> <I4>"
+
+  - code: 51B
+    name: RIFRG
+    description: "Read interface register"
+    params: "<register value/I4>"
+
+  - code: 52B
+    name: G500P
+    description: "Give ND-500 pages"
+    params: "<number of pages>"
+
+  - code: 53B
+    name: T500P
+    description: "Take ND-500 pages"
+    params: "<number of pages>"
+
+  - code: 54B
+    name: STSWP
+    description: "Start swapper"
+    params: "(none)"
+
+  - code: 55B
+    name: SPLAC
+    description: "Start place"
+    params: "(none)"
+
+  - code: 56B
+    name: EPLAC
+    description: "End place"
+    params: "(none)"
+
+  - code: 57B
+    name: MPVER
+    description: "Microprogram version"
+    params: "<version number/I4>"
+
+  - code: 60B
+    name: LIMEM
+    description: "List memory configuration"
+    params: "<array>"
+
+  - code: 61B
+    name: RESER
+    description: "Reserve ND-500 and ND-500 memory"
+    params: "<no. of pages> <first page no.>"
+
+  # Histogram & Logging (62B - 72B)
+  - code: 62B
+    name: HIDEF
+    description: "Define histogram"
+    params: "<start address> <interval size> <no. of intervals>"
+
+  - code: 63B
+    name: HISTA
+    description: "Start histogram"
+    params: "(none)"
+
+  - code: 64B
+    name: HISTP
+    description: "Stop histogram"
+    params: "(none)"
+
+  - code: 65B
+    name: HISTN
+    description: "Read histogram"
+    params: "<array>"
+
+  - code: 66B
+    name: HIREL
+    description: "Release histogram"
+    params: "(none)"
+
+  - code: 67B
+    name: SPRTE
+    description: "Search for process entry"
+    params: "<process name> <record>"
+
+  - code: 70B
+    name: GPRTE
+    description: "Get process entry"
+    params: "<process> <record>"
+
+  - code: 71B
+    name: SSGTE
+    description: "Search for physical segment"
+    params: "<name of phys. segment> <array>"
+
+  - code: 72B
+    name: GSGTE
+    description: "Get physical segment"
+    params: "<phys. segment no.> <array>"
+
+  # Process Control (73B - 110B)
+  - code: 73B
+    name: RPHSG
+    description: "Read physical segment"
+    params: "<phys.segment no.> <address> <no. of bytes> <array>"
+
+  - code: 74B
+    name: SPRNM
+    description: "Set process name"
+    params: "<process name>"
+
+  - code: 75B
+    name: USYST
+    description: "User SYSTEM test"
+    params: "(none)"
+
+  - code: 76B
+    name: TOSWP
+    description: "Send message to swapper"
+    params: "<record>"
+
+  - code: 77B
+    name: RPROC
+    description: "Read last message"
+    params: "<process no.> <record>"
+
+  - code: 100B
+    name: RFLAG
+    description: "Read process flag"
+    params: "<process no.> <flag>"
+
+  - code: 101B
+    name: SPFLAG
+    description: "Set process flag"
+    params: "<process no.> <flag>"
+
+  - code: 102B
+    name: GPSGE
+    description: "Release ND-500 system"
+    params: "(none)"
+
+  - code: 103B
+    name: RSYSP
+    description: "Read system parameters"
+    params: "<parameter array>"
+
+  - code: 104B
+    name: WSYSP
+    description: "Write system parameters"
+    params: "<parameter array>"
+
+  - code: 105B
+    name: SPRIO
+    description: "Set priority"
+    params: "<ND-100 mon call priority> <max percent CPU time>"
+
+  - code: 106B
+    name: LNKPR
+    description: "Link to process"
+    params: "<process no.>"
+
+  - code: 110B
+    name: WPHSG
+    description: "Write physical segment"
+    params: "<segm no.> <ND-500 address> <no. of bytes> <data area>"
+
+  # Process Logging (111B - 126B)
+  - code: 111B
+    name: SLOG1
+    description: "Start process log (one process)"
+    params: "<process no.>"
+
+  - code: 112B
+    name: STOPLOG
+    description: "Stop logging"
+    params: "(none)"
+
+  - code: 113B
+    name: RLOG
+    description: "Read log info"
+    params: "<data area>"
+
+  - code: 114B
+    name: RELLOG
+    description: "Release log facility"
+    params: "(none)"
+
+  - code: 115B
+    name: SLOGA
+    description: "Start log all active processes"
+    params: "(none)"
+
+  - code: 117B
+    name: ABORT
+    description: "Abort process"
+    params: "<process no.>"
+
+  - code: 120B
+    name: SETOUT
+    description: "Set output device"
+    params: "<unit>"
+
+  - code: 121B
+    name: RDSWP
+    description: "Read from swapper"
+    params: "<no. of bytes> <ND-500 address> <data area> <bytes read>"
+
+  - code: 122B
+    name: LOGOUT
+    description: "Logout process"
+    params: "<process no>"
+
+  - code: 123B
+    name: RELMEM
+    description: "Release memory reserved by RESER (61B)"
+    params: "(none)"
+
+  - code: 124B
+    name: SMONLOG
+    description: "Start moncall log"
+    params: "(none)"
+
+  - code: 125B
+    name: PMONLOG
+    description: "Print moncall log"
+    params: "<array of 1K 16 bit words>"
+
+  - code: 126B
+    name: XMONLOG
+    description: "Stop/release moncall log"
+    params: "(none)"
+
+  # Domain Management (127B - 142B)
+  - code: 127B
+    name: DEFDOM
+    description: "Define standard domain"
+    params: "<array>"
+
+  - code: 130B
+    name: PLADOM
+    description: "Place standard domain"
+    params: "<name>"
+
+  - code: 131B
+    name: DELDOM
+    description: "Delete standard domain"
+    params: "<name>"
+
+  - code: 132B
+    name: LSTDOM
+    description: "List standard domain"
+    params: "(none)"
+
+  - code: 133B
+    name: LSTEXQ
+    description: "List execution queue"
+    params: "(none)"
+
+  - code: 134B
+    name: PLADBG
+    description: "Place Debugger"
+    params: "(none)"
+
+  - code: 135B
+    name: LOGABT
+    description: "Logout process and abort corresponding RT-programs"
+    params: "(none)"
+
+  - code: 136B
+    name: ACTIV
+    description: "Activate a stopped process"
+    params: "(none)"
+
+  - code: 137B
+    name: UNUSED
+    description: "Not used"
+    params: "(none)"
+
+  - code: 140B
+    name: SRESPL
+    description: "Start residual place"
+    params: "(none)"
+
+  - code: 141B
+    name: SETBLK
+    description: "Set block size of a file"
+    params: "(none)"
+
+  - code: 142B
+    name: DEFINF
+    description: "Redefine default infant file"
+    params: "(none)"
+
+examples:
+  mac:
+    available: true
+    code: |
+      ; Example: Read ND-500 register
+              LDA    (PARAMS        ; A-register points to parameter list
+              MON    60             ; Monitor call N500M
+              JMP    ERROR          ; Direct return = error
+              ...                   ; Skip return = success
+
+      PARAMS, 0                     ; Function code 0B = RRREG
+              REGNUM                ; Register number
+              REGVAL                ; Where to store value
+
+      ; Example: Reserve ND-500 process (function 15B)
+              LDA    (RESRVP
+              MON    60
+              JMP    ERROR
+              ...
+
+      RESRVP, 15                    ; Function code 15B = RESRV
+              STADDR                ; Start address after escape
+              VERSTR                ; Version string pointer
+    mon_number: 60
+    notes: "A-register points to parameter list. First word is function code."
+
+  assembly_500:
+    available: true
+    code: |
+      ; ND-500 assembly - calling MON 60 via Segment 31 trap
+      ; Note: ND-500 programs use segment 31 traps which are
+      ; forwarded to ND-100 for MON 60 processing
+
+      FUNCCODE : W BLOCK 1
+      PARAMS   : W BLOCK 10
+      N500M    : EQU 37B9 + 60B
+
+      ; Example: Read register
+              LDW W0, =0B           ; Function code RRREG
+              STW W0, FUNCCODE
+              LDW W1, =5            ; Register number
+              STW W1, PARAMS
+              CALLG N500M, 2, FUNCCODE, PARAMS
+              IF K GO ERROR
+              ; Register value now in PARAMS+1
+    octal_definition: "37B9 + 60B"
+    notes: "ND-500 monitor calls trap to ND-100 via segment 31"
+
+  fortran:
+    available: true
+    code: |
+      C     Example: Reserve ND-500 process
+            INTEGER*2 FUNCCODE
+            INTEGER*4 STARTADDR
+            CHARACTER*16 VERSION
+
+            FUNCCODE = 15           ! Function 15B = RESRV
+            STARTADDR = 0
+            VERSION = 'PTO V1.0'
+
+            CALL MONITOR_CALL('N500M', FUNCCODE, STARTADDR, VERSION)
+            IF (ERRCODE .NE. 0) THEN
+                ! Handle error
+            ENDIF
+    notes: "Parameters depend on function code"
+
+  planc:
+    available: true
+    code: |
+      INTEGER : FUNCCODE
+      INTEGER4 : STARTADDR
+      BYTES : VERSION(0:15)
+
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN
+              % Handle error
+          ENDON
+      ENDON
+
+      % Reserve ND-500 process
+      FUNCCODE := 15B              % RESRV
+      STARTADDR := 0
+      VERSION := 'PTO V1.0'
+      Monitor_Call('N500M', FUNCCODE, STARTADDR, VERSION)
+    notes: "Parameters depend on function code"
+
+compatibility:
+  platforms:
+    nd100: true
+    nd500: false  # Called FROM ND-100 to control ND-500
+
+  users:
+    - "User RT"
+    - "User SYSTEM"
+    - "ND-500-MONITOR subsystem"
+
+  programs:
+    - "System programs"
+    - "RT programs with appropriate privileges"
+
+  notes: |
+    MON 60 runs on ND-100 only. It provides the interface for ND-100
+    programs to control and communicate with the ND-500 coprocessor.
+    Most functions require User SYSTEM or special privileges.
+
+errors:
+  returns_error: true
+
+  error_codes:
+    - code: 1
+      description: "Illegal function code"
+    - code: 2
+      description: "ND-500 not present"
+    - code: 3
+      description: "ND-500 not available"
+    - code: 4
+      description: "Process not reserved"
+    - code: 5
+      description: "Invalid parameter"
+
+  error_reference: "See ND-60.136.04A Chapter 10 for complete error list"
+
+source:
+  document: "ND-60.136.04A ND-500 Loader Monitor"
+  page: 192
+  line: 6410
+  scan_date: "2020"
+  scanned_by: "Jonny Oddene for Sintran Data"
+
+extraction:
+  date: "2025-02-05"
+  version: "1.0"
+  validated: true
+  ocr_corrected: false

@@ -1,0 +1,96 @@
+# Monitor Call: 150B CAMACGLRegister
+# Extracted from: ND-860228.2 EN (SINTRAN III Monitor Calls)
+# Source page: 102-103
+
+octal: 150B
+name: CAMACGLRegister
+short_names:
+- GL
+description: |-
+  Read the CAMAC GL (Graded LAM - "look at me") register or the last CAMAC identification number. See under CAMACfunction (mon 147) for more general information.
+
+  When a program requests interrupt, it generates a LAM to the control station. Up to 23 such signals may arrive, but for efficient handling in the computer, these must be reduced to 16 lines called Graded LAMs. The GL register, which may be read by the program, holds a bit mask giving the current LAM requests (bit=1 indicates LAM). The different graded LAM lines have individual IDENT codes (Bits 0-3: Graded LAM code. Bits 4-7: crate code. Bit 8=1 : CAMAC). A LAM Mask Register is used to enable (bit=1) or disable (bit=0) any of the 16 graded LAMs. Each time an IDENT code is read, the associated bit in the MASK register is cleared and must be set by the program to enable a new interrupt.
+see_also:
+- CAMACFunction
+- AssignCAMACLAM
+- BCNAFCAMAC
+- BCNAF1CAMAC
+- CAMACIOInstruction
+parameters:
+- name: Flag
+  type: INTEGER2
+  io: I
+  description: -1 means read last identification number. Other values means read GL register.
+- name: CrateNo
+  type: INTEGER2
+  io: I
+  description: Crate number.
+examples:
+  pascal:
+    available: true
+    code: |-
+      Flag, CrateNo : INTEGER2;
+      ...
+      CAMACGLRegister(Flag, CrateNo);
+  cobol:
+    available: true
+    code: |-
+      01 Flag COMP.
+      01 CrateNo COMP.
+      ...
+      MONITOR-CALL "CAMACGLRegister" USING Flag, CrateNo.
+  fortran:
+    available: true
+    code: |-
+      INTEGER Flag, CrateNo
+      ...
+      Monitor_Call('CAMACGLRegister', Flag, CrateNo)
+  planc:
+    available: true
+    code: |-
+      INTEGER : Flag, CrateNo
+      ...
+      Monitor_Call('CAMACGLRegister', Flag, CrateNo)
+  assembly_500:
+    available: true
+    code: |-
+      Flag : W  BLOCK  1
+      CrateNo : W  BLOCK  1
+      ErrCode : W  BLOCK  1
+      CAMACGLRegister : EQU 3789 + 150B
+      ...
+      CALLG CAMACGLRegister, 2, Value, CrateNo
+      IF K GO Error,
+      ...
+      Error, W1 =: ErrCode
+  mac:
+    available: true
+    code: |-
+      LDA   CRATE  %Crate number.
+      COPY  SA DD
+      LDA   FUNC   %Function.
+      MON   150    %Monitor call CAMACGLRegister.
+      STA   RETUR  %Store result.
+      ...
+      RETUR,  0
+      FUNC, ...   %Input: function / Output: last identification
+      CRATE, ...  % or GL register.
+    mon_number: 150
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 102
+  line: 4214
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true
+  ocr_notes: Extracted from source document page 102-103

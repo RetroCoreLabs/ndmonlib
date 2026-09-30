@@ -1,0 +1,125 @@
+# SINTRAN III Monitor Call: GetObjectEntry
+# Octal: 215B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 215B
+name: GetObjectEntry
+short_names:
+- DROBJ
+description: 'Gets information about a file. An object entry describes each file. It contains the file
+  name, the access rights, the date last opened for read and write, the size, and more. See the file system
+  description in appendix C. You specify the directory index, the user index, and the object index.
+
+
+  - There is one object entry for each version of a file.
+
+  - Only user SYSTEM can get the object entry of a file without read or write access to the file.
+
+  - You may access files on remote computer systems. The computers must be connected through a COSMOS
+  network.'
+see_also:
+- ReadObjectEntry
+- SetObjectEntry
+- and GetAllFileIndexes
+parameters:
+- name: Buffer
+  type: INTEGER2[32]
+  io: O
+  description: The 64 byte object entry.
+- name: DirIndex
+  type: INTEGER2
+  io: I
+  description: The directory index. See GetAllFileIndexes.
+- name: UserIndex
+  type: INTEGER2
+  io: I
+  description: The user index. See GetAllFileIndexes.
+- name: ObjectIndex
+  type: INTEGER2
+  io: I
+  description: The object index. See GetAllFileIndexes.
+examples:
+  pascal:
+    available: true
+    code: 'DirIndex, UserIndex, ObjectIndex : INTEGER2;
+
+      Buffer : ARRAY [0..1] OF RECORD...END;
+
+      ...
+
+      GetObjectEntry(Buffer, DirIndex, UserIndex, ObjectIndex);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: "01 DirIndex COMP.\n01 UserIndex COMP.\n01 ObjectIndex COMP.\n01 RemoteFlag COMP.\n01 RemoteSystem\
+      \ PIC X(64).\n01 Buffer.\n   02 array COMP OCCURS 32 TIMES.\n01 ErrCode COMP.\n...\nMONITOR-CALL\
+      \ \"GetObjectEntry\" USING Buffer, DirIndex, UserIndex,\n   ObjectIndex, RemoteFlag, RemoteSystem)\n\
+      CALL \"CbError\" USING ErrCode.\nIF ErrCode NOT = 0 GO ..."
+  fortran:
+    available: true
+    code: "INTEGER DirIndex, UserIndex, ObjectIndex, RemoteFlag\nCHARACTER RemoteSystem*64\nINTEGER Buffer(32)\n\
+      ...\nMonitor_Call('GetObjectEntry', Buffer(1), DirIndex, UserIndex,\n   ObjectIndex, RemoteFlag,\
+      \ RemoteSystem(1:64))\nIF (ErrCode .NE. 0) THEN ..."
+  planc:
+    available: true
+    code: "INTEGER : DirIndex, UserIndex, ObjIndex, RemoteFlag\nBYTES : RemoteSystem(0:63)\nBYTES : Buffer(0:63)\n\
+      ...\nON ROUTINEERROR DO\n  IF ErrCode > 0 THEN ...\nENDON\nMonitor_Call('GetObjectEntry', Buffer(0),\
+      \ DirIndex, UserIndex, ObjIndex,&\n             RemoteFlag, RemoteSystem)"
+  assembly_500:
+    available: true
+    code: 'DirIndex : W BLOCK 1
+
+      UserIndex : W BLOCK 1
+
+      ObjectIndex : W BLOCK 1
+
+      Buffer : STRING 208
+
+      SysId : STRING 16 %Optional parameter if bit 7 in DirIndex set.
+
+      ErrCode : W BLOCK 1
+
+      GetObjectEntry : EQU 3789 + 215B
+
+
+      ...
+
+      CALLG GetObjectEntry, 4, Buffer, DirIndex, UserIndex ObjectIndex
+
+      IF K GO ERROR
+
+      ...
+
+
+      ERROR : W1 =: ErrCode %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 215B
+  mac:
+    available: true
+    code: "LDA (REMID      %Remote identification in register D.\nCOPY SA DD      %Set bit 15 in register\
+      \ T if remote file.\nLDA (BUFF       %Address of buffer for returned object entry.\nLDT INDEX  \
+      \     %Left byte: Dir index. Right byte: User index.\nLDX OBJIX       %Object index.\nMON 215  \
+      \       %Monitor call GetObjectEntry.\nJMP ERROR       %Error return from monitor call.\n...   \
+      \          %Normal return.\nERROR, ...      %Error number in register A.\n  ...\nBUFF, 0\n*+40/\
+      \           %Make a buffer of 32 words.\nINDEX, ...      %Set bit 15 if remote object entry.\nOBJIX,\
+      \ ...\nREMID, 0        %Remote identification string..\n*+40/           %Make a buffer of 32 words.\n\
+      \n\n\n| ND-100 and ND-500 | All users | All programs |\n|-------------------|-----------|--------------|\n\
+      \nScanned by Jonny Oddene for Sintran Data © 2020"
+    mon_number: 215
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 261
+  line: 11506
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

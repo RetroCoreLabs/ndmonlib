@@ -1,0 +1,234 @@
+# SINTRAN III Monitor Call: Terminal
+# Octal: 336B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 336B
+name: Terminal
+short_names:
+- IOMTY
+description: |-
+  This I/O multifunction monitor call is used to change the attributes of terminal and terminal access device (TAD) input/output. It is also used to configure NET/One interfaces and SCSI disks.
+
+  This monitor call needs a varying number of input and output parameters depending upon function. All parameters are therefore placed in an array.
+notes:
+- >-
+    Version history: the J-version functions/parameters of MON 336 (IOMTY) were
+    completely revised in the K-version - the call now also configures NET/One
+    interfaces and SCSI disks (SCSI connect/report/remove use functions 300B-302B),
+    and all parameters are passed in an array
+    (ND-60230-5-EN SINTRAN III - Release Information - K-version.md:2261-2265, 13194).
+    M-version added function 26B: get protocol ID and MTAD ID from the MTAD data
+    field (ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md:1190-1199).
+    N-version added function 27B: get IP address and TAD information
+    (ND-860230-8-EN SINTRAN III - Release Information - N-version.md:964-988).
+see_also:
+- SetBreak
+- SetEcho
+parameters:
+- name: FunctionCode
+  type: INTEGER2
+  io: I
+  description: Function code (more details on page 496).
+- name: ArrayLength
+  type: INTEGER2
+  io: I
+  description: Length of function parameter array (must be greater than or equal number of input/output
+    parameters specified for function).
+- name: ParameterArray
+  type: INTEGER2[]
+  io: IO
+  description: Function parameter array. (More details are given on page 496.)
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Not available
+  cobol:
+    available: false
+    code: ''
+    notes: Not available
+  fortran:
+    available: false
+    code: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      | Instruction | Operand | Comment |
+      |-------------|---------|---------|
+      | LDT         | NTERM   | %Load register T with new terminal. |
+      | SAA         | 0       |  |
+      | COPY        | SA DL   | %Copy function code 0 to the L register |
+      | LDA         | 0       | %No translation to uppercase letters. |
+      | MON         | 336     | %TerminalFunction with function code 0. |
+      | STA         | ERROR   | %Returns here if errors. |
+
+      - **NTERM, ...**
+        %Logical device number of a terminal.
+
+      - **ERROR, ...**
+
+      | ND-100 and ND-500 | All users | Background programs |
+    mon_number: null
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 503
+  line: 22817
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: not_implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_336B_Terminal.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    NOT IMPLEMENTED, and CURRENTLY THE ND LINKER''S BLOCKER. The handler is the
+    auto-generated stub: it logs its three arguments and returns
+    mon_set_error(ctx, -1) - and -1 is not a SINTRAN error code either. It is
+    registered MON_STATUS_NOT_IMPLEMENTED. NOTE FOR WHOEVER IMPLEMENTS IT: the
+    nd500x dispatcher SHORT-CIRCUITS MON_STATUS_NOT_IMPLEMENTED and never calls
+    the handler, so the registry status must be changed at the same time or the
+    new code will never run (commit 5b6bdfd).
+
+  function_codes:
+    radix: unknown
+    note: >-
+      NOT ESTABLISHED. The manual defers to "more details on page 496" for both
+      FunctionCode and ParameterArray, and that page is not in the scanned set we
+      have. The only observed value is 10 (see observed_calls) whose radix is
+      unknown - if it is octal it is 8 decimal. Do NOT copy 144B MAGTP''s table;
+      that is a different call. Getting the radix wrong is a real bug (see the
+      144B_DeviceFunction.yaml precedent, where the giveaway was that the table
+      skipped 8 and 9).
+    codes: []
+
+  parameter_notes:
+    - name: ParameterArray
+      note: >-
+        IO PARAMETER - the manual types it in/out, and the whole design of this
+        call is "a varying number of input and output parameters depending upon
+        function, therefore placed in an array". THE OUT-PARAMETER DEFECT CLASS
+        APPLIES DIRECTLY: a handler that returns SUCCESS without writing the
+        output slots of this array will cause a failure that surfaces tens of
+        thousands of instructions later somewhere unrelated. Confirmed instances
+        of that exact shape: 412B FSCNT (commit 73ac594) and 144B MAGTP function
+        0 (commit 6ad9c09 - the linker''s DDB tables stayed blank, it walked
+        blank memory as records, computed a bogus 0x40404040 pointer, took a
+        protect violation, and the symptom appeared ~83000 instructions later as
+        a stack overflow). Whatever is implemented here, the array write must be
+        part of the contract.
+      verified: false
+    - name: 'FunctionCode / ArrayLength / ParameterArray'
+      note: >-
+        On ND-500 all INTEGER MON parameters are 32-bit words (W BLOCK), not the
+        16-bit halfwords the manual''s INTEGER2 implies for the ND-100.
+      verified: true
+    - name: ArrayLength
+      note: >-
+        Manual: must be greater than or equal to the number of input/output
+        parameters specified for the function.
+      verified: true
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom) @PC=0xB004C2C7'
+      params:
+        arg0: 10
+        arg1: 2
+        arg2: 1
+        arg3: 0
+      expectation: >-
+        THIS IS THE CALL THE NEXT IMPLEMENTER NEEDS. The linker issues it
+        immediately after it loads its DDB tables (i.e. right after the 144B
+        MAGTP function-0 Read-Record that commit 6ad9c09 made work). Recorded as
+        "MON 336B (IOMTY) with 4 args = (10, 2, 1, 0)". Because 336B is
+        unimplemented, the linker gets an error and cannot proceed - this is the
+        current end of the ND linker path.
+      note: >-
+        FOUR arguments were observed, but the manual documents THREE parameters
+        (FunctionCode, ArrayLength, ParameterArray) and the nd500x registry
+        declares 3. Which of the four observed values maps to which parameter is
+        NOT established - do not assume arg0=FunctionCode=10 without checking the
+        linker''s wrapper, the way the 511B DVIO mapping was established from the
+        caller''s code rather than from arithmetic (commit 2d9b00f).
+
+  return_contract:
+    success: 'Not implemented - never returned.'
+    errors:
+      - code: -1
+        octal: null
+        meaning: >-
+          NOT a SINTRAN code. The auto-generated stub''s placeholder. Commit
+          6b57202 notes 192 such mon_set_error(ctx, -1) calls remain in
+          NOT_IMPLEMENTED stubs and "-1 is not a SINTRAN code either".
+
+  verified:
+    - claim: >-
+        The IOMTY worker is REAL SINTRAN L bytes: 14 words at 51745B-51762B in
+        the resident SINTRAN-DATA_commoncode image (byte offset 42954), bounded
+        strictly by the next symbol MBFDI=51763B.
+      evidence: >-
+        Carve L-VSX-500 336B-Terminal/README.md and 336B-Terminal.ASM. All 14
+        words are code: seven JPL I resident-worker calls interleaved with seven
+        LDD ,B parameter-descriptor loads - the dispatch entry into the resident
+        I/O multifunction machinery.
+    - claim: 'GOTAB[336B] = 000000 - there is no per-call entry stub.'
+      evidence: >-
+        Carve: commoncode 071571B (1 word, byte offset 59122), GOTAB+336 =
+        000000, VERIFIED.
+    - claim: 'The linker reaches 336B only after 144B MAGTP function 0 works.'
+      evidence: >-
+        Commit 6ad9c09: "The linker now advances to MON 336B IOMTY, an
+        unimplemented terminal-attribute call."
+
+  unverified:
+    - >-
+      THE MON 336B -> IOMTY LINK IS NOT PROVEN. The GOTAB slot is zero and the
+      hop crosses the resident MFELL / CALLPROC bridge, which is NOT PRESENT IN
+      ANY CARVED SEGMENT - the carve marks it "MISATTRIBUTED": the bytes are
+      certainly code, but that they are THIS call''s worker is attribution by
+      symbol name only. Unlike most calls in this group, NO MCTAB slot value has
+      been read for 336B.
+    - >-
+      No function-code table, no parameter-array layout, no error codes. The
+      manual defers to page 496, which we do not have.
+    - >-
+      Which of the four observed argument values is the FunctionCode, and its
+      radix.
+    - >-
+      GUIDANCE ALREADY ON RECORD (docs/MON_CSHARP_SYNC_HANDOFF.md PART D): "336B
+      IOMTY / 144B MAGTP / 244B GDIEN / 53B RSEGM: blocked or low-prio (uncarved
+      dispatch or need a backing store). Implement the safe skeleton + benign
+      no-op for unknown sub-functions; DO NOT FABRICATE DEVICE/ERROR SEMANTICS."
+      Note the tension with the OUT-parameter rule above: a benign no-op that
+      does not write the array is exactly the 144B function-0 bug. Prefer
+      erroring loudly over silently succeeding without writing.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/336B-Terminal/README.md'
+      note: 'IOMTY worker body 51745B-51762B in commoncode (real code); GOTAB[336B]=0; the dispatch link is MISATTRIBUTED.'
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'PART D - the stub list the linker needs; 336B is called out as blocked/low-prio.'
+    - doc: 'NDInsight/Developer/MON/calls/144B_DeviceFunction.yaml'
+      note: 'The call the linker makes immediately BEFORE this one; its emulation block explains the DDB-table load.'
+  updates_2026_07_17:
+    - topic: 'Function 12B implemented; Status2 is a 4th OUT arg the YAML omits'
+      status: verified
+      detail: >-
+        Function codes are OCTAL (ND-860228.2 EN pp504-506). nd500x implements
+        function 12B "set/reset 8-bit unmodified input/output" (word1 = device,
+        word2 = 0 set / 1 reset): this fixed the linker's garbled high-bit console
+        output. The ND-500 CALLG form is FOUR args - Func, Size, ParamArray,
+        Status2 - and Status2 (standard error code, OUT) is NOT in the extracted
+        parameter list; writing it is required (412B/144B OUT-parameter class).
+      nd500x_commit: 558ecc6

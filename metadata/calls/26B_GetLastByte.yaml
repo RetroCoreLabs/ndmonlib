@@ -1,0 +1,95 @@
+# SINTRAN III Monitor Call: GetLastByte
+# Octal: 26B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 26B
+name: GetLastByte
+short_names:
+- LASTC
+description: |-
+  Gets the last character typed on a terminal. The monitor call can be used to terminate long output sequences, reading from files, etc. The program never enters the I/O wait state because of this monitor call.
+
+  - Only user SYSTEM can execute this monitor call on a non-reserved terminal.
+  - This monitor call always returns -1 if an error is encountered, not the standard SINTRAN error codes.
+see_also:
+- InByte
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: Logical device number of a terminal.
+- name: LastCharTyped
+  type: INTEGER
+  io: O
+  description: The last character typed on the terminal. Returns -1 on error.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber, LastCharTyped : INTEGER2;
+      ...
+      GetLastByte(DeviceNumber, LastCharTyped);
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNumber COMP.
+      01 LastCharTyped COMP.
+      ...
+      MONITOR-CALL "GetLastByte" USING DeviceNumber, LastCharTyped.
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNumber, LastCharTyped
+      ...
+      Monitor_Call('GetLastByte', DeviceNumber, LastCharTyped)
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNumber, LastCharTyped
+      ...
+      Monitor_Call('GetLastByte', DeviceNumber, LastCharTyped)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNumber : W BLOCK 1
+      LastCharTyped : W BLOCK 1
+      GetLastByte : EQU 37B9 + 26B
+      ...
+          CALLG GetLastByte, 1, DeviceNumber
+          W1 := LastCharTyped %Result is returned in W1 register.
+    octal_definition: 37B9 + 26B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR %Load register A with address of parameter list.
+      MON 26 %Monitor call GetLastByte.
+      JAN ERROR %Error in parameters return -1.
+      STA CHAR %No errors, store byte returned.
+      ...
+      ERROR, ... %Handle the error.
+      ...
+      CHAR, O %Last typed character right adjusted.
+      PAR, DEVNO %Logical device number of a terminal.
+      ...
+      DEVNO, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 26
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 255
+  line: 11211
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

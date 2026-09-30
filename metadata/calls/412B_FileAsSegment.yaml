@@ -1,0 +1,297 @@
+octal: 412B
+name: FileAsSegment
+short_names:
+- FSCNT
+description: 'Connects a file as a segment to your domain. You can then access the file as a logical segment.
+  This reduces the access time.
+
+
+  - The file must be open. The access must be specified in the OpenFile call.
+
+  - The file is disconnected when it is closed.
+
+  - A file may be connected to several processes simultaneously. It is your responsibility to synchronize
+  simultaneous accesses.
+
+  - You may not use ReadFromFile (mon 117) or WriteToFile (mon 120) on a file which is connected to a
+  segment. Refer to these monitor calls for further details.'
+see_also:
+- FileNotAsSegment which disconnects the file
+parameters:
+- name: FileNo
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: LogSegmentNo
+  type: INTEGER2
+  io: I
+  description: Logical segment number in the domain. The segment number must be free. Use 0 to select
+    the first free segment.
+- name: AccessType
+  type: INTEGER2
+  io: I
+  description: 'Access type: 0=file contains initial data, 1=uninitialized empty file, 2=primarily sequential access, 3=combination of 1 and 2.'
+- name: SegmentNo
+  type: INTEGER2
+  io: O
+  description: Logical segment number selected (returned if LogSegmentNo was 0).
+examples:
+  pascal:
+    available: true
+    code: 'FileNo, LogSegmentNo, Type, SegmentNo : LONGINT;
+
+      ...
+
+      FileAsSegment(FileNo, LogSegmentNo, Type, SegmentNo);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 FileNo COMP.
+
+      01 LogSegmentNo COMP.
+
+      01 Type COMP.
+
+      01 SegNo COMP.
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "FileAsSegment" USING FileNo, LogSegmentNo, Type, SegNo.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER FileNo, LogSegmentNo, Type, SegmentNo
+
+      ...
+
+      Monitor_Call(''FileAsSegment'', FileNo, LogSegmentNo, Type, SegmentNo)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  assembly_500:
+    available: true
+    code: 'FileNo : W BLOCK 1
+
+      LogSegmentNo : W BLOCK 1
+
+      Type : W BLOCK 1
+
+      SegmentNo : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      FileAsSegment : EQU 37B9 + 412B
+
+
+      ...
+
+      CALLG FileAsSegment, 4, FileNo, LogSegmentNo, Type, SegmentNo
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode &nbsp;&nbsp;&nbsp;&nbsp;%ErrorCode in W1 register.'
+    octal_definition: 37B9 + 412B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 193
+  line: 8280
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_412B_FileAsSegment.c
+  supporting_code: nd500x/src/cpu/nd500_segment_alloc.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: SegmentNo
+      note: >-
+        THE OUT-PARAMETER RULE. The assigned segment number MUST be written into
+        the caller's arg-3 slot. This is the single most expensive defect class
+        in this codebase: a handler that computes the right value, leaves it only
+        in W1, and never writes the caller's cell. The caller then keeps that
+        cell's STALE value (typically 0), addresses segment 0, and reads zeros.
+        nd500x writes arg 3 AND leaves the value in W1, because some callers read
+        the register instead.
+      verified: true
+    - name: AccessType
+      note: >-
+        AccessType selects INITIAL CONTENT, not permissions: 0 = file contains
+        initial data, 1 = uninitialized/empty, 2 = primarily sequential, 3 =
+        combination of 1 and 2 - exactly as the manual field in this YAML says.
+        The segment's READ/WRITE capability comes from the FILE'S OPEN MODE
+        (50B AccessCode), NOT from this parameter.
+      verified: true
+    - name: 'all INTEGER parameters'
+      note: 'On ND-500 all four are 32-bit words.'
+      verified: true
+
+  observed_calls:
+    - caller: 'CAT-500 (cat-cat5-b06.dom), wrapper @0x0801F080 / @0x0801F08B, 4 call sites'
+      params:
+        FileNo: 'b.0x14'
+        LogSegmentNo: 'b.0x18'
+        AccessType: 'b.0x1C'
+        SegmentNo: '@b.0x20 (INDIRECT - an OUT pointer)'
+      expectation: >-
+        The exact call is "call MON 412B, $0x4, b.0x14, b.0x18, b.0x1C, @b.0x20"
+        - four arguments, the fourth indirect. CAT-500 does NOT read its CAT
+        intermediate with 117B RFILE; it CONNECTS the scratch file as a segment
+        and reads it with ordinary MEMORY LOADS from that logical segment. It
+        takes the segment number from the OUT slot to know which address to read.
+      note: >-
+        With the OUT parameter unwritten, all of this was byte-observed: CAT-500
+        read 0 from the cell, addressed segment 0 (67 reads at vaddr 0x00000000),
+        never once read the real mapping at 0x20000000 (0 reads across the whole
+        code-generation window of 11102 reads), failed with "*ERROR* can't
+        generate code" WITHOUT EVER READING ITS INPUT, and its later 413B
+        FSCDNT(LogSegmentNo=0) mismatched the real segment. With the OUT
+        parameter written, CAT-500 reports "code generation : ok" and emits a
+        real object file.
+    - caller: 'ND linker (linker-b01.dom)'
+      params: {}
+      expectation: >-
+        Static analysis of linker-b01.dom counts 14 call sites for 412B. Their
+        runtime argument values have NOT been traced.
+
+  return_contract:
+    success: >-
+      K flag cleared; the assigned segment number written to SegmentNo (arg 3)
+      AND left in W1; the file's bytes mapped into an MMU/PST-backed logical
+      segment in the caller's (CED) domain.
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 3 args)'
+      - code: 124
+        octal: 174B
+        meaning: >-
+          Illegal parameter (AccessType > 3; file already mapped as a segment;
+          the host-side connect failed)
+
+  verified:
+    - claim: >-
+        412B must return the segment number through the OUT PARAMETER, not only
+        through W1.
+      evidence: >-
+        Byte-observed against CAT-500 (cat-cat5-b06.dom) - see observed_calls.
+        End to end after the fix: NC compiles B.C ("*** no errors detected ***")
+        -> SCRATCH-00001:CAT -> CAT-500 generate-code -> B:NRF = 513 bytes, whose
+        header (0a 00 01 70 44 ...) matches the golden ND-produced reference
+        ND-archive/500/FraTor/test-real/test-real.nrf, with proper NRF symbol
+        records (PROG!NAME, V!ARGC, X). Commit 73ac594.
+    - claim: 'AccessType is 0..3 and means initial-content, not permissions.'
+      evidence: >-
+        The manual field in this YAML and the carve pseudo.c agree. The handler
+        had wrongly implemented 0=read/1=write/2=rdwr and REJECTED 3; corrected
+        in commit fc3ac5b. Capability access is derived from the file's open mode
+        (ACCESS_SEQ_READ / ACCESS_RAND_READ / ACCESS_RAND_READ_CTG -> read-only,
+        else read-write).
+    - claim: 'The mapping is real: the file''s bytes are readable through the MMU.'
+      evidence: >-
+        nd500x/test/diag_fscnt.c maps
+        ND-archive/500/FraTor/test-real/test-real.nrf with AccessType 0, enables
+        the data MMU, and reads back the mapped logical segment via
+        nd500_mmu_peek - the first 32 bytes MATCH the file (0A 00 01 70 44 00 ...).
+    - claim: 'The routing of MON 412B in SINTRAN is byte-proven.'
+      evidence: >-
+        Carve: ND-500 System Monitor call via the S3SM5 0x60 vector table, slot
+        0x0274 -> body at 030-S3SM5.bin offset 0x98dd. MON dispatch is via
+        MCTAB @ 005620B indexed by N.
+
+  unverified:
+    - >-
+      The carved BODY is NOT usable as a contract source. The body entry 0x98dd
+      is SHARED with MON 127B and the disassembly past the entry loads is
+      MISALIGNED; the carve's own pseudo.c states "body semantics, argument-slot
+      mapping, and status/error contract are UNVERIFIED". The carve confirms
+      ROUTING and EXISTENCE only. Our argument/error contract therefore comes
+      from the manual plus CAT-500's observed usage.
+    - >-
+      nd500x loads the ENTIRE file into the segment up front - it is NOT
+      demand-paged. Fine for the small CAT scratch; wrong for very large files.
+    - >-
+      The manual's "A file may be connected to several processes simultaneously"
+      is not modelled: nd500x rejects a second connect of the same file with
+      174B.
+    - >-
+      There is no WRITE-BACK from the segment to the file at any point in 412B's
+      lifetime, and 413B does not do it either (see 413B). A file mapped writable
+      and modified through the segment will not have those changes reach disk.
+    - >-
+      The linker's 14 call sites' runtime arguments have not been traced.
+
+  discrepancies:
+    - was: >-
+        Emulator defect (fixed): AccessType treated as 0=read / 1=write / 2=rdwr,
+        with 3 REJECTED as illegal.
+      is: >-
+        AccessType is 0=initial-data, 1=uninitialized/empty, 2=primarily
+        sequential, 3=combination of 1 and 2. The manual said so all along.
+      evidence: 'Manual field + carve pseudo.c; corrected in commit fc3ac5b.'
+    - was: >-
+        Emulator defect (fixed): the assigned segment number was returned only in
+        W1 via set_error_code, and the caller's OUT slot was never written.
+      is: >-
+        The OUT slot (arg 3) MUST be written. THIS BUG CLASS RECURS - the same
+        shape was later found in 511B DVIO (arg 15, the returned-count OUT
+        parameter, "written by nobody, read straight after the call") and in 412B
+        FSCNT before it. When a caller "fails without ever reading its input",
+        suspect an unwritten OUT parameter FIRST.
+      evidence: >-
+        Commit 73ac594 (412B) and commit 2d9b00f (511B, which explicitly names
+        "the MON 412B FSCNT bug shape").
+    - was: >-
+        The failure this bug produced looked like a code-generator defect
+        ("*ERROR* can't generate code").
+      is: >-
+        The code generator was fine; it had never been given its input. A
+        symptom appearing far from the cause is characteristic of this bug class.
+      evidence: 'Commit 73ac594.'
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      page: 193
+      note: 'The manual page this YAML was extracted from.'
+    - carve: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/412B-FileAsSegment/
+      note: >-
+        Routing byte-proven; BODY semantics/args/errors explicitly UNVERIFIED by
+        the carve itself (entry shared with MON 127B, disassembly misaligned).
+    - doc: nd500x/docs/HANDOFF_412B_FSCNT_FileAsSegment.md
+      note: 'Full implementation handoff, incl. the ND-500 memory-management/isolation model.'
+    - doc: 'ND-05.009.4 EN ND-500 Reference Manual'
+      note: >-
+        Sections around lines 851, 939-945, 1237-1262 - logical segments,
+        domains, capabilities, PST. "Connect a file as a segment" = install a
+        capability in the CALLING domain's DATA capability table.
+    - commit: '73ac594 (nd500x) - 412B must return the segment number via its OUT parameter'
+    - commit: 'fc3ac5b (nd500x) - AccessType 0..3 + real MMU-backed segment connection'

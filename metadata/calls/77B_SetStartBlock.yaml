@@ -1,0 +1,107 @@
+# SINTRAN III Monitor Call: SetStartBlock
+# Octal: 77B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 77B
+name: SetStartBlock
+short_names:
+- SETBL
+description: |-
+  Sets the next block to be read or written in an opened file. You may access the first bytes in the block with the monitor calls to read and write bytes.
+
+  - The standard block size is 512 bytes. This block size is set when the file is opened. You can change this with SetBlockSize.
+  - The first block of a file is number 0.
+see_also:
+- SetStartByte
+- '@SET-BLOCK-POINTER. The monitor call is identical to SetStartByte with the block number multiplied
+  by the block size as parameter'
+parameters:
+- name: FileNumber
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: BlockNumber
+  type: INTEGER
+  io: I
+  description: Block number. Next block to be read or written. First block is 0.
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber, BlockNumber : INTEGER2;
+      ...
+      SetStartBlock(FileNumber, BlockNumber);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 BlockNumber COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "SetStartBlock" USING FileNumber, BlockNumber.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber, BlockNumber
+      ...
+      Monitor Call('SetStartBlock', FileNumber, BlockNumber)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber, BlockNumber
+      ...
+      ON ROUTINEERROR DO
+        IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('SetStartBlock', FileNumber, BlockNumber)
+  assembly_500:
+    available: true
+    code: |-
+      FileNumber : W BLOCK 1
+      BlockNumber : W BLOCK 1
+      ErrCode : W BLOCK 1
+      SetStartBlock : EQU 3789 + 77B
+      ...
+      CALLG SetStartBlock, 2, FileNumber, BlockNumber
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode      %ErrorCode in W1 register.
+    octal_definition: 37B9 + 77B
+  mac:
+    available: true
+    code: |-
+      LDT   FILNO    %File number returned from earlier open.
+      LDA   BLKNO    %Block number.
+      MON   77       %Monitor call SetStartBlock.
+      JMP   ERROR    %Error return from monitor call.
+      ...            %Normal return.
+      ERROR, ...     %Error number in register A.
+      ...
+      FILNO, ...
+      BLKNO, ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+      |-------------------|-----------|--------------|
+    mon_number: 77
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 469
+  line: 21374
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

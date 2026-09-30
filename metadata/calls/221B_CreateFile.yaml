@@ -1,0 +1,256 @@
+octal: 221B
+name: CreateFile
+short_names:
+- CRALF
+description: 'Creates a file. The file may be indexed, contiguous, or allocated. Most files are indexed.
+  The size of indexed files expands automatically when written to. Contiguous and allocated files have
+  shorter access time.
+
+
+  - You need directory access to the user who owns the file.
+
+  - User SYSTEM and RT always have the owner''s access rights.
+
+  - An indexed file not yet written to may be converted to a contiguous file. Use ExpandFile or @EXPAND-FILE.'
+see_also:
+- '@CREATE-FILE'
+- '@ALLOCATE-FILE'
+- NewFileVersion
+- and ExpandFile
+parameters:
+- name: FileName
+  type: STRING
+  io: I
+  description: File name. Default file type is :DATA.
+- name: StartAddress
+  type: INTEGER4
+  io: I
+  description: Start address in the directory. Use 0 if you want to create a contiguous or indexed file.
+  note: >-
+    CORRECTED 2026-08-19 from INTEGER2. Four independent sources in the manual this file cites as
+    its own source (ND-860228.2 EN page 125) say FOUR bytes - the PLANC form declares
+    "INTEGER4 : StartAddress, NoOfPages", FORTRAN declares "INTEGER*4", COBOL declares "S9(10)",
+    and the MAC example calls the size "a double word". The schema's own worked example
+    (mon-call-schema.yaml) also types a file-size parameter as LONGINT. NOT validated by calling
+    it - MON221 does not exist in D100's PLANC runtime, see the planc note below.
+- name: NoOfPages
+  type: INTEGER4
+  io: I
+  description: Length of the file in pages. Use 0 if you want to create an indexed file.
+  note: >-
+    CORRECTED 2026-08-19 from INTEGER2 - same evidence as StartAddress above.
+
+# Calling this from PLANC on a real machine - MEASURED on D100 2026-08-19.
+planc:
+  monn_routine_available: false
+  evidence: >-
+    Importing "ROUTINE VOID, VOID (BYTES, INTEGER4, INTEGER4) : MON221" compiles cleanly and then
+    fails at link - BRF-LINKER's LIST-ENTRIES-UNDEFINED reports "MON221...10101 U". So the PLANC
+    runtime (PLANC-1BANK-F00) on SINTRAN VSX/500 K carries no MON221 and a PLANC program cannot
+    create a file directly.
+  routes_that_do_work:
+    - >-
+      Link MON-CALL-1BANK:BRF (between your program and PLANC-1BANK) and use
+      Monitor_Call('CreateFile', FileName, StartAddress, NoOfPages). Not installed on D100.
+    - >-
+      Hand SINTRAN the command through MON70 CallCommand - "CREATE-FILE NAME:TYPE,pages" with NO
+      quotes on a local filespec, apostrophe-terminated, in a BYTES(0:79) buffer.
+    - >-
+      Write a MAC interface routine for 221 and load it ahead of the PLANC runtime library.
+  see_also: Developer/Languages/Application/PLANC-MONITOR-CALLS.md
+examples:
+  pascal:
+    available: true
+    code: 'StartAddress, NoofPages : LONGINT;
+
+      FileName : PACKED ARRAY [0..63] OF CHAR;
+
+      ...
+
+      CreateFile(FileName, StartAddress, NoofPages);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 StartAddress COMP PIC S9(10).
+
+      01 NoofPages COMP PIC S9(10).
+
+      01 FileName PIC X(64).
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "CreateFile" USING FileName, StartAddress, NoofPages.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER*4 StartAddress, NoofPages
+
+      CHARACTER FileName*64
+
+      ...
+
+      Monitor_Call(''CreateFile'', FileName(1:64), StartAddress, NoofPages)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER4 : StartAddress, NoOfPages\nBYTES : FileName(0:63)\n...\nON ROUTINEERROR DO\n    IF\
+      \ ErrCode > 0 THEN ...\nENDON\nMonitor_Call('CreateFile', FileName, StartAddress, NoOfPages)"
+  assembly_500:
+    available: true
+    code: 'StartAddress : W BLOCK 1
+
+      NoOfPages : W BLOCK 1
+
+      FileName : STRINGDATA ''EXAMPLE:SYMB''...
+
+      ErrCode : W BLOCK 1
+
+      CreateFile : EQU 37B9 + 221B
+
+      ...
+
+      CALLG CreateFile, 3, FileName, StartAddress, NoOfPages
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode        %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 221B
+  mac:
+    available: true
+    code: 'LDX  (FILE         %Address of file name string.
+
+      LDD  START         %Load register AD with start address.
+
+      LDT  (SIZE         %Address of double word with number of pages.
+
+      MON  221           %Monitor call CreateFile.
+
+      JMP  ERROR         %Error return from monitor call.
+
+      ...               %Normal return.
+
+      ERROR, ...         %Error number in register A.
+
+      ...
+
+      FILE, ''EXAMPLE:SYMB'' %Create EXAMPLE:SYMB.
+
+      START, ...          %Start address, ie. page address in directory.
+
+      ...               %A double word.
+
+      SIZE, ...           %File size as a double word.
+
+      ...               %
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 221
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 125
+  line: 5319
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_221B_CreateFile.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: FileName
+      note: >-
+        Real callers pass the name as a [Length:4][Pointer:4] string DESCRIPTOR,
+        not inline text; reading the slot directly yields the descriptor struct
+        (first byte 0x00) and so an empty name. nd500x uses
+        mon_read_descriptor_string.
+      verified: true
+    - name: NoOfPages
+      note: >-
+        1 SINTRAN page = 2048 bytes. When NoOfPages > 0 nd500x pre-allocates
+        NoOfPages*2048 bytes by seeking and writing one byte.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; an empty (or pre-allocated) host file exists.'
+    errors:
+      - code: 62
+        octal: 076B
+        meaning: 'File already exists'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (no args)'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (empty file name, or host create failed)'
+
+  verified:
+    - claim: 'An abbreviated name is NOT resolved on create.'
+      evidence: >-
+        SINTRAN permits abbreviation only on a READ open; the matcher is hooked
+        in mon_file_table.c only after a literal open fails on a read open, and
+        never here. Commit badb3c4.
+
+  unverified:
+    - >-
+      The indexed / contiguous / allocated distinction the manual draws is NOT
+      modelled - every created file is a plain host file. StartAddress is read
+      and logged but has NO effect.
+    - >-
+      "You need directory access to the user who owns the file" and "an indexed
+      file not yet written to may be converted to a contiguous file" are not
+      modelled - there is no access-rights model behind CreateFile.
+    - >-
+      The manual's default file type ":DATA" is not applied by the handler; the
+      type comes from the name (NAME:TYPE) or the path translator.
+    - >-
+      Version handling is not modelled (no new-version-on-create behaviour).
+
+  emulator_specific:
+    - note: >-
+        SCRATCH-* names are routed to a SCRATCH directory by the path translator,
+        and an EXISTING scratch file is deleted and recreated rather than
+        returning 076B "file already exists". That special case is an emulator
+        decision for the compiler pipeline, not a carved SINTRAN rule.
+      evidence: 'mon_221B_CreateFile.c (is_scratch_file branch).'
+
+  discrepancies:
+    - was: >-
+        nd500x defaults an OMITTED NoOfPages to 1, pre-allocating 2048 bytes.
+      is: >-
+        Per the manual field ("Use 0 if you want to create an indexed file") the
+        omitted default should be 0 - an indexed file with no pre-allocation.
+        This is an audited-but-NOT-YET-FIXED defect in nd500x, recorded here so
+        the next implementer does not copy it.
+      evidence: >-
+        nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md Part C
+        ("221B CreateFile: omitted NoOfPages should default to 0 (indexed, no
+        prealloc), not 1") and MON_COMPLETENESS_MATRIX.md row 221B (PARTIAL).
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'Part C - the NoOfPages default defect.'
+    - commit: '6b57202 (nd500x) - real SINTRAN error codes (file already exists = 62 / 076B)'

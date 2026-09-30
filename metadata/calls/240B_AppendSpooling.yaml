@@ -1,0 +1,178 @@
+octal: 240B
+name: AppendSpooling
+short_names:
+- APSPE
+description: 'Prints a file. The printer has a queue of files waiting to be output. The file is appended
+  to this queue. One or more copies can be printed.
+
+
+  - You may connect a text, e.g. INVOICE, to the job. The operator uses the text to select all files to
+  be printed on special paper.
+
+  - SINTRAN III, version K, allows both the file and the printer to be on remote systems. The complete
+  standard syntax for remote file specification is as follows:
+
+  `system(user(password:project)).(directory:user)file:type;version`'
+notes:
+- >-
+    Version history: K-version added remote-file support - both the file and the
+    printer may be on remote systems, using the full remote file-specification
+    syntax (ND-60230-5-EN SINTRAN III - Release Information - K-version.md:2004).
+    M-version decreased the maximum length of parameter 4 (the optional message /
+    text) from 128 characters to 80 characters
+    (ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md:1089, 2455).
+see_also:
+- CloseSpoolingFile
+- '@APPEND-SPOOLING-FILE'
+parameters:
+- name: FileName
+  type: STRING
+  io: I
+  description: File name to print (64 chars).
+- name: PrinterName
+  type: STRING
+  io: I
+  description: Spooling device name, e.g. 'LINE-PRINTER' (64 chars).
+- name: NoOfCopies
+  type: INTEGER
+  io: I
+  description: Number of copies (bits 0-14). Set bit 15 if UserText is present.
+- name: UserText
+  type: STRING
+  io: I
+  description: Optional message to operator (128 chars). Only used if bit 15 of NoOfCopies is set.
+examples:
+  pascal:
+    available: true
+    code: 'FileName, PrinterName : PACKED ARRAY [0..63] OF CHAR;
+
+      NoOfCopies : INTEGER2;
+
+      UserText : PACKED ARRAY [0..127] OF CHAR;
+
+      ...
+
+      AppendSpooling(FileName, PrinterName, NoOfCopies, UserText);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 NoOfCopies COMP.
+
+      01 FileName PIC X(64).
+
+      01 PrinterName PIC X(64).
+
+      01 UserText PIC X(128).
+
+      01 ErrCode COMP.
+
+      ...
+
+      >>> Comment: If UserText is present, add 32768 to NumberOfCopies
+
+      ADD 32768 TO NoOfCopies.
+
+      MONITOR-CALL "AppendSpooling" USING FileName, PrinterName, NoOfCopies, UserText.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER NoOfCopies
+
+      CHARACTER FileName*64, PrinterName*64, UserText*128
+
+      ...
+
+      C If UserText is present, add 100000B to NoOfCopies
+
+      NoOfCopies=NoOfCopies+100000B
+
+      CALL Monitor_Call(''AppendSpooling'', FileName(1:64), PrinterName(1:64),
+
+      & NoOfCopies, UserText(1:128))
+
+      C IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER : NoOfCopies\nBYTES : FileName(0:63), PrinterName(0:63), UserText(0:127)\n...\n% If\
+      \ UserText is present, set bit 15 in NoOfCopies to 1\nTRUE =: Bit(NoOfCopies,15)\nON ROUTINEERROR\
+      \ DO\n    IF ErrCode >< 0 THEN ...\nENDON\nMonitor_Call('AppendSpooling', FileName, PrinterName,\
+      \ NoOfCopies, UserText)"
+  assembly_500:
+    available: true
+    code: 'NoOfCopies : W BLOCK 1
+
+      FileName : STRINGDATA ''EXAMPLE:SYMB''...
+
+      PrinterName : STRINGDATA ''LINE-PRINTER''...
+
+      UserText : STRINGDATA ''File queued''...
+
+      ErrCode : W BLOCK 1
+
+      AppendSpooling : EQU 3789 + 240B
+
+      ...
+
+      CALLG AppendSpooling, 4, FileName, PrinterName, NoOfCopies, UserText
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode  %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 240B
+  mac:
+    available: true
+    code: 'LDX    (FILE     %Memory address of file name.
+
+      LDT    NOCOP   %Number of copies to be printed in bit 0:14.
+
+      LDA    (TEXT    %Memory address of message to the error device.
+
+      COPY   SA DO
+
+      LDA    (DEV     %Memory address of name of spooling device.
+
+      MON    240      %Monitor call AppendSpooling.
+
+      JMP    ERROR    %Error return from monitor call.
+
+      ...            %Normal return.
+
+      ERROR, ...      %Error number in register A.
+
+      ...
+
+      FILE, ''EXAMPLE:SYMB''   %Send EXAMPLE:SYMB to a printer.
+
+      DEV, ''LINE-PRINTER''    %Print file on the device LINE-PRINTER.
+
+      NOCOP, ...             %Bit 15 set to 1 means print message.
+
+      TEXT, ''GUMMED LABELS''  %Message to be send to error device.
+
+
+
+      `ND-100 and ND-500` | `All users` | `All programs`'
+    mon_number: 240
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 79
+  line: 3114
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

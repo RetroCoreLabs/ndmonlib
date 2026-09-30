@@ -1,0 +1,85 @@
+# SINTRAN III Monitor Call: AnswerSIBAS
+# Octal: 506B
+# Reverse-engineered from SINTRAN III NPL source (MP-P2-N500.NPL).
+# The manual (section 2.14) lists this call name-only; contract below is RE-derived.
+
+octal: 506B
+name: AnswerSIBAS
+short_names:
+- 5SIBMO
+- SIBSURV
+description: >-
+  Services a SIBAS-server request coming from the ND-500. Validates the SIBAS
+  number, checks the SIBAS datafield reservation, arms the SIBAS timer, and either
+  reactivates the SIBAS server or, when the SIBAS is set to a stopped state, stops
+  it. Intended for ND subsystems only (SIBAS database system).
+notes:
+- Internal-use monitor call (manual section 2.14); not intended for user programs.
+- Reverse-engineered from the level-12 handler 5SIBMO in MP-P2-N500.NPL:1967-1991.
+- The parameters below are the ND-500 message-buffer fields read by the handler
+  (service side). The caller-side CALLG signature is not documented and is
+  UNVERIFIED.
+- Dispatched via the ND-500 level-12 GOSW table, index = 506B - 500B = 6.
+see_also:
+- GetSIBASMessage
+- AnswerSIBAS
+parameters:
+- name: SibasNumber
+  type: INTEGER
+  io: I
+  description: >-
+    SIBAS process number, read from message field SIBNO. Must be > 0 and
+    <= MXSIBAS and reference an existing SIBAS datafield, else error EC174.
+- name: Status
+  type: INTEGER
+  io: O
+  description: >-
+    Result: OK reactivates the SIBAS server; error 5 if the SIBAS datafield is
+    reserved by another process; EC174 for an illegal SIBAS number.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 506B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: Reverse-engineered from SINTRAN III NPL source
+  handler: MP-P2-N500.NPL:1967-1991 (label 5SIBMO)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

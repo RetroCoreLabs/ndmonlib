@@ -1,0 +1,95 @@
+# SINTRAN III Monitor Call: CallCommand
+# Octal: 70B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 70B
+name: CallCommand
+short_names:
+- COMMND
+description: |-
+  Executes a SINTRAN III command from a program. The program terminates if an error occurs in the command.
+
+  - You are advised to use the newer monitor call, ExecuteCommand (UECOM), instead of CallCommand.
+  - Some commands may destroy your program. Use care with commands which affect your program's memory area.
+  - Note that the program may terminate if an error occurs. Use ExecuteCommand (UECOM) to avoid this problem.
+  - For commands with output, but without an output file as a parameter, e.g. @WHO, output is displayed automatically on the terminal of the user executing the program.
+  - Use SuspendProgram to wait a specified time interval between two CallCommands which depend on each other, e.g. CreateFile and OpenFile.
+  - The following commands are allowed from ND-500 programs: @DATCL, @COPY, @COPY-FILE, @SCHEDULE, @HOLD, @TERMINAL-MODE, @OPERATOR, @WAIT-FOR-OPERATOR, @SET-TERMINAL-TYPE, @GET-TERMINAL-TYPE, @CREATE-FILE, @EXPAND-FILE, @DELETE-FILE, @RENAME-FILE, @LIST-FILE, @FILE-STATISTICS, @OPEN-FILE, @CONNECT-FILE, @SET-FILE-ACCESS, @CLOSE-FILE, @LIST-OPEN-FILE, @SET-BLOCK-SIZE, @SET-PERMANENT-OPEN, @SET-BYTE-POINTER, @SET-BLOCK-POINTER, @APPEND-SPOOLING-FILE, @DELETE-SPOOLING-FILE, @SET-TEMPORARY-FILE, and @SCRATCH-OPEN.
+notes:
+- >-
+    Version history: M-version increased the maximum length of the command buffer
+    from 104 characters to 150 characters
+    (ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md:1085).
+see_also:
+- ExecuteCommand
+- SetCommandBuffer. ExecuteCommand does not terminate the program if an error occurs
+parameters:
+- name: Command
+  type: STRING
+  io: I
+  description: SINTRAN III command string to execute (up to 80 characters).
+examples:
+  pascal:
+    available: true
+    code: |-
+      Command : PACKED ARRAY [0..79] OF CHAR;
+      ...
+      CallCommand(Command);
+  cobol:
+    available: true
+    code: |-
+      01 Command PIC X(100).
+      ...
+      MONITOR-CALL "CallCommand" USING Command.
+  fortran:
+    available: true
+    code: |-
+      CHARACTER Command*80
+      ...
+      Monitor_Call('Call')Command', Command(1:80))
+  planc:
+    available: true
+    code: |-
+      BYTES : Command(0:79)
+      ...
+      Monitor_Call('CallCommand', Command)
+  assembly_500:
+    available: true
+    code: |-
+      Command : STRINGDATA 'CLOSE-FILE 102'''
+      ErrCode : W BLOCK 1
+      CallCommand : EQU 3789 + 70B
+      ...
+      CALLG CallCommand, 1, Command
+      IF K GO Error
+      ...
+      Error, W1 =: ErrCode
+    octal_definition: 37B9 + 70B
+  mac:
+    available: true
+    code: |-
+      LDA  (CMND    %Address of string with command to be executed.
+      MON 70        %Monitor call CallCommand.
+      ...
+      CMND, 'CLOSE-FILE 102'  %Execute @CLOSE-FILE 102
+
+
+      | ND-100 and ND-500 | All users | Background programs |
+    mon_number: 70
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 99
+  line: 4042
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

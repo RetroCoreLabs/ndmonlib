@@ -1,0 +1,91 @@
+# SINTRAN III Monitor Call: TerminationHandling
+# Octal: 206B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 206B
+name: TerminationHandling
+short_names:
+- EDTRM
+description: Switches termination handling on and off.
+notes:
+- Termination handling for RT programs is either on or off. Background programs may have termination handling on or off for either user break or fatal errors.
+see_also:
+- '@ENABLE-TERMINATION-HANDLING'
+- '@DISABLE-TERMINATION-HANDLING'
+parameters:
+- name: EnDisFlag
+  type: INTEGER
+  io: I
+  description: On or off flag. Use 1 for on and 0 for off.
+- name: Flag
+  type: INTEGER
+  io: I
+  description: 'Circumstances for termination handling. Use 1 for termination handling on user break. Use 2 for fatal errors. Specify 0 for both. Always use 0 for RT programs.'
+examples:
+  pascal:
+    available: true
+    code: |-
+      EnDisFlag, Flag : INTEGER2;
+      ...
+      TerminationHandling (EnDisFlag, Flag);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 EnDisFlag COMP.
+      01 Flag COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "TerminationHandling" USING EnDisFlag, Flag.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER EnDisFlag, Flag
+      ...
+      Monitor_Call('TerminationHandling', EnDisFlag, Flag)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : EnDisFlag, Flag
+      ...
+      Monitor_Call('TerminationHandling', EnDisFlag, Flag)
+  assembly_500:
+    available: true
+    code: |-
+      EDFLAG : W BLOCK 1
+      FLAG : W BLOCK 1
+      ...
+      LDA PAR, EDFLAG          %Load register A with address of parameter list.
+      MON 206                  %Monitor call TerminationHandling.
+      PAR, EDFLAG,             %Enable / Disable flag.
+      FLAG,                    %Flag indicating user break or fatal error.
+      ...
+          IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode    %Error code in W1 register.
+    octal_definition: 206
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 24816
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

@@ -1,0 +1,181 @@
+# SINTRAN III Monitor Call: OutByte
+# Octal: 2B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 2B
+name: OutByte
+short_names:
+- OUTBT
+description: |-
+  Writes one byte to a character device, e.g. a terminal or an opened file. If the device is a word-oriented device, one word is written.
+
+  - The program waits if the output buffer of the device is full. You can change this with NoWaitSwitch or TerminalNoWait.
+  - The pointer to the next byte is incremented when you write to a mass-storage file.
+  - Output from card readers are converted to ASCII characters. Use DeviceControl to write the 12-bit card columns.
+  - You are advised to use the faster OutputString on the ND-500.
+  - Appendix F contains an ASCII table.
+see_also:
+- OutUpTo8Bytes
+- Out8Bytes
+- OutString
+- OutputString
+- OutMessage
+- OutNumber
+- and InByte
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: Logical device number. See appendix B. Use 1 for your own terminal.
+- name: OutputValue
+  type: INTEGER
+  io: I
+  description: The byte to write.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber, OutputValue : INTEGER2;
+      ...
+      OutByte(DeviceNumber, OutputValue);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNumber COMP.
+      01 OutputValue COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "OutByte" USING DeviceNumber, OutputValue.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNumber, OutputValue
+      ...
+      Monitor_Call('OutByte', DeviceNumber, OutputValue)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNumber, OutputValue
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode >< 0 THEN ...
+      ENDON
+      Monitor_call('OutByte', DeviceNumber, OutputValue)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNumber : W BLOCK 1
+      OutputValue  : W BLOCK 1
+      ErrCode      : W BLOCK 1
+      OutByte      : EQU 37B9 + 2B
+      ...
+          CALLG OutByte, 2, DeviceNumber, OutputValue
+          IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode       %ErrorCode in W1 register.
+    octal_definition: 37B9 + 2B
+  mac:
+    available: true
+    code: |-
+      LDT DEVNO        %Logical device number.
+      LDA BYTE         %Byte to be written.
+      MON 2            %Monitor call OutByte.
+      JMP ERROR        %Error return from monitor call.
+      ...              %Normal return.
+      ERROR,           %Error number in A register.
+
+      DEVNO,   ...
+      BYTE,   'A'
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+      |-------------------|-----------|--------------|
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+    mon_number: 2
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 377
+  line: 17049
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_2B_OutByte.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: DeviceNumber
+      note: >-
+        32-bit word (ND-500 INTEGER = W). Routed by device class: character device
+        or terminal -> console; mass-storage file -> open-file table with the byte
+        pointer incremented (the manual's "The pointer to the next byte is
+        incremented when writing to mass-storage"); anything else -> error 24.
+      verified: true
+    - name: OutputValue
+      note: 'Read as a 32-bit word; only the low 8 bits are written.'
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared.'
+    errors:
+      - code: 24
+        octal: 030B
+        meaning: 'No such device name (unsupported device class)'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (file not open for writing, or host write error)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 CALLG args)'
+
+  verified:
+    - claim: >-
+        The device model is shared with 1B: device 1 = own terminal, files are
+        numbered separately. See the device_model block on 1B_InByte.yaml - it is
+        recorded once there rather than duplicated.
+      evidence: >-
+        Same is_character_device()/is_terminal()/is_mass_storage_file() routing in
+        nd500x/src/libmon/handlers/mon_2B_OutByte.c.
+    - claim: 'The real SINTRAN error codes are used, not invented ones.'
+      evidence: >-
+        Commit 6b57202 swept the invented 52/53/55/57 out of every handler and
+        replaced them from the Appendix A table
+        (nd500x/src/libmon/mon_errors.h).
+
+  unverified:
+    - >-
+      NO OBSERVED CALLER. Neither NC, CAT-500 nor the ND linker has been traced
+      issuing 2B - they use 504B DVOUTS / 162B OUTST, exactly as the manual advises
+      ("You are advised to use the faster OutputString on the ND-500"). So this
+      handler is implemented but NOT proven end to end.
+    - >-
+      The manual's "The program waits if the output buffer of the device is full" is
+      NOT modelled: nd500x has no output buffer and never waits on write. See 67B
+      OutBufferSpace, which always reports free space for the same reason.
+    - >-
+      Word-oriented devices ("if the device is a word-oriented device, one word is
+      written") are not modelled; nd500x always writes one byte.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'

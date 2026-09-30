@@ -1,0 +1,134 @@
+# SINTRAN III Monitor Call: DefaultRemoteSystem
+# Octal: 314B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 314B
+name: DefaultRemoteSystem
+short_names:
+- SRUSI
+description: |-
+  Sets default values for COSMOS remote file access. You can specify the default remote system, the remote user, and the remote user's passwords. The specified values are used when you omit values in a remote file access.
+
+  - Empty parameters remove previous default values. Default values are then the local user's name and passwords.
+  - SetRemoteMode switches the remote search on and off.
+see_also:
+- '@SET-DEFAULT-REMOTE-SYSTEM'
+- '@RESET-DEFAULT-REMOTE-SYSTEM'
+parameters:
+- name: SystemName
+  type: STRING
+  io: I
+  description: Remote system name.
+- name: UserName
+  type: STRING
+  io: I
+  description: User owning the files in the remote system.
+- name: Password
+  type: STRING
+  io: I
+  description: The user's password.
+- name: ProjPassword
+  type: STRING
+  io: I
+  description: The user's project password.
+examples:
+  pascal:
+    available: true
+    code: |-
+      SystemName: PACKED ARRAY [0..15] OF CHAR;
+      UserName, Password, ProjPassword : PACKED ARRAY [0..15] OF CHAR;
+      ...
+
+      DefaultRemoteSystem(SystemName, UserName, Password, ProjPassword);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 SystemName PIC X(16).
+      01 UserName   PIC X(16).
+      01 Password   PIC X(16).
+      01 ProjPassword PIC X(16).
+      01 ErrCode COMP.
+      ...
+
+      MONITOR-CALL "DefaultRemoteSystem" USING SystemName, UserName,
+                                            Password, ProjPassword.
+
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      CHARACTER SystemName*16
+      CHARACTER UserName*16, Password*16, ProjPassword*16
+      ...
+      Monitor_Call('DefaultRemoteSystem', SystemName(1:16),
+                   UserName(1:16), Password(1:16), ProjPassword(1:16))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      BYTES : SystemName(0:15), UserName(0:15), Password(0:15), ProjPassword(0:15)
+      ...
+      ON ROUTINEERROR DO
+      &nbsp;&nbsp;&nbsp;&nbsp;IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('DefaultRemoteSystem', SystemName, UserName, &
+      &nbsp;&nbsp;&nbsp;&nbsp;Password, ProjPassword)
+  assembly_500:
+    available: true
+    code: |-
+      SystemName : STRINGDATA 'STORE'...
+      UserName : STRINGDATA 'A-HANSEN'''
+      Password : STRINGDATA 'MAY'''
+      ProjPassword : STRINGDATA 'CHEESE'''
+      ErrCode : W BLOCK 1
+      DefaultRemoteSystem : EQU 37B9 + 314B
+      ...
+      &nbsp;&nbsp;&nbsp;&nbsp;CALLG DefaultRemoteSystem, 4, SystemName, UserName, &
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Password, ProjPassword
+
+      &nbsp;&nbsp;&nbsp;&nbsp;IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%ErrorCode in W1 register.
+    octal_definition: 37B9 + 314B
+  mac:
+    available: true
+    code: |-
+      | LDX  | (SYS)   | %Address of remote system name. |
+      | ---  | ---     | ---                              |
+      | LDT  | (USER)  | %Address of remote user identifier string. |
+      | LDA  | (PROJP) | %Address of remote project password string. |
+      | COPY | SA DD   | |
+      | LDA  | (PASSW) | %Address of remote user password string. |
+      | MON  | 314     | %Monitor call DefaultRemoteSystem. |
+      | JMP  | ERROR   | %Error return from monitor call. |
+      | ...  |         | %Normal return. |
+      | ERROR, ... |   | %Error number in register A. |
+
+      SYS, 'STORE' &nbsp;&nbsp;&nbsp;&nbsp;%Set up STORE as default remote system.
+      USER, 'A-HANSEN' &nbsp;&nbsp;&nbsp;&nbsp;%Set up A-HANSEN as default remote user.
+      PASSW, 'MAY' &nbsp;&nbsp;&nbsp;&nbsp;%Set up MAY as default remote user password.
+      PROJP, 'CHEESE' &nbsp;&nbsp;&nbsp;&nbsp;%Set up CHEESE as default remote project password.
+
+
+      | ND-100 and ND-500 | All users | All programs |
+      | ---               | ---       | ---          |
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 133
+  line: 5692
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

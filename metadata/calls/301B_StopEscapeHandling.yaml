@@ -1,0 +1,77 @@
+# SINTRAN III Monitor Call: StopEscapeHandling
+# Octal: 301B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 301B
+name: StopEscapeHandling
+short_names:
+- DUSEL
+description: Disables user-defined escape handling. The ESCAPE key terminates the program as normal. StartEscapeHandling
+  starts user-defined escape handling.
+notes:
+- User-defined escape handling stops when a program terminates.
+- Standard Error Code. See appendix A.
+see_also:
+- StartEscapeHandling
+- DisableEscape
+parameters: []
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Not available
+  cobol:
+    available: true
+    code: |-
+      MONITOR-CALL "StopEscapeHandling".
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT 0 GO ....
+  fortran:
+    available: true
+    code: |-
+      Monitor_Call ('StopEscapeHandling')
+      IF (ErrCode .NE. 0) THEN...
+  planc:
+    available: true
+    code: |-
+      ON ROUTINEERROR DO
+         IF ErrCode <> 0 THEN...
+      ENDON
+      ...
+      Monitor_Call('StopEscapeHandling')
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      | Command | Code | Description                        |
+      |---------|------|------------------------------------|
+      | MON     | 301  | %Monitor call StopEscapeHandling.  |
+      | JMP     | ERROR| %Error return from monitor call.   |
+      | ...     | ...  | %Normal return.                    |
+      | ERROR,  | ...  | %Error number in register A.       |
+      | ...     | ...  |                                    |
+
+
+      | ND-100 | All users | Background programs |
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 491
+  line: 22389
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

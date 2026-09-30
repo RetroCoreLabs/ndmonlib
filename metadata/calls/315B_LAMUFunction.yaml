@@ -1,0 +1,118 @@
+# SINTRAN III Monitor Call: LAMUFunction
+# Octal: 315B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 315B
+name: LAMUFunction
+short_names:
+- MLAMU
+description: Performs various functions on the LAMU system. A LAMU is a logically addressed memory unit.
+  The LAMU system is an extension to the ND-100 segment structure. Programs may address more space than
+  provided by the 3 available segments.
+notes:
+- >-
+    Version history: functions 7 and 8 were added in the J-version
+    (SINTRAN-III-Release-History.md:452). L-version added function 13B: set the
+    cache- or temporary status of a LAMU - LMOD sub-value 1 = turn cache on,
+    2 = turn cache off, 3 = set LAMU as temporary, 4 = reset temporary LAMU
+    (ND-860230-6-EN Sintran III - Release Information - L-Version.md:1049-1064).
+- Several CPUs may share the same LAMU address space.
+- The monitor call is implemented in Pascal as 10 separate routines, each corresponding to one function
+  code. In all other languages, it is presently implemented as one routine, to which you pass the function
+  code as the first parameter. This may change in the future, i.e. separate routines may be added.
+see_also: []
+parameters:
+- name: Func
+  type: INTEGER
+  io: I
+  description: 'Function code: 1=create LAMU, 2=delete, 3=connect, 4=disconnect, 7=protect, 8=get info, 9=create system-LAMU, 10=create temp system LAMU.'
+- name: Para2
+  type: INTEGER
+  io: IO
+  description: Function-dependent parameter 2.
+- name: Para3
+  type: INTEGER
+  io: IO
+  description: Function-dependent parameter 3.
+- name: Para4
+  type: INTEGER
+  io: IO
+  description: Function-dependent parameter 4.
+examples:
+  pascal:
+    available: true
+    code: |-
+      Func, Para2, Para3, Para4 : INTEGER2;
+      ...
+      LAMUfunction(Func, Para2, Para3, Para4);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 Func COMP.
+      01 Para2 COMP.
+      01 Para3 COMP.
+      01 Para4 COMP.
+      ...
+      MONITOR-CALL "LAMUfunction" USING Func, Para2, Para3, Para4.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER Func, Para2, Para3, Para4
+      ...
+      Monitor_Call('LAMUfunction', Func, Para2, Para3, Para4)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER . Func. Para2, Para3, Para4
+      ON ROUTINEERROR DO
+        [IF ErrCode >< 0 THEN ...
+      ENDON
+      Monitor_Call('LAMUfunction', Func. Para2, Para3, Para4
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      LDA   {PAR      % Load register A with address of parameter list.
+      MON   315       % Monitor call LAMUfunction.
+      JMP   ERROR     % Error return from monitor call.
+                     % Normal return.
+      ERROR           % Error number in register A.
+
+      PAR, FUNC       % Function.
+      PARA2
+      PARA3
+      PARA4
+
+      FUNC,
+      PARA2,
+      PARA3,
+      PARA4,
+
+
+      | ND-100 | All users | All programs |
+    mon_number: 315
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 331
+  line: 14963
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

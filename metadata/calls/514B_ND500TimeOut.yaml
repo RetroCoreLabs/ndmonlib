@@ -1,0 +1,89 @@
+# SINTRAN III Monitor Call: ND500TimeOut
+# Octal: 514B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 514B
+name: ND500TimeOut
+short_names:
+- 5TMOUT
+description: |-
+  Suspends the execution of an ND-500 program for a given time. The execution then continues after the monitor call. The program is placed in a time queue in the ND-500, not the ND-100.
+
+  - No reserved files or devices are released.
+  - Avoid using TimeOut (mon 267) from ND-500, use ND500TimeOut instead. Use TimeOut from ND-100.
+see_also:
+- TimeOut
+- SuspendProgram
+- WaitForRestart
+parameters:
+- name: NoOfTimeUnits
+  type: INTEGER
+  io: I
+  description: Number of time units to suspend. Use 0 to restart immediately (clears restart flag).
+- name: TimeUnit
+  type: INTEGER
+  io: I
+  description: 'Type of time units: 1=basic (1/50 sec), 2=seconds, 3=minutes, 4=hours.'
+- name: ReturnStatus
+  type: INTEGER
+  io: O
+  description: 'Restart cause: 0=time elapsed, 1=interrupt, -1=scheduled for repeat.'
+examples:
+  pascal:
+    available: true
+    code: |-
+      NoOfTimeUnits, TimeUnit, ReturnStatus : LONGINT;
+      ...
+      ND500TimeOut(NoOfTimeUnits, TimeUnit, ReturnStatus);
+  cobol:
+    available: true
+    code: |-
+      01 NoOfTimeUnits COMP.
+      01 TimeUnit COMP.
+      01 ReturnStatus COMP.
+      ...
+      MONITOR-CALL "ND500TimeOut" USING NoOfTimeUnits, TimeUnit, ReturnStatus.
+  fortran:
+    available: true
+    code: |-
+      INTEGER NoOfTimeUnits, TimeUnit, ReturnStatus
+      ...
+      Monitor_Call('ND500TimeOut', NoOfTimeUnits, TimeUnit, ReturnStatus)
+  planc:
+    available: true
+    code: |-
+      INTEGER : NoOfTimeUnits, TimeUnit, ReturnStatus
+      ...
+      Monitor_Call('ND500TimeOut', NoOfTimeUnits, TimeUnit, ReturnStatus)
+  assembly_500:
+    available: true
+    code: |-
+      NoOfTimeUnits : W BLOCK 1
+      TimeUnit : W BLOCK 1
+      ReturnStatus : W BLOCK 1
+      ND500TimeOut : EQU 3789 + 514B
+      ...
+      CALLG ND500TimeOut, 3, NoOfTimeUnits, TimeUnit, ReturnStatus
+    octal_definition: 37B9 + 514B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 349
+  line: 15697
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

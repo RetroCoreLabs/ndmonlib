@@ -1,0 +1,359 @@
+# SINTRAN III Monitor Call: INPUTSTRING
+# Octal: 503B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 503B
+name: InputString
+short_names:
+- DVINST
+description: Reads a string from a device, e.g. a terminal or an opened file. This monitor call provide a fast input to ND-500 programs.
+notes:
+- Only the first four parameters are used for file input.
+- An ASCII table is given in Appendix G.
+see_also:
+- InByte
+- InString
+- OutputString
+parameters:
+- name: DevNo
+  type: INTEGER
+  io: I
+  description: Logical device number. See appendix B. Use 1 for your own terminal.
+- name: MaxNo
+  type: INTEGER
+  io: I
+  description: Maximum number of bytes to read before break.
+- name: NoOfBytesRet
+  type: INTEGER
+  io: O
+  description: Number of bytes read.
+- name: Buff
+  type: STRING
+  io: O
+  description: Buffer to receive input.
+- name: BreakStrat
+  type: INTEGER
+  io: I
+  description: Break setting. See SetBreak. Use 8 for user-defined break table.
+- name: EchoStrat
+  type: INTEGER
+  io: I
+  description: Echo setting. See SetEcho. Use 8 for user-defined echo table.
+- name: BreakT1
+  type: INTEGER
+  io: I
+  description: Break table bits 0:31. Bits set to 1 cause break.
+- name: BreakT2
+  type: INTEGER
+  io: I
+  description: Break table bits 32:63.
+- name: BreakT3
+  type: INTEGER
+  io: I
+  description: Break table bits 64:95.
+- name: BreakT4
+  type: INTEGER
+  io: I
+  description: Break table bits 96:127.
+- name: EchoT1
+  type: INTEGER
+  io: I
+  description: Echo table bits 0:31. Bits set to 0 cause echo.
+- name: EchoT2
+  type: INTEGER
+  io: I
+  description: Echo table bits 32:63.
+- name: EchoT3
+  type: INTEGER
+  io: I
+  description: Echo table bits 64:95.
+- name: EchoT4
+  type: INTEGER
+  io: I
+  description: Echo table bits 96:127.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DevNo, MaxNo, NoOfBytesRet, BreakStrat, EchoStrat, BreakT1: LONGINT;
+      BreakT2, BreakT3, BreakT4, EchoT1, EchoT2, EchoT3, EchoT4: LONGINT;
+      Buff : ARRAY [0..8] OF RECORD...END;
+      ...
+      InputString(DevNo, MaxNo, NoOfBytesRet, Buff, BreakStrat, EchoStrat,
+                  BreakT1, BreakT2, BreakT3, BreakT4, EchoT1, EchoT2, EchoT3, EchoT4);
+  cobol:
+    available: true
+    code: |-
+      01 DevNo COMP.
+      01 MaxNo COMP.
+      01 NoOfBytesRet COMP.
+      01 BreakStrat COMP.
+      01 EchoStrat COMP.
+      01 BreakT1 COMP.
+      01 BreakT2 COMP.
+      01 BreakT3 COMP.
+      01 BreakT4 COMP.
+      01 EchoT1 COMP.
+      01 EchoT2 COMP.
+      01 EchoT3 COMP.
+      01 EchoT4 COMP.
+      01 Buff.
+         02 array COMP OCCURS 100 TIMES.
+      ...
+      MONITOR-CALL "InputString" USING DevNo, MaxNo, NoOfBytesRet, Buff,
+                   BreakStrat, EchoStrat, BreakT1, BreakT2, BreakT3,
+                   BreakT4, EchoT1, EchoT2, EchoT3, EchoT4.
+  fortran:
+    available: true
+    code: |-
+      INTEGER DevNo, MaxNo, NoOfBytesRet, BreakStrat, EchoStrat, BreakT1
+      INTEGER BreakT2, BreakT3, BreakT4, EchoT1, EchoT2, EchoT3, EchoT4
+      INTEGER Buff(100)
+      ...
+      Monitor_Call('InputString', DevNo, MaxNo, NoOfBytesRet, Buff(1),
+                   BreakStrat, EchoStrat, BreakT1, BreakT2, BreakT3,
+                   BreakT4, EchoT1, EchoT2, EchoT3, EchoT4)
+  planc:
+    available: true
+    code: |-
+      INTEGER : DevNo, MaxNo, NoOfBytesRet, BreakStrat, EchoStrat, BreakT1
+      INTEGER : BreakT2, BreakT3, BreakT4, EchoT1, EchoT2, EchoT3, EchoT4
+      BYTES : Buff(0:199)
+      ...
+      Monitor_Call('InputString', DevNo, MaxNo, NoOfBytesRet, Buff(1),
+                   BreakStrat, EchoStrat, BreakT1, BreakT2, BreakT3,
+                   BreakT4, EchoT1, EchoT2, EchoT3, EchoT4)
+  assembly_500:
+    available: true
+    code: |-
+      DevNo : W BLOCK 1
+      MaxNo : W BLOCK 1
+      NoOfBytesRet: W BLOCK 1
+      BreakStrat: W BLOCK 1
+      EchoStrat: W BLOCK 1
+      BreakT1 : W BLOCK 1
+      BreakT2: W BLOCK 1
+      BreakT3: W BLOCK 1
+      BreakT4 : W BLOCK 1
+      EchoT1: W BLOCK 1
+      EchoT2: W BLOCK 1
+      EchoT3: W BLOCK 1
+      EchoT4 : W BLOCK 1
+      Buff : BY BLOCK 400B
+      InputString: EQU 37B9 + 503B
+      ...
+      Monitor_Call('InputString', DevNo, MaxNo, NoOfBytesRet, Buff(0), &
+                   BreakStrat, EchoStrat, BreakT1, BreakT2, BreakT3, &
+                   BreakT4, EchoT1, EchoT2, EchoT3, EchoT4)
+      ...
+      CALLG InputString, 14, DevNo, MaxNo, NoOfBytesRet, Buff, &
+            BreakStrat, EchoStrat, BreakT1, BreakT2, &
+            BreakT3, BreakT4, EchoT1, EchoT2, EchoT3, EchoT4
+    octal_definition: 37B9 + 503B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 14451
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_503B_InputString.c
+  last_updated: '2026-07-17'
+
+  health_note: >-
+    503B DVINST CORRECTLY SUSPENDS ON AN EMPTY QUEUE. Recorded explicitly because
+    this call was suspected during the linker investigation and was cleared: the
+    blocking-read model is right, and the 503B-line hypothesis for the linker's
+    config dialogue was DISPROVEN, not left open.
+
+  architecture_note: >-
+    THE DVINST BODY IS SHARED, NOT DUPLICATED. mon_dvinst_read() in
+    nd500x/src/libmon/handlers/mon_503B_InputString.c is the core,
+    exported via mon_device_io.h, and MON 511B DVIO calls the SAME function for its
+    input phase. The carve independently confirms this is how SINTRAN itself is
+    built: 511B's input phase is named XNINSTR, which is literally 503B DVINST's
+    body. Fix a bug in the core and both calls get it.
+
+  parameter_notes:
+    - name: DevNo
+      note: '32-bit word. arg 0 for DVINST; also arg 0 for 511B DVIO.'
+      verified: true
+    - name: MaxNo
+      note: >-
+        arg 1 for DVINST. NOTE it moves to arg 14 in 511B DVIO - the arg lists are NOT
+        a shared prefix. Capped at 2048 (DVINST_MAX_BYTES).
+      verified: true
+    - name: NoOfBytesRet
+      note: >-
+        arg 2 for DVINST (arg 15 in 511B DVIO). An OUT parameter - it MUST be written
+        or the caller keeps a stale count. This is the MON 412B FSCNT bug shape.
+      verified: true
+    - name: Buff
+      note: >-
+        arg 3. Taken as a raw byte address (arg_addresses[3]); bytes are written
+        directly. Same index in 511B DVIO.
+      verified: true
+    - name: BreakStrat / EchoStrat / BreakT1-T4 / EchoT1-T4
+      note: >-
+        FIXED indices 4..13, and 511B DVIO uses THE SAME INDICES for the same fields -
+        which is why the shared core can read them straight from ctx for both calls.
+        Absent BreakStrat/EchoStrat args fall back to the device defaults set by 4B/3B.
+      verified: true
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), thunk @0xB004AC8A, call @0xB004AC90'
+      params:
+        arg_count: 14
+      expectation: >-
+        The linker reads its command line ONCE from the TERMINAL via DVINST. Its call
+        site is a bare pass-through thunk (ents $0x4C; call $0xF8000143, $0xE, b.0x14,
+        b.0x18, b.0x1C, @b.0x20, b.0x24..b.0x48) with exactly ONE caller
+        (@0xB004754F..0xB00475C0) that builds the argument block at a fixed +0x150 and
+        calls it with ZERO CALLG args.
+      note: >-
+        Laying this call site beside the 511B one is what established the 511B
+        argument mapping. See 511B_DVIO.yaml.
+    - caller: 'NC compiler (nc-a06.dom)'
+      params:
+        BreakStrat: 1
+      expectation: 'NC uses break strategy 1 (control characters break) and is unaffected by the linker-specific table fallback below.'
+      note: 'NC reads device 1 and never touches device 0.'
+
+  return_contract:
+    success: 'K flag cleared; NoOfBytesRet written with the byte count; bytes in Buff.'
+    errors:
+      - code: 24
+        octal: 030B
+        meaning: 'No such device name (unsupported device class)'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (file not open for reading)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 4 CALLG args)'
+
+  verified:
+    - claim: >-
+        BLOCKING-READ SEMANTICS: a terminal DVINST with NO input available SUSPENDS
+        (STOP_WAIT_INPUT) rather than returning an empty line. Nothing is consumed,
+        the MON is left uncommitted, the CPU rewinds to the CALLG and the whole line
+        is re-read on resume. Only applies before the first byte - a line already in
+        the buffer is read to its break character as usual.
+      evidence: >-
+        Commit 7819a36, mirroring the MON 1B model (commit 26f665d). Returning an
+        empty line instead makes the caller act on a blank answer and busy-loop.
+    - claim: >-
+        503B is an ND-500 LEVEL-12 monitor call. It is NOT dispatched through the
+        ND-100 monitor GOTAB - a GOTAB[503] probe is MEANINGLESS. It arrives via the
+        resident level-12 GOSW, slot 3 (NINSTR).
+      evidence: >-
+        Carve .../mon-analysis/503B-InputString/README.md; prove-mon.py 503 reports
+        "500-523B -> level-12 5CMNO GOSW; GOTAB[503] is meaningless".
+    - claim: 'The handler body is real, byte-identical SINTRAN L code.'
+      evidence: >-
+        NINST = 141272B with extended entry XNINS = 141277B, carved from 026-S3IMPIT
+        (load 32000B). Two independent anchors agree: the L07 symbol table, and the
+        fact that every indirect worker pointer resolves to exactly this call's worker
+        set (EMONICO, XACTRDY, NXTMSG, 5GTDF, NORMMC, SET12, GCPUDF, WN5STATUS). The
+        illegal-parameter error path (SAA 174 -> EMONICO) is byte-verified - note 174B
+        is exactly the "Illegal parameter" code the handler returns.
+    - claim: 'Maximum string length is 2048 bytes.'
+      evidence: >-
+        The manual, corroborated by the NPL/carve side of 511B (DNOBY max 4000B octal
+        = 2048 bytes).
+
+  unverified:
+    - >-
+      THE LINKER'S 503B ARGUMENT LAYOUT IS NOT FULLY MAPPED. Read positionally, the
+      linker's 14-arg call yields args[6..9] that are NOT an inline break table -
+      the resulting "table" breaks on the letter 'T' but NOT on CR, truncating every
+      command at its first 'T'. nd500x GUARDS against this rather than fixing it: if
+      a user-table strategy yields a table that does not break on CR, the table is
+      treated as invalid and the read falls back to MAC-style line breaks. A valid
+      terminal line-input break table ALWAYS breaks on CR. This guard should be
+      removed once the linker's true parameter layout is mapped.
+    - >-
+      MaxNo CLAMPING IS AN EXPERIMENT, NOT A CONTRACT. The linker passes MaxNo =
+      0xF80000CB (a leftover CALLG target address, not a length). nd500x CLAMPS to
+      2048 instead of erroring, explicitly to test whether its command read then
+      proceeds. Real SINTRAN's response to an out-of-range MaxNo is UNKNOWN - the
+      carve's only proven error path is 174B illegal parameter.
+    - >-
+      THE PARAMETER FIELDS ARE NOT BYTE-ISOLATED IN THE CARVE, and the carve says so:
+      the max-byte-count, the destination-array pointer and the returned-byte-count
+      write-back are all read/written as numeric displacements into the ND-500 message
+      buffer, and the carve captured the handler CODE but not the data-structure
+      DECLARATIONS that give those displacements meaning. See the folder's ADDENDUM.md.
+    - >-
+      Break/echo strategies 3-6 (system-defined tables) are NOT implemented; the core
+      falls through to a PLACEHOLDER using the MAC set.
+    - >-
+      A DEBUG PROBE REMAINS IN THE HANDLER, gated behind ND500X_DVINST_DUMP.
+
+  discrepancies:
+    - was: >-
+        The working hypothesis that the ND linker's startup config answers ("Batch
+        abortion", "Advanced mode") are read via 503B DVINST, and that feeding a 503B
+        line would unblock it.
+      is: >-
+        DISPROVEN by driving it: those answers are read via an in-memory datafield
+        poll, NOT via 503B or INBT. The blocking-read change was kept because it is
+        correct in general, but it did NOT unblock the linker.
+      evidence: >-
+        Commit 7819a36 - "driving it showed its config-question answers are read via
+        an in-memory datafield poll, NOT via 503B/INBT, so the 503B-line hypothesis is
+        disproven for the linker".
+
+  notes:
+    - >-
+      THE DUAL-INPUT-SOURCE TRAP - this cost days. The ND linker uses TWO input
+      channels: the command line ONCE from the TERMINAL via 503B DVINST, and
+      characters from DEVICE 0 via 1B INBT. Feeding only one channel sends it down an
+      unreachable path and produces a CONVINCING FALSE BLOCKER. Feed both, or route
+      each feed by the device that is actually waiting. See 1B_InByte.yaml and
+      nd500x/test/diag_linkdrive.c.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/503B-InputString/README.md
+      note: 'Level-12 GOSW dispatch, the NINST/XNINS body, and its honest caveats.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/503B-InputString/ADDENDUM.md
+      note: 'Why the carve alone cannot name the parameter fields (message-buffer displacements).'
+    - doc: nd500x/docs/CSHARP_HANDOFF_BLOCKING_READ_SESSION.md
+      note: 'The blocking-read model for the C# side.'
+  updates_2026_07_17:
+    - topic: 'File EOF = error 3; console suspend policy'
+      status: verified
+      detail: >-
+        When DVINST reads from an OPEN FILE and hits end of file, it returns
+        error 3 (003B End of file), NOT success-with-0-bytes. The ND linker reads
+        its LINKER:INIT command file through DVINST one line per call; returning
+        "success, 0 bytes" made it re-read the file forever.
+      console_policy: >-
+        Terminal read: a console that EXISTS but is empty must SUSPEND
+        (STOP_WAIT_INPUT) so the host can feed a line and the CPU retries. NO
+        console configured deliberately does NOT suspend (headless/batch runs, e.g.
+        NC, proceed on the empty result); suspending there would deadlock. A driver
+        that intends to feed input must install a console BEFORE the run.
+      nd500x_commits: 'a628b70, 3b8660f'

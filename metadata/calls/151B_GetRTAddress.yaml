@@ -1,0 +1,99 @@
+# SINTRAN III Monitor Call: GETRTADDRESS
+# Octal: 151B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 151B
+name: GetRTAddress
+short_names:
+- GRTDA
+description: Gets the address of an RT description. You specify the name of the RT program. See the SINTRAN III Real Time Guide (ND-860133) for further information.
+notes:
+- In SINTRAN III, version J and older, this monitor call is only available to RT programs.
+see_also:
+- GetRTDescr
+- GetRTName
+- '@LIST-RT-PROGRAM'
+parameters:
+- name: RTProgramName
+  type: STRING
+  io: I
+  description: RT-program name (up to 7 chars, uppercase). End with apostrophe if < 7 chars.
+- name: RTProgram
+  type: INTEGER
+  io: O
+  description: RT program address. Returns -1 if RT-program doesn't exist.
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTProgramName: PACKED ARRAY [0..6] OF CHAR;
+      RTProgram : INTEGER2;
+      ...
+      GetRTAddress (RTProgramName, RTProgram);
+  cobol:
+    available: true
+    code: |-
+      01 RTProgramName PIC X(7).
+      01 RTProgram COMP.
+      ...
+      MONITOR-CALL "GetRTAddress" USING RTProgramName, RTProgram.
+  fortran:
+    available: true
+    code: |-
+      CHARACTER RTProgramName*7
+      INTEGER RTProgram
+      ...
+      Monitor_Call('GetRTAddress', RTProgramName(1:7), RTProgram)
+  planc:
+    available: true
+    code: |-
+      BYTES : RTProgramName(0:6)
+      INTEGER : RTProgram
+      ...
+      Monitor_Call('GetRTAddress', RTProgramName, RTProgram)
+  assembly_500:
+    available: true
+    code: |-
+      RTProgramName : STRINGDATA 'SIB2A'''
+      RTProgram : W BLOCK 1
+      GetRTAddress : EQU 37B9 + 151B
+      ...
+      %Get address of process SIB2A.
+      CALLG GetRTAddress, 1, RTProgramName
+          IF K GO Error
+      ...
+      W1 := RTProgram
+    octal_definition: 37B9 + 151B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR      %Load register A with address of parameter list.
+      MON 151       %Monitor call GetRTAddress.
+      STA RTPRO     %Store address of RT description.
+      ...
+      RTPRO, 0
+      ...
+      PAR, RTNAM    %String containing name of RT program.
+      ...
+      RTNAM, 'SIB2A' %Get address of RT description of SIB2A.
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 151
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 11850
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

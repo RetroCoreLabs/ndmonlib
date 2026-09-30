@@ -1,0 +1,198 @@
+octal: 76B
+name: SetBlockSize
+short_names:
+- SETBS
+description: 'Sets the block size of an opened file. Monitor calls which read randomly from, or write
+  randomly to a file, operate on blocks. See ReadFromFile and WriteToFile.
+
+
+  - The standard block size is 512 bytes. This block size is set when the file is opened.
+
+  - The block size is reset when the file is closed.
+
+  - Factors of 2048 bytes are the most efficient block sizes.'
+see_also:
+- SetStartBlock
+- ReadFromFile
+- WriteToFile
+- and @SET-BLOCK-SIZE
+parameters:
+- name: FileNumber
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: BlockSize
+  type: LONGINT
+  io: I
+  description: Block size in bytes. Must be an even number. Factors of 2048 are most efficient.
+examples:
+  pascal:
+    available: true
+    code: 'FileNumber : INTEGER2;
+
+      BlockSize : LONGINT;
+
+      ...
+
+      SetBlockSize(FileNumber, BlockSize);
+
+      If ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 FileNumber COMP.
+
+      01 BlockSize COMP PIC S9(10).
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "SetBlockSize" USING FileNumber, BlockSize.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER FileNumber
+
+      INTEGER*4 BlockSize
+
+      ...
+
+      Monitor_Call(''SetBlockSize'', FileNumber, BlockSize)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER : FileNumber\nINTEGER : BlockSize\n...\nON ROUTINEERROR DO\n  IF ErrCode > 0 THEN ...\n\
+      ENDON\nMonitor_Call('SetBlockSize', FileNumber, BlockSize)"
+  assembly_500:
+    available: true
+    code: 'FileNumber : W BLOCK 1
+
+      BlockSize : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      SetBlockSize : EQU 37B9 + 76B
+
+      ...
+
+      CALLG SetBlockSize, 2, FileNumber, BlockSize
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode       %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 76B
+  mac:
+    available: true
+    code: 'LDT FILNO       %File number returned from earlier open.
+
+      LDA SIZE        %Block size in words.
+
+      MON 76          %Monitor call SetBlockSize.
+
+      JMP ERROR       %Error return from monitor call.
+
+      ...             %Normal return.
+
+      ERROR, ...      %Error number in register A.
+
+
+      FILNO, ...
+
+      SIZE, ...       %New block size.
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+
+      |-------------------|-----------|--------------|'
+    mon_number: 76
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 433
+  line: 19687
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_76B_SetBlockSize.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: BlockSize
+      note: >-
+        The block size recorded here is what 117B RFILE and 120B WFILE multiply
+        BlockNo by to compute the file offset. With no SETBS the default is 512
+        bytes, matching the manual.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; the block size is recorded on the open-file entry.'
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (block size 0, or above the emulator cap)'
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), startup'
+      params:
+        BlockSize: 0
+      expectation: >-
+        Observed in a FAILURE cascade only: when the linker's first 50B OPEN
+        (empty file name) fails, the following 76B SETBS arrives with block size
+        0 and errors. That is a SYMPTOM of the OPEN failure, not a SETBS defect.
+
+  verified:
+    - claim: 'The default block size is 512 bytes and is applied when SETBS never ran.'
+      evidence: >-
+        Manual: "The standard block size is 512 bytes. This block size is set
+        when the file is opened." Both mon_117B_ReadFromFile.c and
+        mon_120B_WriteToFile.c fall back to DEFAULT_BLOCK_SIZE 512 when
+        entry->block_size is 0.
+
+  unverified:
+    - >-
+      "The block size is reset when the file is closed" - nd500x clears the whole
+      entry at close, so the effect matches, but the reset is not an explicit
+      modelled step.
+    - >-
+      The manual says the block size "must be an even number". nd500x does NOT
+      enforce evenness; it accepts any value in 1..65536.
+    - >-
+      The 65536 upper cap is an emulator invention, not a documented SINTRAN
+      limit.
+    - >-
+      Access code D (direct transfer) requires the block size to be a multiple of
+      the page size (2048 bytes). That constraint is not enforced here or in
+      117B/120B.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 76B SETBS - MATCH (prior).'

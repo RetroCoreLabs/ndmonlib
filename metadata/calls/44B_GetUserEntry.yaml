@@ -1,0 +1,116 @@
+# SINTRAN III Monitor Call: GetUserEntry
+# Octal: 44B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 44B
+name: GetUserEntry
+short_names:
+- RUSER
+description: |-
+  Gets information about a user. The user entry in the directory is returned. It contains the user name, default file accesses, the pages in use, the password, the table of friends, and more.
+
+  - Only user RT and user SYSTEM may read the user entries of other users.
+see_also:
+- GetUserName
+- '@DUMP-USER-ENTRY'
+parameters:
+- name: UserName
+  type: STRING
+  io: I
+  description: User name string. May include directory name, e.g. PACK-ONE:P-HANSEN.
+- name: Buff
+  type: ARRAY
+  io: O
+  description: Buffer to receive the 64-byte user entry. See appendix C.
+examples:
+  pascal:
+    available: true
+    code: |-
+      UserName : PACKED ARRAY [0..63] OF CHAR;
+      Buff : ARRAY [0..1] OF RECORD...END;
+      ...
+      ReadUserEntry(UserName, Buff);  [Note routine name.]
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 UserName PIC X(64).
+      01 Buff.
+      02 array COMP OCCURS 32 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "GetUserEntry" USING UserName, Buff.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      CHARACTER UserName*64
+      INTEGER Buff(32)
+      ...
+      Monitor Call('GetUserEntry', UserName(1:64), Buff(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      BYTES : UserName(0:63)
+      BYTES : Buff(0:63)
+
+
+      **ON ROUTINEERROR DO**
+
+
+      IF ErrCode > 0 THEN ...
+
+
+
+      ENDON
+      Monitor_Call('GetUserEntry', UserName, Buff(0))
+  assembly_500:
+    available: true
+    code: |-
+      UserName : STRINGDATA 'A-HANSEN' %Get entry of user A-HANSEN.
+      Buff : H BLOCK 40B
+      ErrCode : W BLOCK 1
+      GetUserEntry : EQU 37B9 + 44B
+      ...
+      CALLG GetUserEntry, 2, UserName, Buff
+      IF K GO ERROR
+
+
+
+      ERROR : W1 := ErrCode  %ErrorCode in W1 register.
+    octal_definition: 37B9 + 44B
+  mac:
+    available: true
+    code: |-
+      LDA (BUFF  %Address for receiving user entry.
+      LDX (USER  %Address of string containing user name.
+      MON 44  %Monitor call GetUserEntry.
+      JMP ERROR  %Error return from monitor call.
+      ... %Normal return.
+      ERROR, ... %Error number in register A.
+      USER, 'A-HANSEN' %Obtain user entry for A-HANSEN.
+      BUFF, 0
+      *+40/ %Make a buffer of 32 words.
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 44
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 297
+  line: 13196
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

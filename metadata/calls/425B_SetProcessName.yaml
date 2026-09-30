@@ -1,0 +1,75 @@
+# SINTRAN III Monitor Call: SetProcessName
+# Octal: 425B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 425B
+name: SetProcessName
+short_names:
+- SPRNAM
+description: |-
+  Defines a new name for your process.
+
+  - Process names may be up to 16 characters and contain an additional user name, e.g. (P-HANSEN)WP-PROCESS.
+see_also:
+- GetProcessNo
+- GetOwnProcessInfo
+parameters:
+- name: ProcessName
+  type: STRING
+  io: I
+  description: New process name (up to 34 chars, max 16 chars + user name prefix).
+examples:
+  pascal:
+    available: true
+    code: |-
+      ProcessName : PACKED ARRAY [0..33] OF CHAR;
+      ...
+      SetProcessName(ProcessName);
+  cobol:
+    available: true
+    code: |-
+      01 ProcessName PIC X(34).
+      ...
+      MONITOR-CALL "SetProcessName" USING ProcessName.
+  fortran:
+    available: true
+    code: |-
+      CHARACTER ProcessName*34
+      ...
+      Monitor_Call('SetProcessName', ProcessName(1:34))
+  planc:
+    available: true
+    code: |-
+      BYTES : ProcessName(0:33).
+      ...
+      Monitor_Call('SetProcessName', ProcessName)
+  assembly_500:
+    available: true
+    code: |-
+      ProcessName : STRINGDATA 'WP-PROCESS'...
+      SetProcessName : EQU 37B9 + 425B
+      ...
+      CALLG SetProcessName, 1, ProcessName
+    octal_definition: 37B9 + 425B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 461
+  line: 21066
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

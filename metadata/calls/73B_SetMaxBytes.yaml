@@ -1,0 +1,197 @@
+# SINTRAN III Monitor Call: SetMaxBytes
+# Octal: 73B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 73B
+name: SetMaxBytes
+short_names:
+- SMAX
+description: |-
+  Sets the value of the maximum byte pointer in an opened file (i.e. the number of bytes minus 1). The specified number of bytes are stored when the file is closed. The error code 3 is returned if you later try to read beyond this size. Error code 3 means end of file.
+
+  - The file must be opened for write.
+  - This monitor call is only relevant for sequential access.
+see_also:
+- GetBytesInfile
+- SetStartByte
+parameters:
+- name: FileNumber
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: MaxBytePointer
+  type: INTEGER4
+  io: I
+  description: Maximum file size in bytes (32-bit value).
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber : INTEGER2;
+      MaxBytePointer : LONGINT;
+      ...
+      SetMaxBytes(FileNumber, MaxBytePointer);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 MaxBytePointer COMP PIC S9(10).
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "SetMaxBytes" USING FileNumber, MaxBytePointer.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber
+      INTEGER*4 MaxBytePointer
+      ...
+      Monitor_Call('SetMaxBytes', FileNumber, MaxBytePointer)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber
+      INTEGER4 : MaxBytePointer
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('SetMaxBytes', FileNumber, MaxBytePointer)
+  assembly_500:
+    available: true
+    code: |-
+      FileNumber : W BLOCK 1
+      MaxBytePointer : W BLOCK 1
+      ErrCode : W BLOCK 1
+      SetMaxBytes : EQU 37B9 + 73B
+      ...
+      CALLG SetMaxBytes, 2, FileNumber, MaxBytePointer
+          IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode              %ErrorCode in W1 register.
+    octal_definition: 37B9 + 73B
+  mac:
+    available: true
+    code: |-
+      LDT  FILNO      %File number returned from earlier open.
+      LDD  POINT      %Maximum byte pointer.
+      MON  73         %Monitor call SetMaxBytes.
+      JMP  ERROR      %Error return from monitor call.
+      ...             %Normal return.
+      ERROR,          %Error number in register A.
+      ...
+      FILNO,
+      ...
+      POINT,          %A double word.
+      ...
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 73
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 449
+  line: 20454
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_73B_SetMaxBytes.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: MaxBytePointer
+      note: >-
+        This is the maximum byte POINTER, i.e. the number of bytes MINUS 1. The
+        handler stores max_byte_ptr + 1 as the logical length. Off-by-one here
+        silently truncates one byte off every file.
+      verified: true
+    - name: 'both parameters'
+      note: >-
+        On ND-500 both are 32-bit words ('W BLOCK' in the manual's assembly_500
+        example), not halfwords.
+      verified: true
+
+  return_contract:
+    success: >-
+      K flag cleared. The call only RECORDS the logical length; nothing is
+      written to the file and the file is NOT truncated at this point.
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (file not open for write)'
+
+  verified:
+    - claim: >-
+        SMAX must NOT truncate the host file immediately. It records the logical
+        max-byte length; the physical length is applied at CLOSE (43B).
+      evidence: >-
+        Carved L07 SMAX: the physical file length is applied at CLOSE, not by
+        SMAX. The premature ftruncate was observed shortening NC's scratch file
+        under its feet, so a later read-back delivered a truncated image.
+        nd500x now sets a max_bytes_set flag consumed by mon_close_file.
+        Commit 2618145.
+    - claim: >-
+        This call's own manual text is the authoritative source for the SINTRAN
+        end-of-file error code.
+      evidence: >-
+        "Error code 3 is returned if you later try to read beyond this size" -
+        this is the cite that established EOF = 3 (003B) for 117B RFILE, which
+        had wrongly used 55. Commit 01c286e.
+
+  unverified:
+    - >-
+      The carve does NOT byte-prove the SMAX -> CLOSE link. "SMAX records, CLOSE
+      applies" is the consistent model adopted after the immediate-truncate was
+      proven harmful; it is INFERRED, not read from the carve.
+    - >-
+      The manual says "This monitor call is only relevant for sequential access".
+      nd500x accepts it for any write-capable open mode and only rejects
+      ACCESS_SEQ_READ / ACCESS_RAND_READ.
+    - >-
+      nd500x never truncates a SCRATCH file at close even when SMAX ran (the
+      scratch is about to be unlinked). Whether real SINTRAN applies the length
+      to a scratch is unproven.
+    - >-
+      The error the real system returns when the file is not open for write is
+      not established; nd500x returns 174B.
+
+  discrepancies:
+    - was: >-
+        Emulator defect (fixed): SMAX ftruncate-d the host file immediately.
+      is: 'SMAX records the length only; CLOSE applies it.'
+      evidence: 'Commit 2618145; carved L07 SMAX applies the length at CLOSE.'
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: >-
+        The manual page this YAML was extracted from. Its "Error code 3 means
+        end of file" line is the authoritative EOF-code cite for the whole file
+        group.
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'Section "73B SMAX + 43B CLOSE - truncation deferral".'
+    - commit: '2618145 (nd500x) - SMAX records, CLOSE applies'
+    - commit: '01c286e (nd500x) - EOF code 3 established from this call''s manual text'

@@ -1,0 +1,80 @@
+# SINTRAN III Monitor Call: ReadSystemRecord
+# Octal: 340B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 340B
+name: ReadSystemRecord
+short_names:
+- RSREC
+description: Used to read the system record into a buffer.
+see_also: []
+parameters:
+- name: RecordType
+  type: INTEGER2
+  io: I
+  description: 'Record type: 1=RT-description, 2=segment entry.'
+- name: AddressOrNumber
+  type: INTEGER2
+  io: I
+  description: RT-description address or segment number.
+- name: Buffer
+  type: INTEGER2[]
+  io: O
+  description: Buffer to receive system record. Minimum 38 words for RecordType=1, 8 words for RecordType=2.
+- name: Format
+  type: INTEGER2
+  io: I
+  description: 'Format (ND-500 only): 0=return information in 16-bit integer format.'
+examples:
+  planc:
+    available: false
+    code: ''
+    notes: Not available
+  assembly_500:
+    available: true
+    code: |-
+      | RECTYPE | W BLOCK 1  | % RT-description/segment entry            |
+      |---------|------------|-------------------------------------------|
+      | ADDNO   | W BLOCK 1  | % address of RT-descr/ND-100 segment      |
+      | ENTRY   | H BLOCK 38 | % buffer, 38 words                        |
+      | FORMAT  | W BLOCK 1  | % format (16/32-bit integer)              |
+      | RSREC   | EQU 37000000340B | % RSREC = MON 340                   |
+
+      CALLG RSREC,4,RECTYPE,ADDNO,ENTRY,FORMAT % MON RSREC with 4 parameters
+      IF K GO ERROR % on error return, W1 = error code
+    octal_definition: ''
+  mac:
+    available: true
+    code: |-
+      - LDA RECTP  %Load A register with the record type.
+      - LDT RTADR  %Load T register with RT address or segment no.
+      - LDX (BUFFR %Load X register with address of the buffer.
+      - MON 340    %Monitor call ReadSystemRecord.
+      - JMP ERROR  %Error return.
+        ...        %Normal return.
+
+      | RECTP. | 1    |
+      |--------|------|
+      | RTADR. | 54214|
+      | BUFFR. | 0 *+46/ %Reserve 46 (38 words). |
+
+
+      ND-100 and ND-500  User RT and user SYSTEM  RT programs
+    mon_number: 340
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: false
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 405
+  line: 18388
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

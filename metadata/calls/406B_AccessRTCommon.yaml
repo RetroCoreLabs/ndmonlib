@@ -1,0 +1,102 @@
+# SINTRAN III Monitor Call: AccessRTCommon
+# Octal: 406B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 406B
+name: AccessRTCommon
+short_names:
+- RWRTC
+description: |-
+  Reads from or writes to RT common from an ND-500 program. RT common is an area in physical memory where RT programs may exchange data.
+
+  - Some SINTRAN III systems are generated without RT common. The size of RT common is defined at the time of system generation. The size may be increased by up to 8 pages by the SINTRAN-SERVICE-PROGRAM command DEFINE-RTCOMMON-SIZE (see the SINTRAN III Commands Reference Manual, ND-860128, for more information).
+see_also:
+- GetInputFlags
+- SetOutputFlags
+parameters:
+- name: Func
+  type: INTEGER
+  io: I
+  description: 'Function: 0=read, 1=write.'
+- name: RTCommon
+  type: INTEGER
+  io: I
+  description: RT common address (ND-100 16-bit word address).
+- name: NoOfBytes
+  type: INTEGER
+  io: I
+  description: Number of bytes to read or write.
+- name: Buffer
+  type: ARRAY
+  io: IO
+  description: Buffer of data to be read or written.
+examples:
+  pascal:
+    available: true
+    code: |-
+      Func, RTCommon, NoOfBytes : LONGINT;
+      Buffer : ARRAY [0..6] OF RECORD...END;
+
+          AccessRTCommon(Func, RTCommon, NoOfBytes, Buffer);
+  cobol:
+    available: true
+    code: |-
+      01 Func COMP.
+      01 RTCommon COMP.
+      01 NoOfBytes COMP.
+      01 Buffer.
+         02 array COMP OCCURS 100 TIMES.
+      ...
+      MONITOR-CALL "AccessRTCommon" USING Func, RTCommon, NoOfBytes, Buffer.
+  fortran:
+    available: true
+    code: |-
+      INTEGER Func, RTCommon, NoOfBytes
+      INTEGER Buffer(100)
+      ...
+      Monitor_Call('AccessRTCommon', Func, RTCommon, NoOfBytes, Buffer(1))
+  planc:
+    available: true
+    code: |-
+      INTEGER : Func, RTCommon, NoOfBytes
+      BYTES : Buffer(0:199)
+
+      Monitor_Call('AccessRTCommon', Func, RTCommon, NoOfBytes, Buffer(0))
+  assembly_500:
+    available: true
+    code: |-
+      Func : W BLOCK 1
+      RTCommon : W BLOCK 1
+      NoOfBytes : W BLOCK 1
+      Buffer : W ARRAY 100
+      ErrCode : W BLOCK 1
+      AccessRTCommon : EQU 37B9 + 406B
+
+      CALLG AccessRTCommon, 4, Func, RTCommon, NoOfBytes, Buffer
+      IF K GO ERROR
+
+
+      Error : W1 = ErrCode  %Error code in the W1 register.
+    octal_definition: 37B9 + 406B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 73
+  line: 2858
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

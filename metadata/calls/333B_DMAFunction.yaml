@@ -1,0 +1,147 @@
+# Monitor Call: 333B DMAFunction
+# Extracted from: ND-860228.2 EN (SINTRAN III Monitor Calls)
+# Source page: 160-162
+
+octal: 333B
+name: DMAFunction
+short_names:
+- UDMA
+description: |-
+  Various DMA functions for Direct Memory Access operations.
+
+  Function codes:
+  - 1: Receive DMA data (input: length in bytes, output: actual length)
+  - 2: Send DMA data (input: length in bytes)
+  - 3: Receive DMA data with No Wait (input: length in bytes)
+  - 4: Send DMA data with No Wait (input: length in bytes)
+  - 7: Test mode (output: status)
+  - 20: Read DMA status (output: status)
+  - 21: Clear DMA device (output: status)
+  - 24: Read last status
+  - 54-57: Use programmed input/output devices
+
+  Output status bits:
+  - Bits 0:7 and bit 15: Copied from the device status word
+  - Bits 8:14: User status lines
+  - Bit 16: DMA interrupt has occurred
+  - Bit 17: Timeout
+parameters:
+- name: DeviceNo
+  type: INTEGER2
+  io: I
+  description: Logical device number of a DMA channel.
+- name: FuncCode
+  type: INTEGER2
+  io: I
+  description: Function code. See function codes in description.
+- name: DataAddress
+  type: ARRAY
+  io: IO
+  description: Memory address of data to send or receive for function code 0:3. Function codes 54:57 use programmed input/output devices and this parameter contains the logical device number of the device. Ignored for other function codes.
+- name: InPara
+  type: INTEGER4
+  io: I
+  description: Input parameter. Function dependent.
+- name: OutPara
+  type: INTEGER4
+  io: O
+  description: Output parameter. Function dependent. Some functions return a status value.
+- name: ErrCode
+  type: INTEGER2
+  io: O
+  description: Standard Error Code. See appendix A.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNo, FuncCode : INTEGER2; InPara, OutPara : LONGINT;
+      DataAddress : ARRAY [0..16] OF RECORD...END;
+      ...
+      DMAFunction(DeviceNo, FuncCode, DataAddress, InPara, OutPara);
+      IF ErrCode <> 0 THEN...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP. 01 FuncCode COMP.
+      01 InPara COMP PIC S9(10).
+      01 OutPara COMP PIC S9(10).
+      01 DataAddress.
+      02 array COMP OCCURS 256 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "DMAFunction" USING DeviceNo, FuncCode, DataAddress,
+      InPara, OutPara.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo, FuncCode
+      INTEGER*4 InPara, OutPara
+      INTEGER DataAddress(256)
+      Monitor_Call('DMAFunction', DeviceNo, FuncCode,
+      C DataAddress(1), InPara, OutPara)
+      IF (ErrCode .NE. 0) THEN...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, FuncCode
+      INTEGER4 : InPar, OutPar
+      BYTES : DataAdr(0:511)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('DMAFunction', DeviceNo, FuncCode, DataAdr(0), InPar, OutPar)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNo   : W BLOCK 1
+      FuncCode   : W BLOCK 1
+      InPara     : W BLOCK 1    %Length must be an even number of bytes.
+      OutPara    : W BLOCK 1
+      Buffer     : W BLOCK 256
+      ErrCode    : W BLOCK 1
+      DMAFunction: EQU 37B9 + 333B
+      ...
+      CALLG DMAFunction, 5, FuncCode, Buffer, DeviceNo, InPara, OutPara
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode         %ErrorCode in W1 register.
+  mac:
+    available: true
+    code: |-
+      LDT LDN                   %Load register T with the logical device number.
+      LDA (PAR                  %Load register A with address of parameter list.
+      MON 333                   %Monitor call DMAFunction.
+      STA STAT
+      ...
+      STAT, 0
+      PAR, FUNC                %Parameter list.
+      ADR
+      IPAR
+      OPAR
+
+      FUNC, ...
+      ADR, ...                 %Address in your memory area.
+      IPAR, 0:0                %A 32-bit input parameter.
+      OPAR, 0:0                %A 32-bit output parameter.
+    mon_number: 333
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 160
+  line: 6940
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true
+  ocr_notes: Extracted from source document page 160-162

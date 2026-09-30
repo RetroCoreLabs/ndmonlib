@@ -1,0 +1,205 @@
+octal: 11B
+name: GetBasicTime
+short_names:
+- TIME
+description: '**Time**
+
+
+  Gets the current internal time. The internal time is specified in basic time units. There are 50 basic
+  time units in a second.
+
+
+  - The internal time is set to 0 each time SINTRAN III is started.'
+see_also:
+- GetCurrentTime
+- AdjustClock
+- and SetClock
+parameters:
+- name: BasicTime
+  type: LONGINT
+  io: O
+  description: Internal time in basic time units (output). 50 units per second.
+examples:
+  pascal:
+    available: true
+    code: 'BasicTime : LONGINT;
+
+      ...
+
+      GetBasicTime(BasicTime);'
+  cobol:
+    available: true
+    code: '01 BasicTime COMP PIC S9(10).
+
+      ...
+
+      MONITOR-CALL "GetBasicTime" USING BasicTime.'
+  fortran:
+    available: true
+    code: 'INTEGER*4 BasicTime
+
+      ...
+
+      Monitor_Call(''GetBasicTime'', BasicTime)'
+  planc:
+    available: true
+    code: 'INTEGER4 : BasicTime
+
+      ...
+
+      Monitor_Call(''GetBasicTime'', BasicTime)'
+  assembly_500:
+    available: true
+    code: 'BasicTime : W BLOCK 1
+
+      GetBasicTime : EQU 37B9 + 11B
+
+      ...
+
+      CALLG GetBasicTime, 0
+
+      W1 =: BasicTime  %Result is returned in W1 register.'
+    octal_definition: 37B9 + 11B
+  mac:
+    available: true
+    code: '| MON | 11   | %Monitor call GetTime.                                |
+
+      |-----|------|-------------------------------------------------------|
+
+      | STD | TIME | %Store time returned in the A and D register.         |
+
+      | ... |      |                                                       |
+
+      | TIME, 0 | | %Time in basic time units as a double word.            |
+
+      | 0      |    | %                                                   |
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 223
+  line: 9588
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_11B_GetBasicTime.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    nd500x does NOT derive 11B from a wall clock. It returns
+    cpu->instruction_count / 40000, i.e. it models "40000 instructions = 1 basic
+    time unit (1/50 s) at ~2 MHz". That makes the value monotonic and
+    run-reproducible but unrelated to real elapsed time. This is an EMULATOR
+    MODEL, not a SINTRAN behaviour.
+
+  parameter_notes:
+    - name: BasicTime
+      note: >-
+        OUT parameter. The handler writes it BOTH ways: into W1/I1 (for
+        ASSEMBLY-500 callers, which read the result from the register) and, when
+        at least one argument is present, into the parameter word via
+        mon_write_param_word(ctx, 0, ...). On ND-500 the parameter is a 32-bit
+        word (W BLOCK).
+      verified: true
+    - name: BasicTime
+      note: >-
+        OUT-PARAMETER DEFECT CLASS - this call HAS an out parameter, so writing
+        it is part of the contract. A handler that returns SUCCESS without
+        writing its OUT/IO parameter leaves the caller reading a stale cell, and
+        the failure surfaces tens of thousands of instructions later somewhere
+        unrelated. Confirmed instances of exactly this bug elsewhere: 412B FSCNT
+        (fixed, commit 73ac594) and 144B MAGTP function 0 (fixed, commit 6ad9c09).
+      verified: true
+
+  observed_calls:
+    - caller: 'CAT-500 code generator (cat-cat5-b06.dom), startup'
+      params: {}
+      expectation: >-
+        CAT-500 issues 11B TIME as part of its startup sequence (11B TIME, 114B
+        TUSED, 143B RSIO, 422B GSWSP, 41B ROBJE, 76B SETBS, 62B RMAX, 73B SMAX,
+        504B DVOUTS, 503B DVINST) before printing its banner and "Cat-500:"
+        prompt. No dependence on the actual value has been observed.
+      note: 'Source: nd500x/docs/CAT500_UECOM_CSHARP_HANDOFF.md Part C.'
+
+  return_contract:
+    success: 'K flag cleared; BasicTime in W1 and in the OUT parameter word.'
+    errors:
+      - code: -1
+        octal: null
+        meaning: >-
+          NOT a SINTRAN code. Internal guard when ctx or ctx->cpu is NULL. Real
+          SINTRAN would never return this; see mon_errors.h ("Do NOT invent
+          error numbers").
+
+  verified:
+    - claim: 'MON 11B dispatches via MCTAB to the L07 worker TIME in segment 003-S3CP.'
+      evidence: >-
+        Carve L-VSX-500 11B-GetBasicTime/README.md: MCTAB slot 005631B (segment
+        044-S3IDPIT, byte offset 1842) = 040747B = TIME; TIME worker body carved
+        at 040747B-040755B in 003-S3CP (byte offset 9166). Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=1842 count=2 -> 41 e7.
+    - claim: 'TIME is one of a clock family sharing a common body in 003-S3CP.'
+      evidence: >-
+        Same carve README: TIME, CLOCK, XPERC, PERCE, DPERC share a common body
+        in 003-S3CP.
+
+  unverified:
+    - >-
+      The 40000-instructions-per-basic-time-unit constant is an emulator
+      invention. Nothing in the manual or the carve fixes an
+      instructions-to-time ratio, and the real 11B reads a hardware-driven
+      counter. Any program that measures a real interval with 11B will see
+      emulator time, not host time.
+    - >-
+      11B is NOT routed through mon_clock (src/libmon/mon_clock.c), unlike 113B
+      CLOCK, 114B TUSED and 142B error timestamps (commit 4fa340a). So
+      ND500X_PIN_CLOCK does not affect it. It is reproducible anyway because the
+      instruction count is, but the two time sources can disagree.
+    - >-
+      DISPUTED WIDTH, not yet resolved: an nd500x audit
+      (docs/MON_CSHARP_SYNC_HANDOFF.md PART C) records "11B TIME: return is a
+      DOUBLE WORD (LONGINT) in A/D, not a single 32-bit word. Also route through
+      the pinned clock." The handler currently truncates to 32 bits
+      (basic_time & 0xFFFFFFFF) and writes one word. The manual's own parameter
+      type here is LONGINT. This correction is AUDITED BUT NOT APPLIED in
+      nd500x, and the ND-500 register pair that would carry it is not confirmed
+      from a manual page.
+    - >-
+      The TIME worker body was carved but its exact output convention (which
+      register(s), what the internal counter's origin is) was not read out for
+      this note.
+
+  discrepancies:
+    - was: >-
+        Earlier carve versions claimed GOTAB[11B] = 120427B -> P04R2 and a
+        "zero-filled TIME region", on the model that GOTAB is the monitor-call
+        table.
+      is: >-
+        MON calls dispatch through MCTAB @ 005620B (segment 044-S3IDPIT). GOTAB
+        is MFELL for 224 of 256 calls. MCTAB[11B] = 040747B = TIME, and that
+        worker IS carved in 003-S3CP.
+      evidence: >-
+        Carve CORRECTED 2026-07-13 header in
+        .../L-VSX-500/re/mon-analysis/11B-GetBasicTime/README.md; byte check
+        dd if=044-S3IDPIT.bin bs=1 skip=1842 count=2 -> 41 e7.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/11B-GetBasicTime/README.md'
+      note: 'Dispatch chain + TIME worker, byte-verified.'
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'PART C - the LONGINT/pinned-clock correction, audited, not applied.'

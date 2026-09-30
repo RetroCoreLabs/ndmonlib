@@ -1,0 +1,108 @@
+octal: 57B
+name: GetUserParam
+short_names:
+- PAGEI
+description: 'Gets information about why the last program terminated. There are 5 parameters for each
+  background user. These can be set by SINTRAN III or your background program.
+
+
+  - Use SetUserParam to set the parameter values.
+
+  - SINTRAN III sets some of the parameter values if you give the command @ENABLE-TERMINATION-HANDLING
+  first.'
+see_also:
+- TerminationHandling
+- GetND500Param
+- '@DEFINE-TERMINATION-HANDLING'
+- '@DISABLE-TERMINATION-HANDLING'
+- and @SET-USER-PARAMETERS
+parameters:
+- name: Buff
+  type: INTEGER2[5]
+  io: O
+  description: 5-word buffer for user parameters. [0]=dir/user index, [1]=terminal LDN, [2]=error number (-1 if escape), [3-4]=user defined.
+examples:
+  pascal:
+    available: true
+    code: 'Buff : RECORD...END;
+
+      ...
+
+      GetUserParam(Buff);'
+  cobol:
+    available: true
+    code: "01 Buff.\n   02 array COMP OCCURS 5 TIMES.\n   ...\n   MONITOR-CALL \"GetUserParam\" USING\
+      \ Buff."
+  fortran:
+    available: true
+    code: 'INTEGER Buff(5)
+
+      ...
+
+      Monitor_Call(''GetUserParam'', Buff(1))'
+  planc:
+    available: true
+    code: 'BYTES : Buff(0:9)
+
+      ...
+
+      Monitor_Call(''GetUserParam'', Buff(0))'
+  assembly_500:
+    available: true
+    code: 'Buff : H BLOCK 5
+
+      GetUserParam : EQU 37B9 + 57B
+
+
+      CALLG GetUserParam, 1, Buff'
+    octal_definition: 37B9 + 57B
+  mac:
+    available: true
+    code: 'LDA (PAR %Load register A with address of parameter list.
+
+      MON 57 %Monitor call GetUserParam.
+
+
+
+      PAR BUFF
+
+      %Buffer of 5 words to receive user parameters.
+
+
+      BUFF |
+
+      ---|
+
+      0 | %Left byte: dir.index. Right byte: user index.
+
+      0 | %Logical device number, terminal number.
+
+      0 | %-1 if escape, otherwise error number.
+
+      0 | %User defined.
+
+      0 | %User defined.
+
+
+
+      ND-100 and ND-500 | All users | Background programs
+
+      ---|---|---'
+    mon_number: 57
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 301
+  line: 13424
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

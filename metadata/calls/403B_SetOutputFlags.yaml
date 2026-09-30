@@ -1,0 +1,74 @@
+# SINTRAN III Monitor Call: SetOutputFlags
+# Octal: 403B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 403B
+name: SetOutputFlags
+short_names:
+- WFLAG
+description: |-
+  ND-100 and ND-500 programs may communicate through two 32-bit flag arrays. You can use the flags as you want. SetOutputFlags writes to the output flags. The ND-100 reads these flags with the monitor call ND500Function. See the manual ND Linker User Guide and Reference Manual (ND-860289).
+
+  - You store the last values written to the flags. There is no queue.
+see_also:
+- SetOutputFlags
+parameters:
+- name: Value
+  type: INTEGER
+  io: I
+  description: Flag values as a 32-bit integer.
+examples:
+  pascal:
+    available: true
+    code: |-
+      Value : LONGINT;
+      ...
+      SetOutputFlags(Value);
+  cobol:
+    available: true
+    code: |-
+      01 Value COMP.
+      ...
+      MONITOR-CALL "SetOutputFlags" USING Value.
+  fortran:
+    available: true
+    code: |-
+      INTEGER Value
+      ...
+      Monitor_Call('SetOutputFlags', Value)
+  planc:
+    available: true
+    code: |-
+      INTEGER : Value
+      ...
+      Monitor_Call('SetOutputFlags', Value)
+  assembly_500:
+    available: true
+    code: |-
+      Value : W BLOCK 1
+      SetOutputFlags : EQU 37B9 + 403B
+      ...
+      CALLG SetOutputFlags, 1, Value
+    octal_definition: 37B9 + 403B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 455
+  line: 20776
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

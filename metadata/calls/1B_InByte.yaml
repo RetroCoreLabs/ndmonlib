@@ -1,0 +1,309 @@
+# SINTRAN III Monitor Call: InByte
+# Octal: 1B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 1B
+name: InByte
+short_names:
+- INBT
+description: |-
+  Reads one byte from a character device, e.g. a terminal or an opened file. If the device is a word-oriented device, one word is read. This monitor call can be used on most input devices.
+
+  - Bit 7 is a parity bit if terminal or file input. IOMultiFunction may change this.
+  - The program waits if there is no bytes in the input buffer of the device. You can change this with NoWaitSwitch or TerminalNoWait.
+  - The pointer to the next byte is incremented when you read from a mass-storage file.
+  - Input from card readers are converted to ASCII characters. Use DeviceControl to read the 12-bit card columns.
+  - Background programs may read from logical device number 0. This is the SINTRAN III command buffer. You may read parameters following the program name this way. Break and echo are both set to 1. Normal SINTRAN III command editing is available. All letters are converted to uppercase. You may control this with IOMultiFunction.
+  - Appendix F contains an ASCII table.
+see_also:
+- In8AndFlag
+- InUpTo8Bytes
+- In8Bytes
+- InString
+- InputString
+- In4x2Bytes
+- OutByte
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: Logical device number. Use 1 for your own terminal.
+- name: ReturnValue
+  type: INTEGER
+  io: O
+  description: The read byte.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber, ReturnValue : INTEGER2;
+      ...
+      InByte(DeviceNumber, ReturnValue);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNumber COMP.
+      01 ReturnValue COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "InByte" USING DeviceNumber, ReturnValue.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNumber, ReturnValue
+      ...
+      Monitor Call('InByte', DeviceNumber, ReturnValue)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER: DeviceNumber, ReturnValue
+      ..
+      ON ROUTINEERROR DO
+         IF ErrCode > 0 THEN ..
+      ENDON
+      Monitor_Call('InByte', DeviceNumber, ReturnValue)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNumber : W BLOCK 1
+      ReturnValue  : W BLOCK 1
+      ErrCode      : W BLOCK 1
+      InByte       : EQU 37B9 + 1B
+      
+      CALLG InByte, 2, DeviceNumber, ReturnValue
+      IF K GO ERROR
+      
+      ERROR: W1 =: ErrCode             %ErrorCode in W1 register.
+    octal_definition: 37B9 + 1B
+  mac:
+    available: true
+    code: |-
+      LDT  DEVNO            %Logical device number.
+      MON  1               %Monitor call InByte.
+      JMP  ERROR           %Error return from monitor call.
+      STA  BYTE            %Normal return, store byte read.
+      
+      ERROR, ...           %Error number in register A.
+      
+      DEVNO, ...
+      BYTE,  0
+    mon_number: 1
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 319
+  line: 14357
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_1B_InByte.c
+  last_updated: '2026-07-17'
+
+  device_model:
+    note: >-
+      THE DEVICE MODEL, recorded here because 1B is where it is provable and where
+      getting it wrong costs days. Device 0 = the SINTRAN command buffer = the
+      INVOCATION COMMAND LINE (the manual's "Background programs may read from
+      logical device number 0"). Device 1 = the program's OWN TERMINAL. They are
+      DIFFERENT CHANNELS with different backing stores, not fallbacks for each
+      other: an empty device 0 does NOT fall through to the terminal.
+    devices:
+      - device: 0
+        meaning: 'SINTRAN command buffer (the invocation command line)'
+        backing: >-
+          nd500x: g_command_buffer / mon_read_command_buffer_char()
+          (nd500x/src/libmon/mon_file_table.c:1045)
+      - device: 1
+        meaning: "the program's own terminal"
+        backing: 'nd500x: the ConsoleIO handler (mon_file_table_get_console())'
+    routing_in_nd500x: >-
+      device 0 -> command buffer; is_character_device()/is_terminal() -> console;
+      is_mass_storage_file() -> open-file table (byte pointer incremented, matching
+      the manual's "The pointer to the next byte is incremented"); anything else ->
+      error 24 (030B No such device name).
+
+  parameter_notes:
+    - name: DeviceNumber
+      note: >-
+        Read as a 32-bit word. On ND-500 all INTEGER MON parameters are 32-bit
+        words (W BLOCK, not H BLOCK).
+      verified: true
+    - name: ReturnValue
+      note: >-
+        nd500x returns the byte BOTH in W1/I1 (ND-100 compatibility) and by writing
+        the second CALLG argument as a 32-bit word. Callers observed to date read
+        W1; the OUT-parameter write is defensive.
+      verified: false
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom) @PC=0xB004E759'
+      params:
+        DeviceNumber: 0
+      expectation: >-
+        The linker's resident character reader polls device 0 for its command line.
+        Its FIRST device-0 read must return 0x0D (CR); it then prints its banner and
+        startup dialogue and NEVER reads device 0 again.
+      note: >-
+        This one call site is the whole evidence base for both the CR termination
+        and the blocking-read model below.
+
+  return_contract:
+    success: 'K flag cleared; byte in W1 (and written to the OUT parameter).'
+    errors:
+      - code: 3
+        octal: 003B
+        meaning: 'End of file (nd500x also uses this to signal an ESCAPE user break)'
+      - code: 24
+        octal: 030B
+        meaning: 'No such device name (unsupported device class)'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 CALLG args)'
+
+  verified:
+    - claim: >-
+        Device 0 is ALWAYS CR-terminated (015B / 0x0D). 47B is an INTERNAL SOURCE
+        MARKER that never reaches a device-0 reader.
+      evidence: >-
+        WRITE SIDE, byte-proven in the L07 command processor: at the 47B source
+        marker it substitutes CR and resets the command byte pointer CPNT -
+        050773: SAA 15 -> SBYT. (Command-buffer machinery is CPNT byte pointer
+        + CSTRIN = 144035B, NOT CBUF = 170207B, which is a boot-time scratch
+        pointer.) Carve:
+        NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/1B-InByte/DEVICE0-CR-TERMINATION.md
+    - claim: 'A program launched with NO arguments still reads a lone CR.'
+      evidence: >-
+        Follows from the same 050773 CR substitution (the terminator is written
+        unconditionally). Asserted in nd500x test_mon_calls.c ("empty no-args ->
+        lone CR, not wait/EOF"), commit 19f7354.
+    - claim: >-
+        READ SIDE: a device-0 read yields args + CR, and the reader consumes that
+        and stops.
+      evidence: >-
+        ND linker under nd500x with device 0 delivering CR: its first 1B INBT at
+        PC=0xB004E759 returns 0x0D, it proceeds to its banner and startup dialogue,
+        and never reads device 0 again. This is the runtime confirmation of the
+        carver's write-side CR proof. Commit 19f7354.
+    - claim: >-
+        Returning raw EOF at end-of-line instead of the CR is WRONG and observably
+        catastrophic.
+      evidence: >-
+        MEASURED: 20,088 consecutive 1B INBT retries at PC=0xB004E759 within 600k
+        instructions, with no other MON activity - the ND linker busy-spins. Fixed
+        in mon_read_command_buffer_char()
+        (nd500x/src/libmon/mon_file_table.c:1052-1071): return the
+        stored bytes, then exactly ONE synthetic CR if the line did not already end
+        in one, then end-of-line. A line that already ends in CR is not given a
+        second one. Commits 19f7354, 2d9b00f (re-tested and re-confirmed).
+    - claim: >-
+        BLOCKING-READ SEMANTICS: an empty read SUSPENDS (STOP_WAIT_INPUT); it does
+        not return EOF. This is the manual's own "The program waits if there is no
+        bytes in the input buffer of the device" made real.
+      evidence: >-
+        Modelled in nd500x as suspend + retry: the MON call is NOT committed,
+        ctx->wait_requested is set, nd500_check_indirect_call rewinds the resolved
+        address to the CALLG and stops the run loop with STOP_WAIT_INPUT, so the MON
+        re-executes on resume. Applies to BOTH device 0 and the terminal. Verified:
+        the linker's EXIT no longer spins (clean "STOP=waiting for input" at the
+        command reader); NC unchanged (clean MON 0B LEAVE at instr 1902382).
+        Commit 26f665d.
+    - claim: >-
+        ESCAPE handling is real per-device state, not a constant: if the byte is the
+        terminal's escape character AND escape is ENABLED (DFLAG.5IESC clear) it is
+        a user break; if 71B DESCF disabled escape, the character passes through as
+        ordinary input data.
+      evidence: >-
+        mon_is_escape_break(device, byte) against TerminalState.escape_inhibited /
+        escape_char (VESCAPE, default 033B/0x1B). Commit 68e290d.
+    - claim: 'MON 1B dispatch is a level-14 FAST PATH, not an MFELL call.'
+      evidence: >-
+        Byte-proven: GOTAB[1B] = 071633B = M1, a resident level-14 handler (one of
+        the 32 GOTAB slots that are NOT MFELL) - 026-S3IMPIT :071234B, byte offset
+        32056 -> 73 9b. MCTAB[1B] = 026576B = YFGET, the filesystem byte-input
+        worker - 044-S3IDPIT :005621B, byte offset 1826 -> 2d 7e; body carved in
+        006-S3FS :026576B-026640B. Carve: .../mon-analysis/1B-InByte/README.md
+        (CORRECTED 2026-07-13; the earlier "stub-routed / INBT=032471B" model was an
+        artefact of the wrong dispatch model and is debunked).
+
+  unverified:
+    - >-
+      WHAT A REAL DEVICE-0 READ RETURNS PAST THE CR. No program we have exercises
+      it - the linker reads the CR once and stops. nd500x's command buffer returns
+      -1 (end-of-line) there and the 1B handler treats that as SUSPEND. That is a
+      CHOICE, not a proven behaviour. Carried forward from the carve's own "Still
+      UNPROVEN (do not guess)" section and mon_file_table.c:1064-1066.
+    - >-
+      The runtime hand-off between the M1 fast path and the YFGET file-byte worker
+      is INFERRED (a dashed hop in the carve), not byte-proven.
+    - >-
+      The manual's device-0 notes that nd500x does NOT model: "Break and echo are
+      both set to 1", "Normal SINTRAN III command editing is available", "All
+      letters are converted to uppercase" (controllable via IOMultiFunction). No
+      program under test has depended on any of these, so none is implemented and
+      none is disproven.
+    - >-
+      Bit 7 as a parity bit on terminal/file input (manual). nd500x masks the byte
+      to 0xFF and does no parity handling.
+    - >-
+      NoWaitSwitch (36B) / TerminalNoWait (307B) can change the wait behaviour per
+      the manual. nd500x's 1B always suspends on empty; it does not consult a
+      no-wait flag.
+
+  notes:
+    - >-
+      THE DUAL-INPUT-SOURCE TRAP - this cost days. The ND linker uses TWO input
+      channels at once: it reads its command line ONCE from the TERMINAL via 503B
+      DVINST, and characters from DEVICE 0 via 1B INBT. Feeding only one channel
+      sends it down an unreachable path and produces a CONVINCING FALSE BLOCKER.
+      A driver harness must feed BOTH, or route each feed by the device that is
+      actually waiting (STOP_WAIT_INPUT's stop_data). See
+      nd500x/test/diag_linkdrive.c and commit 0b64731.
+    - >-
+      An earlier note in this tree blamed NC's reader for the EOF spin. That was
+      WRONG and is corrected: NC reads device 1 and never touches device 0. The
+      suspend is required by the LINKER. Do not "restore EOF" here. (Commit 2d9b00f
+      re-tested and confirmed this after 143B RSIO moved command input to the
+      terminal.)
+
+  discrepancies:
+    - was: >-
+        The emulator previously returned SINTRAN error 57 on an empty 1B read
+        ("non-blocking EOF semantics", asserted in an older test).
+      is: >-
+        57 is not an EOF code at all - it is "Space not available to expand file".
+        The invented codes 52/53/55/57 were swept out and replaced with the real
+        Appendix A values; and the EOF return itself was then replaced entirely by
+        the STOP_WAIT_INPUT suspend model.
+      evidence: >-
+        Commits 6b57202 (real error codes; nd500x/src/libmon/mon_errors.h)
+        and 26f665d (suspend replaces EOF).
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/1B-InByte/DEVICE0-CR-TERMINATION.md
+      note: 'The write-side CR proof and the three-sentinel table (47B vs 015B vs -1). Do not conflate them.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/1B-InByte/README.md
+      note: 'Dispatch carve (GOTAB[1B]=M1, MCTAB[1B]=YFGET).'
+    - doc: nd500x/docs/HANDOFF_CSHARP_FILE_TABLE_SINTRAN_SEMANTICS.md
+      note: 'ITEM 2 - device-0 CR termination, with the exact behaviours the C# side must match.'
+    - doc: nd500x/docs/CSHARP_HANDOFF_BLOCKING_READ_SESSION.md
+      note: 'The blocking-read model (STOP_WAIT_INPUT) and device-0 vs terminal.'

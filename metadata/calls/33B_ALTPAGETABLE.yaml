@@ -1,0 +1,90 @@
+# SINTRAN III Monitor Call: ALTPAGETABLE
+# Octal: 33B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 33B
+name: AltPageTable
+short_names:
+- ALTON
+description: Switches page table. Each page table allows you to access 128 Kbyte memory. SINTRAN III has
+  4 page tables. SINTRAN III VSX, version K, has 16 page tables. They are numbered 0-15. RT programs may
+  use any page table. Background programs will get page table 2. The parameter is ignored.
+notes:
+- The specified page table is used for all later X register relative, B-register relative, and indirect
+  addresses. P register relative addresses go through the normal page table. See the ND-100 Functional
+  Description (ND-06.015) for details on addressing and page table selection.
+- When used from background, the background segment size must be 256 Kbyte. See @CHANGE-BACKGROUND-SEGMENT-SIZE.
+- Do not call AltPageTable twice without calling NormalPageTable in between.
+- If addressing via the alternative page table (LDA, STA), bit 0 in the status register (STS) must be
+  set to 1. If this bit is 0, addressing is via the normal page table. This monitor call sets bit 0 in
+  the status register to 1.
+- Monitor calls are independent of status bit 0. Return parameters are always on the alternative page
+  table.
+see_also:
+- NormalPageTable
+parameters:
+- name: PageTableNumber
+  type: INTEGER
+  io: I
+  description: Number of the page table to use (0-15 for VSX).
+examples:
+  pascal:
+    available: true
+    code: |-
+      PageTableNumber : INTEGER2;
+      ...
+      AltPageTable(PageTableNumber);
+  cobol:
+    available: true
+    code: |-
+      01 PageTableNumber COMP.
+      ...
+      MONITOR-CALL "AltPageTable" USING PageTableNumber.
+  fortran:
+    available: true
+    code: |-
+      INTEGER PageTableNumber
+      ...
+      Monitor_Call('AltPageTable', PageTableNumber)
+  planc:
+    available: true
+    code: |-
+      INTEGER : PageTableNumber
+      ...
+      Monitor_Call('AltPageTable', PageTableNumber)
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      | Instruction | Parameters  | Description                            |
+      |-------------|-------------|----------------------------------------|
+      | LDA         | (PAR        | %Load register A with address of parameter list. |
+      | MON         | 33          | %Monitor call AltPageTable.            |
+      | ...         |             |                                        |
+      | PAR,        | PAGE        |                                        |
+      | ...         |             |                                        |
+      | PAGE,       | ...         | %Number of the alternative page table. |
+
+      | ND-100 | All users | All programs |
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 77
+  line: 3034
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

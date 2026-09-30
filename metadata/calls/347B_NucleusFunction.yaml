@@ -1,0 +1,71 @@
+# SINTRAN III Monitor Call: NucleusFunction
+# Octal: 347B
+# STUB - handler body NOT located in the available NPL source tree.
+# The manual (section 2.14) lists this call name-only.
+octal: 347B
+name: NucleusFunction
+short_names:
+- NUCL
+description: >-
+  Nucleus function (manual section 2.14, short name NUCL). UNVERIFIED - the handler body is
+  not present in the available source tree; only the dispatch/name is known.
+notes:
+- >-
+    STUB - the handler body is NOT located in the available NPL source. Only the manual name/short (NucleusFunction / NUCL) is known.
+- >-
+    Not located in the NPL source: the nucleus server (5SERVER) body is carved-only
+    (lives in the ND-500 System Monitor image), not in the source tree.
+- >-
+    Contract UNVERIFIED - description is taken from the manual name only; no
+    parameter block, return values, or caller convention can be confirmed.
+see_also: []
+parameters: []
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Handler body not located in source; contract unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Handler body not located in source; contract unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Handler body not located in source; contract unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Handler body not located in source; contract unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 347B
+    notes: Handler body not located in source; contract unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    ND-860228-2-EN manual (section 2.14) - name only
+  handler: >-
+    not located in the available NPL source tree
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering

@@ -1,0 +1,123 @@
+octal: 160B
+name: FixContiguous
+short_names:
+- FIXC
+description: 'Places a segment in physical memory. Its pages will no longer be swapped to the disk. The
+  segment is placed in a contiguous area of physical memory. This function is useful for time-critical
+  operations.
+
+
+  - The segment must be created with the RT LOADER as a non-demand segment.
+
+  - Use UnfixSegment or @UNFIX to allow the RT LOADER to clear the segment.
+
+  - Your program normally terminates if you refer to a nonexistent segment or a demand segment. An error
+  message is output on the error device. See parameters 1 and 3 to get a status value instead.
+
+  - Only a limited number of pages can be fixed. This limit is defined when SINTRAN III is generated.
+  You may change it with the command CHANGE-VARIABLE in the SINTRAN-SERVICE-PROGRAM.'
+see_also:
+- UnfixSegment
+- FixScattered
+- FixInMemory
+- MemoryAllocation
+- FixIOArea
+- and @FIXC
+parameters:
+- name: SegmentNo
+  type: INTEGER2
+  io: I
+  description: Segment number to be fixed. Set bit 15 to 1 if you want a return status.
+- name: PageNumber
+  type: INTEGER2
+  io: I
+  description: First physical page number to be used.
+examples:
+  pascal:
+    available: true
+    code: 'SegmentNo, PageNumber, Stat : INTEGER2;
+
+      ...
+
+      FixContiguous(SegmentNo, PageNumber, Stat);'
+  cobol:
+    available: true
+    code: '01 SegmentNo COMP.
+
+      01 PageNumber COMP.
+
+      01 Stat COMP.
+
+      ...
+
+      MONITOR-CALL "FixContiguous" USING SegmentNo, PageNumber, Stat.'
+  fortran:
+    available: true
+    code: 'INTEGER SegmentNo, PageNumber, Stat
+
+      ...
+
+      Monitor_Call(''FixContiguous'', SegmentNo, PageNumber, Stat)'
+  planc:
+    available: true
+    code: 'INTEGER : SegmentNo, PageNumber, Stat
+
+      ...
+
+      Monitor_Call(''FixContiguous'', SegmentNo, PageNumber, Stat)'
+  assembly_500:
+    available: true
+    code: 'SegmentNo : W BLOCK 1
+
+      PageNumber : W BLOCK 1
+
+      FixContiguous : EQU 37B9 + 160B
+
+      ...
+
+      CALLG FixContiguous, 2, SegmentNo, PageNumber'
+    octal_definition: 37B9 + 160B
+  mac:
+    available: true
+    code: 'LDA (PAR   %Load register A with address of parameter list.
+
+      MON 160    %Monitor call FixContiguous.
+
+      STA STAT   %Returned status.
+
+      ...
+
+      STAT, 0
+
+      PAR, SEGNO %Segment number to be fixed.
+
+      PAGE       %First physical page number.
+
+      ...
+
+      SEGNO, ...
+
+      PAGE, ...
+
+
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |'
+    mon_number: 160
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 201
+  line: 8656
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

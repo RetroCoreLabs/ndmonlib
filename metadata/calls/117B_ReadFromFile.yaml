@@ -1,0 +1,328 @@
+octal: 117B
+name: ReadFromFile
+short_names:
+- RFILE
+description: 'Reads any number of bytes from a file. The read operation must start at the beginning of
+  a block. The file must be opened for random read access.
+
+
+  - The standard block size is 512 bytes. You can change this with SetBlockSize. The first block is number
+  0.
+
+  - You may use access code D for direct transfer. Then the block size must be a multiple of the page
+  size. The number of bytes to transfer must be a multiple of the block size.
+
+  - Peripheral files are always read sequentially.
+
+  - Data transfer across segment or RT common limits is illegal as this would be likely to result in inconsistent
+  data.'
+see_also:
+- SetStartBlock
+- SetBlockSize
+- ReadDiskPage
+- ReadBlock
+- WriteBlock
+- and WriteToFile
+parameters:
+- name: FileNo
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: WaitFlag
+  type: INTEGER2
+  io: I
+  description: Wait flag. 0=suspend until complete, non-zero=continue (use AwaitFileTransfer to check).
+- name: Buff
+  type: BYTES
+  io: O
+  description: Buffer to receive transferred data (output). Must start on even byte address.
+- name: BlockNo
+  type: INTEGER2
+  io: I
+  description: Block number to start reading from. Use -1 to read the next block.
+- name: NoOfBytes
+  type: LONGINT
+  io: I
+  description: Number of bytes to read.
+examples:
+  pascal:
+    available: true
+    code: 'FileNo, WaitFlag, BlockNo : INTEGER2;
+
+      Buff : ARRAY [0..15] OF RECORD...END;
+
+      NoOfBytes : LONGINT;
+
+      ...
+
+      ReadFromFile(FileNo, WaitFlag, Buff, BlockNo, NoOfBytes);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: "01 FileNo COMP.\n01 WaitFlag COMP.\n01 Buff.\n   02 array COMP OCCURS 256 TIMES.\n01 BlockNo\
+      \ COMP.\n01 NoOfBytes COMP PIC S9(10).\n01 ErrCode COMP.\n...\nMONITOR-CALL \"ReadFromFile\" USING\
+      \ FileNo, WaitFlag, Buff,\n                                BlockNo, NoOfBytes.\n\nCALL \"CbError\"\
+      \ USING ErrCode.\nIF ErrCode NOT = 0 GO ..."
+  fortran:
+    available: true
+    code: "INTEGER FileNo, WaitFlag, BlockNo\nINTEGER Buff(256)\nINTEGER*4 NoOfBytes\n...\nMonitor_Call('ReadFromFile',\
+      \ FileNo, WaitFlag, Buff(1),\n                               BlockNo, NoOfBytes)\nC  IF (ErrCode\
+      \ .NE. 0) THEN ..."
+  planc:
+    available: true
+    code: 'INTEGER : FileNo, RetFlag, BlockNo
+
+      BYTES : Buff(0:511)
+
+      INTEGER4 : NoOfBytes
+
+      ...
+
+      ON ROUTINEERROR DO
+
+      &nbsp;&nbsp;&nbsp;&nbsp;IF ErrCode >< 0 THEN ...
+
+      ENDON
+
+      Monitor_Call(''ReadfromFile'', FileNo, RetFlag, Buff(0), BlockNo, NoOfBytes)'
+  assembly_500:
+    available: true
+    code: 'FileNo : W BLOCK 1
+
+      WaitFlag : W BLOCK 1
+
+      Buff : W BLOCK 256 %Must start on an even byte address.
+
+      BlockNo : W BLOCK 1
+
+      NoOfBytes : W BLOCK 1
+
+      ErrCode : W BLOCK 1
+
+      ReadFromFile : EQU 37B9 + 117B
+
+
+      ...
+
+      CALLG ReadfromFile, 5, FileNo, WaitFlag, Buff, BlockNo, NoOfBytes
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode %ErrorCode in W1 register.'
+    octal_definition: 37B9 + 117B
+  mac:
+    available: true
+    code: 'LDA (PAR %Load register A with address of parameter list.
+
+      MON 117 %Monitor call ReadFromFile.
+
+      JAF ERROR %Handle error if register A is non-zero.
+
+      ...
+
+      ERROR, ... %Error number in register A.
+
+      ...
+
+      PAR, FILNO %File number returned from earlier call to OpenFile.
+
+      RETUR %Return flag.
+
+      BUFF %Buffer to receive data.
+
+      BLKNO %Block number in file where data starts.
+
+      COUNT %Number of words to be read.
+
+      ...
+
+      FILNO, ...
+
+      RETUR, 0
+
+      BUFF, 0
+
+      *+400/ %Make a buffer of 256 words.
+
+      BLKNO, ...
+
+      COUNT, ...
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 117
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 399
+  line: 18074
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_117B_ReadFromFile.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: BlockNo
+      note: >-
+        The manual field already says "Use -1 to read the next block". The trap
+        is the SIGN: BlockNo is a SIGNED halfword that callers sign-extend to a
+        word (PLANC emits H WCONV), so -1 arrives at the handler as 0xFFFFFFFF.
+        Read as an unsigned block index it seeks far past the end and EVERY read
+        fails. -1 must mean "resume at the recorded position, do not seek by
+        block".
+      verified: true
+    - name: NoOfBytes
+      note: >-
+        This slot is BIDIRECTIONAL in practice even though the manual marks it
+        [I]. On a successful transfer the handler writes the ACTUAL number of
+        bytes transferred back into arg 4. That count is how the reader learns
+        the length of a short final block - it is NOT signalled by an error.
+      verified: true
+    - name: 'all INTEGER parameters'
+      note: >-
+        On ND-500 every INTEGER parameter is a 32-bit WORD. The manual's own
+        assembly_500 example for this call declares FileNo/WaitFlag/BlockNo/
+        NoOfBytes as 'W BLOCK 1' (not 'H BLOCK'), and nd500x reads all of them
+        with word accessors.
+      verified: true
+
+  return_contract:
+    success: >-
+      K flag cleared, data in Buff, and the ACTUAL transferred byte count written
+      back to NoOfBytes (arg 4). A short read - including a short FINAL block at
+      end of data - is a SUCCESS, not an error.
+    errors:
+      - code: 3
+        octal: 003B
+        meaning: >-
+          End of file. A RANGE check: raised only when the requested
+          block/position is ENTIRELY beyond the file's data (i.e. zero bytes
+          available there).
+      - code: 86
+        octal: 126B
+        meaning: 'Not open for random read'
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 97
+        octal: 141B
+        meaning: 'Transfer error (genuine host I/O error - kept distinct from EOF)'
+      - code: 89
+        octal: 131B
+        meaning: 'No more buffer space'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (negative BlockNo other than -1, or size over the cap)'
+
+  verified:
+    - claim: >-
+        EOF is signalled with SINTRAN error code 3 (003B), not 55. RFILE has no
+        residual-byte-count output in the manual's own parameter list, so the
+        error code in W1 is the only EOF channel the manual documents.
+      evidence: >-
+        Authoritative manual cite: the 73B SMAX documentation states "Error code
+        3 means end of file". The handler previously returned 55, so a
+        read-until-EOF loop testing ErrCode==3 could never terminate cleanly.
+        Commit 01c286e.
+    - claim: >-
+        Error 3 is a RANGE check, and a within-bounds short read returns SUCCESS
+        with the real count written back.
+      evidence: >-
+        Carved L07 RFILE (segment 006-S3FS, worker 102130B): bounds test at
+        102364-102402 with SAA 3 @ 102403 raising the EOF code; the SUCCESS path
+        at 102433-102470 recomputes the transferred count -> B+16 -> stored via
+        rec[26]. Commit 2618145.
+    - claim: 'Returning error 3 on every short read breaks the NC compiler.'
+      evidence: >-
+        NC reading 4096 bytes of a 23-byte source saw K-set/EXIT-ERROR, treated
+        the source as unreadable, and rejected valid declarations ("IDENTIFIER
+        deleted"). Fixed by the range-check semantics above. Commit 2618145.
+    - claim: 'ReadFromFile is illegal on a file connected as a segment.'
+      evidence: >-
+        The manual states it; the handler enforces it (entry->mapped_as_segment
+        -> 174B).
+
+  unverified:
+    - >-
+      WaitFlag is READ and LOGGED but has no effect - every transfer is
+      synchronous. The manual's non-zero "continue, then use AwaitFileTransfer"
+      path is not modelled.
+    - >-
+      The manual's rule "The read operation must start at the beginning of a
+      block" is NOT enforced; the handler will honour a byte pointer set by 74B
+      SETBT mid-block.
+    - >-
+      Access code D (direct transfer) constraints - block size a multiple of the
+      page size, byte count a multiple of the block size - are not enforced.
+    - >-
+      "Peripheral files are always read sequentially" is not modelled; nd500x
+      only serves host-backed mass-storage files here.
+    - >-
+      nd500x caps a single read at 65536 bytes (MAX_READ_SIZE) and returns 174B
+      above it. That cap is an emulator invention, not a documented SINTRAN
+      limit.
+    - >-
+      The exact error the real system returns for a negative BlockNo other than
+      -1 is not established; nd500x returns 174B.
+
+  discrepancies:
+    - was: >-
+        Emulator defect (fixed): RFILE returned error 55 for EOF, returned 55 on
+        seek-past-end, and silently returned SUCCESS on a short final block with
+        no way to learn the length.
+      is: >-
+        EOF is code 3; a short final block is a SUCCESS whose length is reported
+        through the NoOfBytes slot.
+      evidence: 'Commits 01c286e then 2618145 (carve 006-S3FS worker 102130B).'
+    - was: >-
+        Emulator defect (fixed): BlockNo was read as an unsigned word, so the
+        manual-documented -1 ("read the next block") became 0xFFFFFFFF and every
+        sequential streaming read failed.
+      is: 'BlockNo is sign-interpreted; -1 resumes at the recorded position.'
+      evidence: 'Handler comment in mon_117B_ReadFromFile.c; the manual field itself documents -1.'
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      page: 399
+      note: 'The manual page this YAML was extracted from.'
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN) - 73B SetMaxBytes page'
+      note: '"Error code 3 means end of file" - the authoritative EOF-code cite.'
+    - carve: 'L-VSX-500 segment 006-S3FS, RFILE worker 102130B (bounds 102364-102402, SAA 3 @102403, success path 102433-102470)'
+    - doc: nd500x/docs/MON_CSHARP_SYNC_HANDOFF.md
+      note: 'Part B, "117B RFILE".'
+    - commit: '01c286e (nd500x) - EOF is code 3, not 55'
+    - commit: '2618145 (nd500x) - range-check EOF + count write-back'
+  updates_2026_07_17:
+    - topic: 'Random read of an unallocated page = "No such page" (022B), not EOF'
+      status: verified
+      detail: >-
+        SINTRAN distinguishes two zero-byte outcomes. A SEQUENTIAL resume
+        (BlockNo == -1) that runs off the end is "End of file" (003B). A RANDOM /
+        positioned read (explicit BlockNo >= 0) of a page that is not allocated is
+        "No such page" (022B = 18 dec). Confirmed vs ND-60.128.5 SINTRAN III Ref
+        Manual error table (022 018 = "No such page"; 003 003 = "End of file").
+      why_it_matters: >-
+        The ND linker reads block 0 of a freshly created domain; its domain-read
+        handler (linker-b01.dom @B002215C) treats 022B as "page absent -> new
+        domain, use a fresh header" and any other error (incl. 003B) as fatal.
+        Returning 003B left the domain uninitialised.
+      nd500x_commit: 570dd85

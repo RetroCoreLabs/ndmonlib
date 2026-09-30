@@ -1,0 +1,74 @@
+octal: 421B
+name: GetActiveSegment
+short_names:
+- GASGM
+description: Gets the name of the segments in your domain. A 2048 byte buffer is returned. It contains
+  32 pointers to segment names in the buffer. Each pointer consists of 12 bytes. The first four is an
+  address. The second four is the offset from this address to the start of the segment name. The last
+  four are the offset to the end of the segment name.
+notes:
+- Unused segments have the address 0.
+see_also: []
+parameters:
+- name: Buffer
+  type: INTEGER2[1024]
+  io: O
+  description: A 2048 byte buffer (1 page) containing 32 pointers to segment names.
+examples:
+  pascal:
+    available: true
+    code: 'Buffer : ARRAY [0..31] OF RECORD...END;
+
+      ...
+
+      GetActiveSegment(Buffer);'
+  cobol:
+    available: true
+    code: "01 Buffer.\n   02 array COMP OCCURS 1024 TIMES.\n   ...\nMONITOR-CALL \"GetActiveSegment\"\
+      \ USING Buffer."
+  fortran:
+    available: true
+    code: 'INTEGER Buffer(1024)
+
+      ...
+
+      Monitor_Call(''GetActiveSegment'', Buffer(1))'
+  planc:
+    available: true
+    code: 'BYTES : Buffer(0:2047)
+
+      ...
+
+      Monitor_Call(''GetActiveSegment'', Buffer(0))'
+  assembly_500:
+    available: true
+    code: 'Buffer : W BLOCK 1024
+
+      GetActiveSegment : EQU 37B9 + 421B
+
+      ...
+
+      CALLG GetActiveSegment, 1, Buffer'
+    octal_definition: 37B9 + 421B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 217
+  line: 9318
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

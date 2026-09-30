@@ -1,0 +1,66 @@
+# SINTRAN III Monitor Call: UserDef7
+# Octal: 177B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 177B
+name: UserDef7
+short_names:
+- US7
+description: User-defined monitor call. You can implement up to 8 monitor calls yourself. These are named UserDef0, UserDef1,... UserDef7. The short names are US0, US1,...US7. To do this you need good knowledge of SINTRAN III. See the SINTRAN III listing parts one and two.
+notes:
+- Use the DMAC subsystem or the @LOOK-AT command to patch in the MAC instructions of your monitor call. Place the code in physical memory after the SINTRAN III symbol 7ENDC. You ought to do this from a mode file. The monitor call is lost in a warm start.
+- Use the SINTRAN-SERVICE-PROGRAM command DEFINE-USER-MONITOR-CALL to define the entry point of the monitor call.
+- There are other ways of implementing user-defined monitor calls.
+- Some monitor calls are no longer in use. You may use these for user-defined monitor calls.
+- If the subsystems TPS is installed, the user-defined monitor calls 170 to 175 may not be used.
+- Both input and output parameters are user-defined. Transfer parameters in the same way as SuspendProgram, InString, WriteToFile, etc.
+see_also: []
+parameters: []
+examples:
+  pascal:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  cobol:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  fortran:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  planc:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  assembly_500:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Depends on the monitor call.
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 25511
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true

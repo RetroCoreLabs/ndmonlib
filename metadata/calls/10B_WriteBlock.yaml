@@ -1,0 +1,112 @@
+# Monitor Call: 10B WriteBlock
+# Extracted from: ND-860228.2 EN (SINTRAN III Monitor Calls)
+# Source page: 560-561
+
+octal: 10B
+name: WriteBlock
+short_names:
+- WPAGE
+description: |-
+  Writes randomly to a file. You write one block at a time. The file must be opened for random write access.
+
+  - The standard block size is 512 bytes. You can change this with SetBlockSize. The first block is number 0.
+see_also:
+- SetStartBlock
+- SetBlockSize
+- WriteDiskPage
+- WriteFromFile
+- ReadBlock
+parameters:
+- name: FileNumber
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: BlockNumber
+  type: INTEGER2
+  io: I
+  description: Block number.
+- name: Buffer
+  type: ARRAY
+  io: I
+  description: Transferred block (data to be written).
+- name: ErrCode
+  type: INTEGER2
+  io: O
+  description: Standard Error Code. See appendix A.
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber, BlockNumber : INTEGER2;
+      Buffer : ARRAY [0..15] OF RECORD...END;
+      ...
+      WriteBlock(FileNumber, BlockNumber, Buffer);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 BlockNumber COMP.
+      01 Buffer.
+         02 array COMP OCCURS 256 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "WriteBlock" USING FileNumber, BlockNumber, Buffer.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber, BlockNumber
+      INTEGER Buffer(256)
+      ...
+      Monitor Call('WriteBlock', FileNumber, BlockNumber, Buffer(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber, BlockNumber
+      BYTES : Buffer(0:511)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('WriteBlock', FileNumber, BlockNumber, Buffer(0))
+  assembly_500:
+    available: false
+    code: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      LDT     FILNO       %File number returned from earlier open.
+      LDA     BLKNO       %Block number.
+      LDX     (BUFF       %Address of buffer to receive block read.
+      MON     10          %Monitor call WriteBlock.
+      JMP     ERROR       %Error return from monitor call.
+              ...         %Normal return.
+      ERROR,  ...         %Error number in register A.
+
+      FILNO,  ...
+      BLKNO,  ...
+      BUFF,   0
+      *+400/              %Make a buffer of 256 words, 1 block.
+    mon_number: 10
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 560
+  line: 25356
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true
+  ocr_notes: Extracted from source document page 560-561

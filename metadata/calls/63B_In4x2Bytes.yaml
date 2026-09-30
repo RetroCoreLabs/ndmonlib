@@ -1,0 +1,140 @@
+octal: 63B
+name: In4x2Bytes
+short_names:
+- B41NW
+description: 'Reads 8 bytes from a word-oriented or character-oriented device, e.g. internal devices.
+
+
+  - Do not use this monitor call for terminals.
+
+  - This monitor call was mainly used for SIBAS communication via ND-NET. It is now seldom used.'
+see_also:
+- In8Bytes
+- InUpTo8Bytes
+- In8AndFlag
+- InString
+- InputString
+- InByte
+- and Out8Bytes
+parameters:
+- name: DeviceNumber
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B.
+- name: DataRead
+  type: BYTES[8]
+  io: O
+  description: The 8 bytes of data read (output).
+- name: NoOfBytes
+  type: INTEGER2
+  io: O
+  description: Number of bytes read (output, returned in W1).
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNumber, NoOfBytes : INTEGER2;
+
+      DataRead : PACKED ARRAY [0..7] OF CHAR;
+
+      ...
+
+      In4x2Bytes(DeviceNumber, NoOfBytes, DataRead);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 DeviceNumber  COMP.
+
+      01 NoOfBytes     COMP.
+
+      01 DataRead      PIC X(8).
+
+      01 ErrCode       COMP.
+
+      ...
+
+      MONITOR-CALL "In4x2Bytes" USING DeviceNumber, NoOfBytes, DataRead.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNumber, NoOfBytes
+
+      CHARACTER DataRead*8
+
+      ...
+
+      Monitor_Call(''In4x2Bytes'', DeviceNumber, NoOfBytes, DataRead(1:8))
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER : DeviceNumber, NoOfBytes\nBYTES : DataRead(0:7)\n...\n\nON ROUTINEERROR DO\n  IF ErrCode\
+      \ > 0 THEN ...\nENDON\n\nMonitor_Call(’In4x2Bytes’, DeviceNumber, NoOfBytes, DataRead)"
+  assembly_500:
+    available: true
+    code: "DeviceNumber : W BLOCK 1\nNoOfBytes : W BLOCK 1\nDataRead : STRING 8\nErrCode : W BLOCK 1\n\
+      In4x2Bytes : EQU 37B9 + 63B\n...\n\nCALLG In4x2Bytes, 2, DeviceNumber, DataRead\n  IF K GO ERROR\n\
+      \  W1 =: NoOfBytes\n...\n\nERROR : W1 =: ErrCode       % ErrorCode in W1 register."
+    octal_definition: 37B9 + 63B
+  mac:
+    available: true
+    code: 'LDT DEVNO            % Logical device number.
+
+      MON 63               % Monitor call In4x2Bytes.
+
+      JMP ERROR            % Error return from monitor call.
+
+      STD BYTES            % Normal return, store first 4 bytes read.
+
+      COPY SL DA
+
+      STA BYTES+2          % Store next 2 bytes read.
+
+      STX BYTES+3          % Store last 2 bytes read.
+
+      STT COUNT            % Store number of bytes read.
+
+      ...
+
+
+      ERROR, ...           % Error number in register A.
+
+      ...
+
+
+      DEVNO, ...
+
+      COUNT, 0
+
+      BYTES, 0
+
+      0
+
+      0
+
+      0
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 63
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 309
+  line: 13799
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

@@ -1,0 +1,118 @@
+# SINTRAN III Monitor Call: MultipleDataTransfer
+# Octal: 515B
+# Reverse-engineered from SINTRAN III NPL source (MP-P2-N500.NPL) +
+# ND-860228-2-EN manual sections 2.14 / 2.17 (name only).
+octal: 515B
+name: MultipleDataTransfer
+short_names:
+- 5MTRANS
+description: >-
+  Fast disk transfer / event / start service for the ND-500. Provides eight
+  functions: disk transfer (nowait/wait), check-event (nowait/wait) and
+  start-process (nowait/wait). Requires a hard disk with disk-optimization.
+  Listed name-only in the manual (sections 2.14 and 2.17); contract is RE-derived.
+  Intended for ND subsystems only.
+notes:
+- >-
+    Version history: L-version added two disk-transfer subparameter-function values
+    to parameter 5 <disk identifier> - 6 = read without clearing cache and 7 = write
+    without "dump dirty" (write from a cache-inhibit area), both applicable only if
+    cache-inhibit is set for the area (ND-860230-6-EN Sintran III - Release Information
+    - L-Version.md:2782-2792). N-version changed the disk-transfer / event-flag
+    behaviour: the microprogram now always gives an interrupt to the ND-100 and
+    continues scanning the execution queue without waiting for an answer from the
+    ND-100 (ND-860230-8-EN SINTRAN III - Release Information - N-version.md:1645).
+- >-
+    Internal-use ND-500 level-12 monitor call; not intended for user programs.
+- >-
+    Handler SUBR 5MTRANS at MP-P2-N500.NPL:2440 (body :2441); entered with
+    X = CMSGA (current message) and B = ND-500 CPU datafield -> XC5CPUDF.
+- >-
+    Function selection: 5MFNC flag word tested NBIT 5DTRANS (disk transfer) /
+    NBIT 5CHEVENT (check event); 5MFNC /\ 6 selects the nowait variant.
+- >-
+    UNVERIFIED message offsets: 5MNWA->NWFUNC; 5MLGN->LOGPH (logical device);
+    5MDIS->DISID disk function (low 6 bits: read=60, write=61, read-no-clear=66
+    octal); 5MEMA->MEMAD; 5DSEC->ABPA2 (sector); 5MNOS->ABP31 (sector count);
+    5MREQ->REQID (request id). Message offsets, not a confirmed CALLG signature.
+- >-
+    Requires disk-optimization (9BBHD..9EEHD); allocates a disk-queue element, else
+    links the message into the 5MWQU wait-queue. Verifies memory is fixed
+    (CALL CHFIX) and queues via CALL M5TRANS. CHEVENT searches READYQ by
+    ADMESS/REQID.
+- >-
+    Status returns (bare literals before GO FIN/GO OUT): 1 received, 4, 2
+    no-event-nowait; errors A:=6 no-disk-optimization, A:=7 illegal r/w function.
+    Exact status-code -> caller mapping is PARTIAL (final write-back outside the
+    analysed excerpt).
+see_also:
+- DataTransfer
+- AwaitTransfer
+parameters:
+- name: FunctionFlags
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - message field 5MFNC. Selects disk-transfer / check-event /
+    start-process and (via /\ 6) the nowait variant. Message offset, not a
+    confirmed CALLG parameter.
+- name: LogicalDevice
+  type: INTEGER
+  io: I
+  description: >-
+    UNVERIFIED - message field 5MLGN (logical device). Message offset only.
+- name: RequestId
+  type: INTEGER
+  io: IO
+  description: >-
+    UNVERIFIED - message field 5MREQ (request id), used by check-event to match
+    the queued request. Message offset only.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 515B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (sections 2.14 / 2.17)
+  handler: >-
+    MP-P2-N500.NPL:2440 (SUBR 5MTRANS), body :2441; header :2427-2437
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

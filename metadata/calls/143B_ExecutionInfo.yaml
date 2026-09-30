@@ -1,0 +1,264 @@
+# SINTRAN III Monitor Call: ExecutionInfo
+# Octal: 143B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 143B
+name: ExecutionInfo
+short_names:
+- RSIO
+description: Gets information about the execution of the calling program. You are told whether the program
+  executes interactively, as a batch or mode job, or as an RT program. The monitor call returns some additional
+  information for non-RT programs, consisting of the command input file, the command output file, and
+  the directory index and user index of the program's owner.
+notes:
+- Your terminal number is returned as the command input and output files in interactive programs.
+- Execution mode.
+- 0 means interactive program
+- 1 means batch job
+- 2 means mode job
+- 3 means RT program
+- Logical device number for command input. This is your terminal number for interactive programs. Batch
+  and mode jobs return the file number of the command input file. Not used for RT programs.
+- Logical device number for command output. This is your terminal number for interactive programs. Batch
+  and mode jobs return the file number of the command output file. Not used for RT programs.
+- Directory and user index of the program's owner. On the ND-100, the Directory Index is the uppermost
+  8 bits and the User Index is the lowermost 8 bits. On the ND-500, the Directory Index is the uppermost
+  8 bits of the lowermost halfword. i.e. bits 8-15, and the User Index is the lowermost 8 bits, i.e. bits
+  0-7, (the uppermost halfword, bits 16-31, is zero - i.e. all bits are cleared). Not used for RT programs.
+- Standard Error Code. See appendix A.
+see_also: []
+parameters:
+- name: ExecutionMode
+  type: INTEGER
+  io: O
+  description: |-
+    Execution mode:
+    0 = interactive program
+    1 = batch job
+    2 = mode job
+    3 = RT program
+- name: InputDev
+  type: INTEGER
+  io: O
+  description: Logical device number for command input. Terminal number for interactive, file number for batch/mode.
+- name: OutputDev
+  type: INTEGER
+  io: O
+  description: Logical device number for command output. Terminal number for interactive, file number for batch/mode.
+- name: UserIndex
+  type: INTEGER
+  io: O
+  description: Directory and user index of program's owner. Bits 8-15=directory index, bits 0-7=user index.
+examples:
+  pascal:
+    available: true
+    code: 'ExecutionMode, InputDev, OutputDev, UserIndex : INTEGER2;
+
+      ...
+
+      ExecutionInfo(ExecutionMode, InputDev, OutputDev, UserIndex);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: "01 ExecutionMode COMP.\n01 InputDev COMP.\n01 OutputDev COMP.\n01 UserIndex COMP.\n01 ErrCode\
+      \ COMP.\n...\nMONITOR-CALL \"ExecutionInfo\" USING ExecutionMode, InputDev,\n              OutputDev,\
+      \ UserIndex.\nCALL \"CbError\" USING ErrCode.\nIF ErrCode NOT = 0 GO ..."
+  fortran:
+    available: true
+    code: "INTEGER ExecutionMode, InputDev, OutputDev, UserIndex\nMonitor_Call('ExecutionInfo', ExecutionMode,\
+      \ InputDev,\n             OutputDev, UserIndex)\nC IF (ErrCode .NE. 0) THEN ..."
+  assembly_500:
+    available: true
+    code: "ExecutMode  : W BLOCK 1\nInputDev    : W BLOCK 1\nOutputDev   : W BLOCK 1\nUserIndex   : W\
+      \ BLOCK 1\nExecutionInfo : EQU 37B9 + 143B\n...\n    CALLG ExecutionInfo, 4, ExecutMode, InputDev,\
+      \ OutputDev, UserIndex"
+    octal_definition: 37B9 + 143B
+  mac:
+    available: true
+    code: '| MON  | 143  | %Monitor call ExecutionInfo.                    |
+
+      |------|------|-----------------------------------------------|
+
+      | STA  | EXMOD| %Store execution mode.                        |
+
+      | STT  | IFILE| %Store file number of command input file.     |
+
+      | COPY | SD DA|                                               |
+
+      | STA  | OFILE| %Store file number of command output file.    |
+
+      | STX  | INDEX| %Store directory and user indexes.            |
+
+      | ...  |      |                                               |
+
+
+
+      EXMOD, 0
+
+      IFILE, 0
+
+      OFILE, 0
+
+      INDEX, 0
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 183
+  line: 7884
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_143B_ExecutionInfo.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    Returns a fixed, self-consistent interactive environment. The values are
+    constants - nd500x has no batch processor, no login and no real terminal
+    numbering - but WHICH constants took two reverted attempts and a coupled
+    change to get right. See the InputDev note.
+
+  parameter_notes:
+    - name: 'ExecutionMode / InputDev / OutputDev / UserIndex'
+      note: >-
+        ALL FOUR ARE OUT PARAMETERS - this call has no input at all, and its OUT
+        parameters ARE its contract. OUT-PARAMETER DEFECT CLASS: a handler that
+        returns SUCCESS without writing them leaves the caller acting on stale
+        memory, and the failure surfaces tens of thousands of instructions later
+        somewhere unrelated. Confirmed instances of exactly this bug elsewhere:
+        412B FSCNT (fixed, commit 73ac594) and 144B MAGTP function 0 (fixed,
+        commit 6ad9c09). nd500x writes each one, guarded by arg_count.
+      verified: true
+    - name: 'ExecutionMode / InputDev / OutputDev / UserIndex'
+      note: >-
+        On ND-500 each is a 32-bit word (W BLOCK), written with
+        mon_write_param_word. On ND-100 INTEGER is a 16-bit halfword.
+      verified: true
+    - name: InputDev
+      note: >-
+        THE EXPENSIVE ONE. nd500x reports 1 (the TERMINAL), changed 2026-07-16;
+        it previously reported 0 (the SINTRAN command buffer = the batch
+        channel), which was self-inconsistent: it told a program reported as
+        INTERACTIVE to take its commands from the batch channel, while the
+        manual's own text says InputDev is the "terminal number for interactive,
+        file number for batch/mode". COUPLED CHANGE - do not ship it alone: with
+        InputDev=1 the linker takes its interactive path and immediately calls
+        MON 511B DVIO. Before 511B existed that traded a hang for an
+        unimplemented-MON stop, which is why this was probed and REVERTED TWICE
+        (2026-07-15). It lands only together with handlers/mon_511B_DVIO.c
+        (commit 2d9b00f).
+      verified: true
+    - name: UserIndex
+      note: >-
+        Bits 8-15 = directory index, bits 0-7 = user index. nd500x packs
+        (DIRECTORY_INDEX << 8) | USER_INDEX with both = 1, giving 257 decimal =
+        401 octal.
+      verified: true
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom); also nd500x default for every caller'
+      params: {}
+      expectation: >-
+        Returns mode=0 (interactive), input=1, output=1, user_idx=401 octal.
+        Observed. IMPORTANT READING NOTE: the linker later asks a CONFIG QUESTION
+        "Batch abortion (Yes,No)" during its startup dialogue. That is a
+        configuration prompt, NOT evidence that it is running as a batch job -
+        RSIO has already told it, and it accepts, that it is interactive. Do not
+        "fix" RSIO to report batch on the strength of that prompt.
+      note: 'nd500x MON log line: "OUT: mode=0, input=1, output=1, user_idx=401".'
+    - caller: 'CAT-500 code generator (cat-cat5-b06.dom), startup'
+      params: {}
+      expectation: >-
+        Part of CAT-500's fixed startup sequence (11B TIME, 114B TUSED, 143B
+        RSIO, 422B GSWSP, 41B ROBJE, 76B SETBS, 62B RMAX, 73B SMAX, 504B DVOUTS,
+        503B DVINST); it then prints its banner and reads commands via 503B
+        DVINST.
+      note: 'Source: nd500x/docs/CAT500_UECOM_CSHARP_HANDOFF.md Part C.'
+
+  return_contract:
+    success: 'K flag cleared; up to 4 words written, as many as arg_count allows.'
+    errors: []
+
+  verified:
+    - claim: 'MON 143B dispatches via MCTAB to the L07 worker RSIO in segment 003-S3CP.'
+      evidence: >-
+        Carve L-VSX-500 143B-ExecutionInfo/README.md: MCTAB slot (segment
+        044-S3IDPIT, byte offset 2022) = 051430B = RSIO; the worker is carved in
+        003-S3CP alongside its siblings GBGSZ / MBECH. Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=2022 count=2 -> 53 18.
+    - claim: 'InputDev=0 byte-provably breaks the ND linker.'
+      evidence: >-
+        With InputDev=0 the linker believed its command input was device 0,
+        issued 1B INBT on it, found it empty and blocked forever. Feeding device
+        0 instead forced it into its BATCH dialogue ("Batch abortion (Yes,No)Yes")
+        where it spun without ever consuming the fed commands. Recorded in the
+        handler header and commit 2d9b00f.
+    - claim: 'With InputDev=1 the linker reaches real terminal I/O.'
+      evidence: >-
+        Commit 2d9b00f, runtime: "511B DVIO: DeviceNo=1, OutBytes=2,
+        OutBuf=0xB0049430, MaxNo=12, InBuf=0xB0001C2E; 504B DVOUTS wrote 2 bytes;
+        503B DVINST read 12 bytes; EXIT -> SUCCESS".
+
+  unverified:
+    - >-
+      Every returned value is a CONSTANT, not a query. ExecutionMode is always 0
+      (never 1 batch, 2 mode job, or 3 RT), OutputDev always 1, UserIndex always
+      401 octal. There is no mechanism by which nd500x could report anything
+      else, so a program that branches on batch/RT mode has never exercised those
+      paths.
+    - >-
+      The DIRECTORY_INDEX=1 / USER_INDEX=1 values are invented defaults. The
+      handler comments them "Default user (SYSTEM or RT)" - which of the two is
+      not established. Nothing observed reads the field.
+    - >-
+      The RSIO worker body is carved but was not decoded for this note, so the
+      real source of each field (which SINTRAN datafield the values come from) is
+      unread.
+    - >-
+      A stale comment survives in the handler: line 71 still reads "input_dev =
+      DEFAULT_INPUT_DEV; /* Input device 0 */" while the constant is 1. The
+      constant, not the comment, is what runs.
+
+  discrepancies:
+    - was: >-
+        Earlier carve version located the worker via a fictional level-14
+        GOTAB/F1670 compiler stub and read RSIO from SINTRAN-DATA_commoncode.
+      is: >-
+        MON calls dispatch through MCTAB @ 005620B (segment 044-S3IDPIT); GOTAB
+        is MFELL for 224 of 256 calls. MCTAB[143B] = 051430B = RSIO, carved in
+        003-S3CP.
+      evidence: >-
+        Carve CORRECTED 2026-07-13 header;
+        dd if=044-S3IDPIT.bin bs=1 skip=2022 count=2 -> 53 18.
+    - was: >-
+        The linker's "Batch abortion (Yes,No)" prompt was read as evidence that
+        the linker considered itself a batch job, motivating an RSIO change.
+      is: >-
+        It is a CONFIG QUESTION in the linker's startup dialogue. RSIO already
+        reports interactive (mode=0) and the linker accepts that; the prompt is
+        unrelated to execution mode.
+      evidence: >-
+        Observed 2026-07-17 with mode=0/input=1/output=1/user_idx=401 in force;
+        commit 2d9b00f records that feeding the batch channel merely made it spin.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/143B-ExecutionInfo/README.md'
+      note: 'MCTAB[143B] = RSIO = 051430B, worker carved in 003-S3CP.'
+    - doc: nd500x/src/libmon/handlers/mon_511B_DVIO.c
+      note: 'The coupled change: RSIO InputDev=1 is useless without 511B DVIO (commit 2d9b00f).'

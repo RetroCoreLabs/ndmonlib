@@ -1,0 +1,137 @@
+# SINTRAN III Monitor Call: EventSystem
+# Octal: 352B
+# Sourced from: ND-860230-7A-EN SINTRAN III Release Information M-Version,
+#   section 3.2.2 (EVENT MON 352), pages 30-36; also section 9 "The Event System".
+
+octal: 352B
+name: EventSystem
+short_names:
+- EVENT
+description: >-
+  Multifunction monitor call giving access to the SINTRAN III event system, which
+  handles sets of 32 events per process (RT-program). Events are kept in an
+  extended RT-description (EVSET / EVWAIT / EVTMOUT / EVINTV). A process can set
+  events on another process, read/clear its own events, wait for events (with
+  optional timeout), connect events to SINTRAN functions, and define interval
+  events. Introduced in the M-version.
+notes:
+- >-
+    NEW in the M-version (ND-860230-7A-EN section 3.2.2). The ND-500/5000 form of
+    the call is described on M-version pages 32-36.
+- >-
+    ND-100 register convention: A = address of the parameter list PEVNT.
+    PEVNT = FUNC (function code), SIZE (length of the parameter array), ARRAY
+    (the P0..Pn parameter array). Error return via JMP with A = error code.
+- >-
+    Function codes (selected in FUNC): 0 = check if a function/subfunction is
+    implemented; 1 = set event(s) on a specified process; 2 = read events on the
+    current process (returned events are cleared); 3 = wait for events (optional
+    timeout); 4 = connect events to SINTRAN functions; 5 = specify time-related
+    events at regular intervals.
+- >-
+    Function 0 (check): SIZE = 2, P0 = function code to check, P1 = subfunction
+    (only for functions 3 and 4). Returns AD = 0 not implemented, 1 implemented
+    (A = 0, D = 1).
+- >-
+    Function 1 (set): SIZE = 3, P0 = process ID (RT-description address; 0 =
+    current process), P1 = first part of event mask, P2 = last part of event mask.
+    The mask is inclusive-ORed into the target process EVSET.
+- >-
+    Function 2 (read): reads and clears the current process events from EVSET;
+    events returned in the AD-register.
+- >-
+    Function 3 (wait): P1/P2 = event mask to wait for; P3 nonzero = timeout time,
+    P5/P6 = events to set on timeout (ORed into EVSET). Events returned in AD.
+    A subfunction bit selects "return only waited-for events" vs all; another
+    selects "restart only when ALL specified events have occurred". Uses EVWAIT
+    and EVTMOUT.
+- >-
+    Function 4 (connect): connect events to SINTRAN functions. P0 = SINTRAN
+    function (0 = other events, 1 = terminal input / break, 2 = terminal output
+    ready, 3 = NUCLEUS event); P2/P3 = events to set when that function occurs
+    (ORed into EVSET).
+- >-
+    Function 5 (interval): specify events set at regular intervals; one definition
+    per process (each call redefines). P1/P2 = events to set at the interval;
+    P4 = interval (0 disables). Uses EVINTV.
+- 'Rules: available to all users in background, and to RT-programs.'
+see_also:
+- NucleusFunction
+- AwaitRequest
+parameters:
+- name: ParamListAddr
+  type: INTEGER
+  io: I
+  description: >-
+    A-register: address of the parameter list PEVNT = FUNC, SIZE, ARRAY.
+- name: FUNC
+  type: INTEGER
+  io: I
+  description: >-
+    Function code (0 = check, 1 = set, 2 = read, 3 = wait, 4 = connect,
+    5 = interval).
+- name: SIZE
+  type: INTEGER
+  io: I
+  description: Length of the parameter array ARRAY.
+- name: ARRAY
+  type: INTEGER
+  io: I/O
+  description: >-
+    The P0..Pn parameter array; contents depend on FUNC (see notes). Some
+    functions return events in the AD-register.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: ''
+  cobol:
+    available: false
+    code: ''
+    notes: ''
+  fortran:
+    available: false
+    code: ''
+    notes: ''
+  planc:
+    available: false
+    code: ''
+    notes: ''
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 352B
+    notes: >-
+      The ND-500/5000 form of MON EVENT is described on M-version pages 32-36; no
+      single CALLG argument line is quoted here.
+  mac:
+    available: true
+    code: |-
+      LDA (PEVNT    % A = address of parameter list
+      MON 352       % MON EVENT
+      JMP ERR       % A = error code
+      % PEVNT, FUNC   % function code
+      %        SIZE    % length of parameter array
+      %        ARRAY   % P0..Pn parameter array (contents depend on FUNC)
+    mon_number: 352
+    notes: 'Available to all users in background, and to RT-programs.'
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: >-
+    ND-860230-7A-EN SINTRAN III Release Information M-Version, section 3.2.2
+    (EVENT MON 352), pages 30-36
+  page: 30
+  line: 1398
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-30'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false
+  method: SINTRAN release-doc (M-version) extraction

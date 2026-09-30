@@ -1,0 +1,263 @@
+octal: 162B
+name: OutString
+short_names:
+- OUTST
+description: 'Writes a string of characters to a peripheral file, e.g., a terminal or a printer.
+
+
+  - You cannot use this monitor call for mass-storage files.
+
+  - The output buffer of the device may be too small. Then the program waits until the required buffer
+  space becomes available.
+
+  - Parameters are fetched and returned through the alternative page table.
+
+  - The maximum string length is 2048 bytes (as in OutputString).
+
+  - For performance reasons, it is inadvisable to use this call from the ND-500(0). Use OutputString instead.
+
+  - Appendix F contains an ASCII table.'
+see_also:
+- OutMessage
+- OutUpTo8Bytes
+- Out8Bytes
+- OutputString
+- OutNumber
+- OutByte
+- and InString
+parameters:
+- name: DeviceNo
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B. You cannot use 1 for your own terminal. Use ExecutionInfo
+    to get its logical device number instead. File numbers are illegal.
+- name: TextWrite
+  type: STRING
+  io: I
+  description: Character string to be output (max 2048 bytes).
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNo, NoOfBytes, ReturnStatus : INTEGER2;
+
+      TextWrite : PACKED ARRAY [0..79] OF CHAR;
+
+      ...
+
+      OutString(DeviceNo, TextWrite, NoOfBytes, ReturnStatus);'
+  cobol:
+    available: true
+    code: '01 DevNo COMP.
+
+      01 NoOfBytes COMP.
+
+      01 RetStatus COMP.
+
+      01 TextWrite PIC X(100).
+
+      ...
+
+      MONITOR-CALL "OutString" USING DevNo, TextWrite, NoOfBytes, RetStatus.'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNo, NoOfBytes, RetStatus
+
+      CHARACTER TextWrite*80
+
+      ...
+
+      Monitor_Call(''OutString'', DeviceNo, TextWrite(1:80), NoOfBytes, RetStatus)'
+  planc:
+    available: true
+    code: 'INTEGER : DeviceNo, NoOfBytes, ReturnStatus
+
+      BYTES : TextWrite(0:79)
+
+      ...
+
+      Monitor_Call(''OutString'', DeviceNo, TextWrite, NoOfBytes, ReturnStatus)'
+  assembly_500:
+    available: true
+    code: 'DeviceNo : W BLOCK 1
+
+      TextWrite : STRINGDATA ''This is a text...''
+
+      ReturnStatus : W BLOCK 1
+
+      OutString : EQU 37B9 + 162B
+
+      ...
+
+      CALLG OutString, 2, DeviceNo, TextWrite
+
+      IF K GO Error
+
+      W1 := ReturnStatus      % Status is returned in W1
+
+      ...
+
+      Error, ...
+
+      register.'
+    octal_definition: 37B9 + 162B
+  mac:
+    available: true
+    code: 'LOA (PAR         % Load register A with address of parameter list.
+
+      MON 162          % Monitor call OutString.
+
+      STA STAT         % Store status returned.
+
+      ...
+
+      STAT, 0
+
+      PAR, DEVNO       % Logical device number.
+
+      TEXT             % String to be written.
+
+      COUNT            % Number of characters to be written.
+
+      ...
+
+
+      DEVNO, ...
+
+      TEXT, ''THIS IS A TEST''
+
+      COUNT, 16        % Write 14 characters.
+
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: 162
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 385
+  line: 17406
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: verified
+  nd500x_handler: nd500x/src/libmon/handlers/mon_162B_OutString.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: TextWrite
+      note: >-
+        THE ARGUMENT COUNT SELECTS THE STRING CONVENTION - this is the single most
+        important fact about emulating 162B. In the 2-ARG form (DeviceNo, TextWrite)
+        the argument is the address of an ND-500 STRING DESCRIPTOR
+        {element_count @ +0, base_address @ +4}, big-endian words - the same layout
+        SCOMP/SCOPA use. In the 3+-ARG form it is the RAW character address, bounded
+        by NoOfBytes. Both forms honour the 0x27 terminator.
+      verified: true
+    - name: NoOfBytes
+      note: >-
+        OPTIONAL. This YAML's own parameters list has only DeviceNo and TextWrite -
+        it agrees with the linker's 2-arg usage. nd500x accepts 2 or 3+ args and caps
+        every form at 2048 bytes.
+      verified: true
+    - name: ReturnStatus
+      note: >-
+        Only written when 4 or more CALLG args are present: 0 on success, 52 on the
+        file-number rejection. Not exercised by any observed caller.
+      verified: false
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), banner/prompt output'
+      params:
+        DeviceNo: 'terminal'
+        TextWrite: '0xB0056B34 -> descriptor {count = 0xC8, base = 0xB0056A6C}'
+      expectation: >-
+        The linker calls OUTST in the 2-ARG, terminator-driven form with NO byte
+        count. nd500x previously REQUIRED the 3-arg count form and returned error
+        111 (157B Missing parameter), so the linker's banner and prompt NEVER
+        APPEARED - it looked like the linker was silent/hung when in fact its output
+        call was being rejected.
+      note: >-
+        Byte-verified that arg1 is a descriptor and not text: the raw bytes at
+        0xB0056B34 are {0x000000C8, 0xB0056A6C}, and the readable string lives at the
+        base address. Commit fc3ac5b.
+
+  return_contract:
+    success: 'K flag cleared; ReturnStatus = 0 if a 4th arg is present.'
+    errors:
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (a file number was passed - the manual says file numbers are illegal)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (fewer than 2 CALLG args)'
+
+  verified:
+    - claim: >-
+        047B (0x27, apostrophe) is the STRING TERMINATOR - output stops there and the
+        0x27 is not emitted.
+      evidence: >-
+        Carve 162B-OutString, the OUTST loop, byte-verified. Carve folder:
+        NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/162B-OutString/
+    - claim: >-
+        044B (0x24, dollar) emits '$' AND THEN A LINE FEED (012B). It is a formatting
+        control byte, not an ordinary character.
+      evidence: 'Carve 162B-OutString, OUTST loop at 41043-41052 (octal).'
+    - claim: >-
+        The 2-arg descriptor decode is right: with it the linker produces its banner
+        and startup dialogue.
+      evidence: >-
+        Commit fc3ac5b: "162B OUTST: treat the 2-arg form as a string descriptor
+        {count, base} and honor the 0x27 terminator and 0x24 line-feed convention."
+        With this plus 511B/143B the linker TALKS.
+
+  unverified:
+    - >-
+      The 0x27 terminator and the 0x24 line-feed rule are carved from the ND-100
+      OUTST worker. Whether the ND-500 path applies BOTH identically is not
+      separately proven; the linker's observed strings exercise the descriptor decode
+      and the terminator, and no traced string has contained a 0x24.
+    - >-
+      ReturnStatus value 52 on the file-number rejection is NOT a real SINTRAN code
+      in the Appendix A sense (52 is "No such friend"); it is a leftover. The K-flag
+      error correctly returns 124 (174B). Treat the 52 as an nd500x artefact, not a
+      contract.
+    - >-
+      The manual's "the program waits until the required buffer space becomes
+      available" is not modelled - nd500x never blocks on output.
+    - >-
+      The manual's "Parameters are fetched and returned through the alternative page
+      table" is not modelled as such; nd500x reads them through the normal path.
+    - >-
+      A DEBUG PROBE REMAINS IN THE HANDLER, gated behind the environment variable
+      ND500X_OUTST_DUMP - it dumps arg1 as raw/descriptor/via-base. Harmless when
+      unset.
+
+  discrepancies:
+    - was: >-
+        The manual says of DeviceNo: "You cannot use 1 for your own terminal. Use
+        ExecutionInfo to get its logical device number instead."
+      is: >-
+        nd500x does NOT enforce this - it accepts device 1 and routes any
+        non-file device to the console. No observed caller passes 1, so the rule is
+        neither exercised nor disproven; the emulator is simply more permissive than
+        the manual. Recorded so nobody reads the permissiveness as a documented fact.
+      evidence: >-
+        nd500x/src/libmon/handlers/mon_162B_OutString.c - only
+        is_mass_storage_file() is rejected; there is no device == 1 check.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'
+    - doc: NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/162B-OutString/
+      note: 'The OUTST loop carve - source of the 0x27 terminator and the 0x24 line-feed rule.'

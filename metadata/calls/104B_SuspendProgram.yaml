@@ -1,0 +1,105 @@
+# SINTRAN III Monitor Call: SuspendProgram
+# Octal: 104B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 104B
+name: SuspendProgram
+short_names:
+- HOLD
+description: Suspends the execution of your program for a given time. The execution then continues after
+  the time specified by the monitor call.
+notes:
+- No reserved files or devices are released.
+- The execution continues immediately if the program has the restart flag set.
+- You may use NoWaitSwitch. Then the program restarts when a break occurs.
+- If a program has been rescheduled by the monitor call? SET (mon 101, DelayStart) or ABSET (mon 102,
+  StartupTime), this rescheduling will be destroyed when you use SuspendProgram.
+- The parameters should not contain zero.
+- Number of time units to suspend the program.
+- The type of time units. 1 = basic time units, i.e. 1/50th of a second, 2 = seconds, 3 = minutes, 4 =
+  hours.
+see_also:
+- TimeOut
+- WaitForRestart
+- '@HOLD'
+parameters:
+- name: TimeUnits
+  type: INTEGER
+  io: I
+  description: Number of time units to suspend the program. Should not be zero.
+- name: UnitType
+  type: INTEGER
+  io: I
+  description: |-
+    Type of time units:
+    1 = basic time units (1/50th second)
+    2 = seconds
+    3 = minutes
+    4 = hours
+examples:
+  pascal:
+    available: true
+    code: |-
+      TimeUnits, UnitType : INTEGER2;
+      ...
+      SuspendProgram(TimeUnits, UnitType);
+  cobol:
+    available: true
+    code: |-
+      01 TimeUnits COMP.
+      01 UnitType COMP.
+      ...
+      MONITOR-CALL "SuspendProgram" USING TimeUnits, UnitType.
+  fortran:
+    available: true
+    code: |-
+      INTEGER TimeUnits, UnitType
+      ...
+      Monitor_Call('SuspendProgram', TimeUnits, UnitType)
+  planc:
+    available: true
+    code: |-
+      INTEGER : TimeUnits, UnitType
+      ...
+      Monitor_Call('SuspendProgram', TimeUnits, UnitType)
+  assembly_500:
+    available: true
+    code: |-
+      TimeUnits : W BLOCK 1
+      UnitType : W BLOCK 1
+      SuspendProgram : EQU 37B9 + 104B
+      ...
+      CALLG SuspendProgram, 2, TimeUnits, UnitType
+    octal_definition: 37B9 + 104B
+  mac:
+    available: true
+    code: |-
+      | LDA    | (PAR          | %Load register A with address of parameter list. |
+      |--------|---------------|--------------------------------------------------|
+      | MON    | 104           | %Monitor call SuspendProgram.                    |
+      | PAR,   | TIME          | %Number of time units the program has to wait.   |
+      | BASE   |               | %Base time units.                                |
+      | TIME,  | ...           |                                                  |
+      | BASE,  | ...           |                                                  |
+
+
+      ND-100 and ND-500 | All users | All programs
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 497
+  line: 22589
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: true
+  ocr_notes: Header missing octal - reconstructed

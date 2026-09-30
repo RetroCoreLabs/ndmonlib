@@ -1,0 +1,202 @@
+# SINTRAN III Monitor Call: SetBreak
+# Octal: 4B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 4B
+name: SetBreak
+short_names:
+- BRKM
+description: |-
+  Sets the break characters for a terminal. Normally, a program waits for input. When a break character is typed, the program restarts. For example, most subsystems restart when you press the RETURN-key after a command. The subsystems have defined the RETURN-key as a break character.
+
+  - SINTRAN III has some predefined break tables.
+  - You may define your own break table. This is a 128-bit array where each bit represents an ASCII character. Use 1 for the characters you want as break characters. The ability to define your own break tables is optional in older versions of SINTRAN III.
+  - If 8-bit I/O is set (TerminalFunction, function number 112), you will get break always if bit 7 in the break table is set.
+see_also:
+- SetEcho
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number. Only used by RT programs; background programs use own terminal.
+- name: BreakStrategy
+  type: INTEGER
+  io: I
+  description: 'Break strategy: <0=none, 0=all, 1=control chars, 2=MAC, 3-6=system, 7=user table, 8=last user, 9=max chars only.'
+- name: Table
+  type: ARRAY
+  io: I
+  description: User-defined 128-bit break table (8 words). Only used with strategy 7.
+- name: NoOfChar
+  type: INTEGER
+  io: I
+  description: Maximum number of characters before break. Dummy for strategies 0, 1, 2.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNo, BreakStrategy, NoOfChar : INTEGER2;
+      Table : RECORD...END;
+      ...
+      SetBreak(DeviceNo, BreakStrategy, Table, NoOfChar);
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNo COMP.
+      01 BreakStrategy COMP.
+      01 NoOfChar COMP.
+      01 Table.
+         02 array COMP OCCURS 8 TIMES.
+      ...
+      MONITOR-CALL "SetBreak" USING DeviceNo, BreakStrategy, Table, NoOfChar.
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo, Strategy, NoOfChar
+      INTEGER Table(8)
+      ...
+      Monitor_Call('SetBreak', DeviceNo, Strategy, Table(1), NoOfChar)
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, Strategy, NoOfChar
+      INTEGER2ARRAY(0:7)
+      ...
+      Monitor_Call('SetBreak', DeviceNo, Strategy, Table(0), NoOfChar)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNo : W BLOCK 1
+      BreakStrategy : W BLOCK 1
+      NoOfChar : W BLOCK 1
+      Table : H BLOCK 8
+      SetBreak : EQU 37B9 + 4B
+      ...
+      CALLG SetBreak, 4, DeviceNo, BreakStrategy, Table, NoOfChar
+    octal_definition: 37B9 + 4B
+  mac:
+    available: true
+    code: |-
+      LDT DEVNO %Logical device number.
+      LDA NOCHR %Number of characters input before break,
+      COPY SA DD % only if STRAT greater or equal to 3.
+      LDX (TABLE %Address of 8-word large bit map.
+      LDA STRAT %Break strategy.
+      MON 4 %Monitor call SetBreak.
+      ...
+      DEVNO, ...
+      STRAT, 1 %Break only on control characters.
+      TABLE, ...
+      *+10/ %Make an 8-word large buffer.
+      NOCHR, ...
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 4
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 435
+  line: 19792
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_4B_SetBreak.c
+  last_updated: '2026-07-17'
+
+  break_strategies:
+    radix: decimal
+    note: >-
+      The strategy codes as nd500x implements them (mon_terminal_state.h and
+      mon_503B_InputString.c is_break_char_ex). These same codes are what 503B
+      DVINST and 511B DVIO accept as a per-call override.
+    codes:
+      - code: -1
+        name: BREAK_STRAT_NONE
+        description: 'Negative = no break; input continues until max chars or EOF.'
+        status: implemented
+      - code: 0
+        name: BREAK_STRAT_ALL
+        description: 'Every character breaks.'
+        status: implemented
+      - code: 1
+        name: BREAK_STRAT_CONTROL
+        description: 'Control characters (ch < 32) break.'
+        status: implemented
+      - code: 2
+        name: BREAK_STRAT_MAC
+        description: 'MAC - CR, LF, ESC, EOF and 0x27 break.'
+        status: implemented
+      - code: 7
+        name: BREAK_STRAT_USER
+        description: 'User-defined 128-bit table read from the Table parameter (4 x 32-bit words).'
+        status: implemented
+      - code: 8
+        name: BREAK_STRAT_LAST_USER
+        description: "Last user-defined table (do not resend the table); uses the device's stored table."
+        status: implemented
+      - code: 9
+        name: BREAK_STRAT_MAX_ONLY
+        description: 'No character breaks - only the NoOfChar count terminates input.'
+        status: implemented
+
+  parameter_notes:
+    - name: Table
+      note: >-
+        Read as 4 consecutive 32-bit words from arg_addresses[2] (128 bits) when
+        strategy is 7. Stored to per-device state, so a later strategy-8 call can
+        reuse it.
+      verified: true
+    - name: NoOfChar
+      note: 'Read from arg 3 as a 32-bit word when 4 or more CALLG args are present.'
+      verified: true
+
+  verified:
+    - claim: >-
+        The break table is the NATURAL way round - bit = 1 means BREAK - unlike the
+        echo table, where bit = 0 means echo. Do not share code between them.
+      evidence: >-
+        mon_503B_InputString.c is_break_char_ex() -> bit_table_test_bit(user_table,
+        ch) versus should_echo_char_ex() -> !bit_table_test_bit(...).
+    - claim: >-
+        The state 4B sets is REAL per-device state consumed by the input calls: a
+        503B DVINST with no per-call BreakStrat argument falls back to
+        mon_get_break_strategy(device).
+      evidence: 'mon_503B_InputString.c mon_dvinst_read().'
+    - claim: >-
+        A VALID TERMINAL LINE-INPUT BREAK TABLE ALWAYS BREAKS ON CR (0x0D). nd500x
+        uses this as a sanity check to reject a mis-decoded table.
+      evidence: >-
+        mon_503B_InputString.c: if a user-table strategy yields a table that does not
+        break on CR, it is treated as invalid and the read falls back to MAC-style
+        line breaks. This guard exists because the ND linker's 503B arg layout was
+        mis-read positionally, producing a "table" that broke on the letter 'T' but
+        not on CR, truncating every command at its first 'T'. Commit fc3ac5b.
+
+  unverified:
+    - >-
+      STRATEGIES 3-6 (the manual's "system-defined tables") ARE NOT IMPLEMENTED.
+      nd500x silently falls through to a PLACEHOLDER that uses the MAC set
+      (CR/LF/ESC/EOF/0x27). The real system tables are not in the scanned pages.
+    - >-
+      NO OBSERVED CALLER of 4B itself. Break behaviour reaches the emulator through
+      the per-call BreakStrat argument of 503B/511B instead. NC uses strategy 1.
+    - >-
+      8-bit I/O handling for characters >= 128 (test bit 7 of the user table) is
+      coded but never executed - no traced program sets the 8-bit I/O flag.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'
+    - doc: nd500x/src/libmon/handlers/mon_503B_InputString.c
+      note: 'is_break_char_ex() - the strategy table as actually implemented, shared by 503B and 511B.'

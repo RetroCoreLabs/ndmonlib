@@ -1,0 +1,118 @@
+# SINTRAN III Monitor Call: DeviceControl
+# Octal: 141B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 141B
+name: DeviceControl
+short_names:
+- IOSET
+description: |-
+  Sets control information for a character device, e.g. a terminal or a printer. The control information depends on the device.
+
+  - The device must be reserved. See ReserveResource.
+see_also:
+- DeviceFunction
+- '@IOSET'
+parameters:
+- name: DeviceNo
+  type: INTEGER
+  io: I
+  description: Logical device number. See appendix B. You cannot use 1 for your own terminal. Use ExecutionInfo to get its logical device number instead.
+- name: IOFlag
+  type: INTEGER
+  io: I
+  description: Input or output part of the device. Use 0 for input and 1 for output.
+- name: RTProgram
+  type: INTEGER
+  io: I
+  description: Address of RT description of reserving program. Use 0 for the calling program.
+- name: CtrlFlag
+  type: INTEGER
+  io: I
+  description: Control flag. -2=empty TAD output buffer, -1=reset device (ASCII mode), 0=ASCII mode, 1=binary mode.
+- name: ReturnStatus
+  type: INTEGER
+  io: O
+  description: Return status in W1. 0 means no errors. An illegal RT description address returns -1.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNo, IOFlag, RTProgram, CtrlFlag, Status : INTEGER2;
+      ...
+      DeviceControl(DeviceNo, IOFlag, RTProgram, CtrlFlag, Status);
+  cobol:
+    available: true
+    code: |-
+      01 DevNo       COMP.
+      01 IOFlag      COMP.
+      01 RTProgram   COMP.
+      01 CtrlFlag    COMP.
+      01 ReturnStatus COMP.
+      ...
+      MONITOR-CALL "DeviceControl" USING DevNo, IOFlag, RTProgram, CtrlFlag,
+                                       ReturnStatus.
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNo, IOFlag, RTProgram, CtrlFlag, ReturnStatus
+      ...
+      Monitor_Call('DeviceControl', DeviceNo, IOFlag, RTProgram,
+                   CtrlFlag, ReturnStatus)
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNo, IOFlag, RTProgram, CtrlFlag, ReturnStatus
+      ...
+      Monitor_Call('DeviceControl', DeviceNo, IOFlag, RTProgram, CtrlFlag, ReturnStatus)
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNo : W BLOCK 1
+      IOFlag : W BLOCK 1
+      RTProgram : W BLOCK 1
+      CtrlFlag : W BLOCK 1
+      ReturnStatus : W BLOCK 1
+      DeviceControl : EQU 37B9 + 141B
+      ...
+      CALLG DeviceControl, 4, DeviceNo, IOFlag, RTProgram, CtrlFlag
+      W1 =: ReturnStatus %Status is returned in W1 register.
+    octal_definition: 37B9 + 141B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR %Load register A with address of parameter list.
+      MON 141 %Monitor call DeviceControl.
+      JAN ERROR %Error if register A is negative.
+      ...
+      ERROR, ... %Handle the error.
+      ...
+      PAR, DEVNO %Logical device number.
+      IOF %Input or Output flag.
+      PROG %RealTime (program) description.
+      CTRL %Control flag.
+      ...
+      DEVNO, ...
+      IOF, ...
+      PROG, ...
+      CTRL, ...
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 141
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 141
+  line: 6111
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

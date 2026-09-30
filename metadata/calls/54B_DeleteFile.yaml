@@ -1,0 +1,179 @@
+octal: 54B
+name: DeleteFile
+short_names:
+- MDLFI
+description: 'Deletes a file. The pages of the file are released.
+
+
+  - You must have directory access to the file in order to delete it. RT programs can delete a file if
+  user RT has directory access to it.
+
+  - Include a version number in the file name to delete specific versions of a file. Otherwise, all versions
+  are deleted.'
+see_also:
+- '@DELETE-FILE'
+- '@DELETE-USERS-FILES'
+- and CreateFile
+parameters:
+- name: FileName
+  type: STRING
+  io: I
+  description: File name to delete. Include version number to delete specific version, otherwise all versions deleted.
+examples:
+  pascal:
+    available: true
+    code: 'FileName : PACKED ARRAY [0..63] OF CHAR;
+
+      ...
+
+      DeleteFile(FileName);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 FileName PIC X(64).
+
+      01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "DeleteFile" USING FileName.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'CHARACTER FileName*64
+
+      ...
+
+      Monitor_Call(''DeleteFile'', FileName(1:64))
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: 'BYTES : FileName(0:63)
+
+      ...
+
+      ON ROUTINEERROR DO
+
+      &nbsp;&nbsp;&nbsp;&nbsp;IF ErrCode > 0 THEN ...
+
+      ENDON
+
+      Monitor_Call(''DeleteFile'', FileName)'
+  assembly_500:
+    available: true
+    code: 'FileName : STRINGDATA ''EXAMPLE:SYMB''
+
+      ErrCode : W BLOCK 1
+
+      DeleteFile : EQU 37B9 + 54B
+
+
+      ...
+
+      CALLG DeleteFile, 1, FileName
+
+      IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode'
+    octal_definition: 37B9 + 54B
+  mac:
+    available: true
+    code: 'LDX   (FILE        %Load register X with address of file name.
+
+      MON   54           %Monitor call DeleteFile.
+
+      JMP   ERROR        %Error return from monitor call.
+
+      ...                %Normal return.
+
+      ERROR, ...         %Error number in register A.
+
+      ...
+
+      FILE, ''EXAMPLE:SYMB'' %Delete file EXAMPLE:SYMB.
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+
+
+      Scanned by Jonny Oddene for Sintran Data © 2020'
+    mon_number: 54
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 137
+  line: 5904
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_54B_DeleteFile.c
+  last_updated: '2026-07-17'
+
+  return_contract:
+    success: 'K flag cleared; the host file is removed.'
+    errors:
+      - code: 46
+        octal: 056B
+        meaning: 'No such file name'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (empty file name, or host remove failed)'
+
+  verified:
+    - claim: >-
+        An empty name returns 174B (124 decimal) and a valid-but-nonexistent name
+        returns 056B (46 decimal).
+      evidence: >-
+        Audited against the NC path; recorded as MATCH in
+        nd500x/docs/MON_COMPLETENESS_MATRIX.md row 54B
+        ("empty->124dec, valid+nomatch->46dec").
+
+  unverified:
+    - >-
+      Version handling is NOT modelled. The manual says: include a version number
+      to delete a specific version, otherwise ALL versions are deleted. nd500x
+      removes exactly one host file.
+    - >-
+      "You must have directory access to the file in order to delete it" and the
+      RT-user rule are not modelled - there is no access-rights model.
+    - >-
+      "The pages of the file are released" has no meaning here - there is no page
+      allocator.
+    - >-
+      Unlike 50B OPEN, this handler reads the name with mon_read_sintran_string
+      (inline), NOT with the [len][ptr] descriptor reader. Whether real callers
+      pass DeleteFile's name as a descriptor - as they demonstrably do for 50B
+      OPEN, 221B CreateFile, 317B UECOM and 12B SETCM - has NOT been observed. If
+      they do, this handler would read an empty name.
+    - >-
+      54B has NOT been audited against the carve.
+      nd500x/docs/HANDOFF_MON_COMPLETENESS.md lists 54B among
+      the calls "NOT yet audited vs carve".
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 54B MDLFI/DeleteFile - MATCH.'

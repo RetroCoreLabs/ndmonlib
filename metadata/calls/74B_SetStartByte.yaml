@@ -1,0 +1,186 @@
+# SINTRAN III Monitor Call: SetStartByte
+# Octal: 74B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 74B
+name: SetStartByte
+short_names:
+- SETBT
+description: |-
+  Sets the next byte to be read or written in an opened mass-storage file.
+
+  - The bytes in a file are numbered upwards from 0.
+see_also:
+- GetStartByte
+- SetStartBlock
+- SetMaxBytes
+- and @SET-BYTE-POINTER
+parameters:
+- name: FileNumber
+  type: INTEGER
+  io: I
+  description: File number. See OpenFile.
+- name: BytePointer
+  type: INTEGER4
+  io: I
+  description: Start byte in the file (32-bit value). First byte is 0.
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber : INTEGER2;
+      BytePointer : LONGINT;
+      ...
+      SetBytePointer(FileNumber, BytePointer); [Note routine name.]
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 BytePointer COMP PIC S9(10).
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "SetStartByte" USING FileNumber, BytePointer.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber
+      INTEGER*4 BytePointer
+      ...
+      Monitor_Call('SetStartByte', FileNumber, BytePointer)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber
+      INTEGER4 : BytePointer
+      ...
+      ON ROUTINEERROR DO
+        IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('SetStartByte', FileNumber, BytePointer)
+  assembly_500:
+    available: true
+    code: |-
+      FileNumber : W BLOCK 1
+      BytePointer : W BLOCK 1
+      ErrCode : W BLOCK 1
+      SetStartByte : EQU 37B9 + 74B
+      ...
+      CALLG SetStartByte, 2, FileNumber, BytePointer
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode           %ErrorCode in W1 register.
+    octal_definition: 37B9 + 74B
+  mac:
+    available: true
+    code: |-
+      LDT    FILNO        %File number returned from earlier open.
+      LOD    POINT        %Byte pointer.
+      MON    74           %Monitor call SetStartByte.
+      JMP    ERROR        %Error return from monitor call.
+                          ... %Normal return.
+      ERROR, ...          %Error number in register A.
+      ...
+      FILNO, ...
+      POINT, ...          %A double word.
+                          ... %
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 74
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 471
+  line: 21474
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_74B_SetStartByte.c
+  last_updated: '2026-07-17'
+
+  parameter_notes:
+    - name: BytePointer
+      note: >-
+        INTEGER4 read as a full 32-bit word on the ND-500, not a halfword. The
+        first byte of a file is 0.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; the entry position is set and the host file seeked.'
+    errors:
+      - code: 87
+        octal: 127B
+        meaning: 'File number out of range'
+      - code: 90
+        octal: 132B
+        meaning: 'No file opened with this number'
+      - code: 99
+        octal: 143B
+        meaning: 'No such block (host seek failed)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter'
+
+  observed_calls:
+    - caller: 'ND linker (linker-b01.dom), DDB table load'
+      params:
+        BytePointer: 0
+      expectation: >-
+        The linker OPENs 'DDBTABLES-G':VTM (abbreviation-resolves to
+        DDBTABLES-G06:VTM), 74B SETBTs the byte pointer to 0, then reads the file
+        via 144B MAGTP function 0. The position set here is the position that
+        read starts from.
+      note: >-
+        Also observed in a FAILURE cascade: when the linker's first 50B OPEN
+        (empty file name) fails, the following 74B SETBT is issued with an
+        invalid file number (56) and errors. That SETBT error is a SYMPTOM of the
+        OPEN failure, not a SETBT defect - do not chase it.
+
+  verified:
+    - claim: 'BytePointer is a 32-bit INTEGER4.'
+      evidence: >-
+        Recorded as carve-verified in
+        nd500x/docs/MON_COMPLETENESS_MATRIX.md row 74B
+        ("byte ptr read as 32-bit INTEGER4 (carve-verified)"). NOTE: that row
+        does not record the octal address of the carved worker, so the specific
+        byte cite is not reproducible from our notes - treat the width as
+        verified, the citation as incomplete.
+    - claim: 'The position set here is honoured by subsequent transfers.'
+      evidence: >-
+        Runtime: the linker SETBTs to 0 and its following 144B MAGTP function 0
+        read starts at 0 ("pos=10000" octal after a 4096-byte read). Commit
+        940ba39 implemented the real seek (the handler had been an
+        auto-generated stub returning -1).
+
+  unverified:
+    - >-
+      Seeking BEYOND the end of the file is allowed by the host and reported as
+      SUCCESS. What real SINTRAN does for a byte pointer past the end of a file
+      is not established.
+    - >-
+      Whether the real SETBT interacts with the block size (76B SETBS) - e.g.
+      rejecting a pointer that is not on a block boundary - is not established;
+      nd500x accepts any pointer.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual page this YAML was extracted from.'
+    - doc: nd500x/docs/MON_COMPLETENESS_MATRIX.md
+      note: 'Row 74B SETBT - PASS, carve-verified width.'
+    - commit: '940ba39 (nd500x) - real SETBT implementation (was a stub returning -1)'

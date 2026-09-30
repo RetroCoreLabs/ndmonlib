@@ -1,0 +1,166 @@
+octal: 35B
+name: OutNumber
+short_names:
+- IOUT
+description: 'Writes a number to the user''s terminal. The number can be output as an octal or a decimal
+  value.
+
+
+  - The number may be in the range -32768 to 32767.'
+see_also:
+- OutMessage
+- OutUpTo8Bytes
+- Out8Bytes
+- OutString
+- OutputString
+- and OutByte
+parameters:
+- name: Format
+  type: INTEGER2
+  io: I
+  description: Output format. 8=octal, 10=decimal, 16=hexadecimal, 2=bitpattern.
+- name: Number
+  type: INTEGER2
+  io: I
+  description: The number to be written (-32768 to 32767).
+examples:
+  pascal:
+    available: true
+    code: "    Format, Number : INTEGER2;\n    ...\n    OutNumber(Format, Number);"
+  cobol:
+    available: true
+    code: "    01 Format COMP.\n    01 Number COMP.\n    ...\n    MONITOR-CALL \"OutNumber\" USING Format,\
+      \ Number."
+  fortran:
+    available: true
+    code: "    INTEGER Format, Number\n    ...\n    Monitor_Call('OutNumber', Format, Number)"
+  planc:
+    available: true
+    code: 'INTEGER : Format, Number
+
+      ...
+
+      Monitor_Call(''OutNumber'', Format, Number)'
+  assembly_500:
+    available: true
+    code: 'Format : W BLOCK 1 %12B=decimal, 10B=octal, 20B=hexadecimal, 2=bitpattern.
+
+      Number : W BLOCK 1
+
+      OutNumber : EQU 37B9 + 35B
+
+
+
+      CALLG OutNumber, 2, Format, Number'
+    octal_definition: 37B9 + 35B
+  mac:
+    available: true
+    code: '| Instruction | Operand | Comment                          |
+
+      |-------------|---------|----------------------------------|
+
+      | LDT         | FORM    | %Format of number to be printed. |
+
+      | LDA         | NUM     | %Number to be printed.           |
+
+      | MON         | 35      | %Monitor call OutNumber.         |
+
+      | ...         |         |                                  |
+
+      | FORM,       | 12      | %Interpret NUM as a decimal digit.|
+
+      | NUM,        | ...     |                                  |
+
+
+
+      | ND-100 and ND-500 | All users | Background programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 381
+  line: 17233
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: implemented
+  nd500x_handler: nd500x/src/libmon/handlers/mon_35B_OutNumber.c
+  last_updated: '2026-07-17'
+
+  format_codes:
+    radix: decimal
+    note: >-
+      These are DECIMAL radix selectors, and the value IS the radix (8 = octal,
+      10 = decimal, 16 = hex) - with 2 meaning "16-bit bit pattern", not "binary
+      number". Taken from this YAML's own Format parameter description.
+    codes:
+      - code: 2
+        name: BitPattern
+        description: 'Emits exactly 16 binary digits, MSB first, zero-padded, no sign.'
+        status: implemented
+      - code: 8
+        name: Octal
+        description: 'Octal digits, with a leading "-" for negative values.'
+        status: implemented
+      - code: 10
+        name: Decimal
+        description: 'Signed decimal. Also the fall-through for any unrecognised Format.'
+        status: implemented
+      - code: 16
+        name: Hexadecimal
+        description: 'Uppercase hex digits, with a leading "-" for negative values.'
+        status: implemented
+
+  parameter_notes:
+    - name: Number
+      note: >-
+        Read as a 32-bit word then TRUNCATED to int16_t - deliberate, because the
+        manual bounds the value to -32768..32767. A caller passing a wider value
+        silently loses the high half.
+      verified: true
+
+  verified:
+    - claim: >-
+        Octal and hex are printed SIGN-MAGNITUDE ("-" then the magnitude), not as a
+        two's-complement bit pattern. Only Format 2 shows the raw 16-bit pattern.
+      evidence: >-
+        mon_35B_OutNumber.c to_octal_string()/to_hex_string(): if (value < 0) {
+        buf[0] = '-'; sprintf(buf + 1, "%o", (unsigned int)(-value)); }
+    - claim: 'No newline is emitted - the number is written bare.'
+      evidence: 'mon_35B_OutNumber.c write_string_to_console(output) with no terminator appended.'
+
+  unverified:
+    - >-
+      NO OBSERVED CALLER. No traced program issues 35B. Implemented but NOT proven
+      end to end, and NONE of the formatting details below is confirmed against real
+      SINTRAN output.
+    - >-
+      THE EXACT OUTPUT FORMATTING IS INFERRED, NOT READ. Field width, zero/space
+      padding, any trailing separator, whether octal carries a "B" suffix, and
+      whether hex is upper or lower case are NOT specified in the scanned manual
+      pages. nd500x prints a bare unpadded C-style conversion. Real SINTRAN IOUT may
+      differ in every one of these.
+    - >-
+      Sign-magnitude vs two's-complement for octal/hex of a negative number is a
+      CHOICE made by the handler, not a documented behaviour.
+    - >-
+      Behaviour for an unrecognised Format is a CHOICE: nd500x falls through to
+      decimal. Real SINTRAN may reject it.
+    - >-
+      This YAML's manual body says "The number can be output as an octal or a decimal
+      value" while its own Format parameter lists four codes including 16 and 2. The
+      wider list is used. Which is authoritative is not resolved here.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: "The manual body of this YAML; the Format parameter description is the source of the four codes."

@@ -1,0 +1,163 @@
+# SINTRAN III Monitor Call: GetTypeRing
+# Octal: 45B
+# Sourced from: ND-60.136.04A ND-500 Loader Monitor (MON-call table, 45B GTYPR);
+#   ND-60230-5-EN SINTRAN III Release Information K-version (16.6.4, equates GTYPR
+#   MON 45 to FSMTY MON 327 function 4); ndfs-extensions.md section 3.4.
+# SUPERSEDES the earlier 45B_DefineBreakpoint.yaml, which read MON 45 off the
+# ND-100-native internal-calls appendix (DBRK). The SINTRAN release docs (J-M)
+# and the ND-500 monitor-call manual both document MON 45 as GTYPR; there is one
+# SINTRAN monitor and this is its call number 45B.
+
+octal: 45B
+name: GetTypeRing
+short_names:
+- GTYPR
+description: >-
+  Return file/device information for a unit. Given an open-file number or a device
+  number, GTYPR returns the TYPRING word (a datafield word holding flag bits plus
+  the open-file number), a status word, and the corresponding SINTRAN III open-file
+  number or device number. Its primary documented use is to obtain the SINTRAN III
+  file number that the DVINST monitor call requires (DVINST does not translate a
+  connect number to a file number). Identical in effect to FSMTY (MON 327)
+  function 4.
+notes:
+- >-
+    CROSS-MONITOR REUSE of number 45B [VERIFIED from the carved mapper]: GTYPR is
+    the ND-500-Monitor meaning of 45B (this file). The NATIVE ND-100 SINTRAN
+    monitor-call table has 45B = DBRK (DefineBreakpoint): MCTAB[45B]=005665B=
+    BDBRK=002235, with the breakpoint family BGBRK(46B)/BSBRK(47B) at the adjacent
+    slots, and that family is present in K03/L07/M06 (NOT deleted). GTYPR does not
+    appear in any ND-100 SINTRAN symbol table (SYMBOL-1/2-LIST) - only in the
+    ND-500 symbol set. CRITICAL [VERIFIED FROM L07 BYTES]: the carved L07 dispatch
+    does NOT realise GTYPR at 45B. MCHANDEL (in PIT overlay 017-S3SMPIT, base
+    032000B) routes ND-500 45B through GO NORMMC -> ND-100 twin RT-program -> native
+    MCTAB[45B] = BDBRK (DBRK). The N5MPA runtime-patch slot (137525B) is the
+    byte-confirmed no-op default (124002 JMP 2 / 124001 JMP 1) and special-cases
+    nothing; GTYPR (107550) and FSMTY/MFFSC (111563) have ZERO occurrences in the
+    dispatch segment. So in the running L07 system, ND-500 45B behaves as DBRK, the
+    SAME as an ND-100 caller - the "45B GTYPR" of the ND-500 Loader Monitor manual
+    is a manual claim NOT realised by the L07 image (would require a boot-time patch
+    of N5MPA, of which there is no evidence, or a different SINTRAN revision).
+- >-
+    IMPLICATION for nd500x/emulation: the FraTor ND-500 tools EMIT 45B with GTYPR's
+    4-arg signature and expect GTYPR behaviour, but real L07 routes 45B to DBRK.
+    Which to implement is UNRESOLVED and needs a live trace on the tools' actual
+    target (or Ronny's knowledge): implement-as-GTYPR satisfies the tools;
+    implement-as-DBRK matches carved L07. Do NOT assume either. See
+    SINTRAN/ND500/ND500-TO-SINTRAN-MON-MAPPING.md section 3 (byte-verified decode).
+- >-
+    Serviced by SINTRAN III on the ND-100 (the ND-500 Monitor component). Listed in
+    the ND-500 Loader Monitor manual so ND-500 programs can call it directly; also
+    reachable as FSMTY (MON 327) function 4.
+- >-
+    ND-500 / CALLG convention (as emitted by the FraTor ND-500 tools -
+    convert-dom, linker, file-compare, planc): CALLG GTYPR,4,<unit>,<typing>,
+    <status>,<Sintran III open file number>. Verified against the 4-arg call sites
+    (gate 0xF8000025).
+- >-
+    ND-100 register convention (from FSMTY function 4, ndfs-extensions.md 3.4):
+    T = 4 (function), A (in) = open-file number OR device number, A (out, skip) =
+    the opposite of the input (device number if a file number was given, and vice
+    versa), X (out) = TYPRING bits, D (out) = status. A (error) = error code.
+- >-
+    Status word bits (from FSMTY function 4): bit 0 = 1 if the file is open for
+    write; bit 1 = 1 if it is a spooling file or a terminal/TAD.
+- >-
+    The TYPRING word is the "TYPING" word from the device datafield (flag bits +
+    open-file number), per ND-60.136.04A: "a word containing flag bits and the
+    open file number corresponding to the specified <unit> is returned".
+- >-
+    Version: MON 45 GTYPR is documented in the ND-500 Loader Monitor manual; the
+    equivalent FSMTY function 4 was added in the K-version. See [[327B]] FSMTY.
+see_also:
+- FileSystemFunction
+- InputString
+parameters:
+- name: Unit
+  type: INTEGER
+  io: I
+  description: >-
+    The open-file number OR device number to query.
+- name: TypeRing
+  type: INTEGER
+  io: O
+  description: >-
+    Returned TYPRING word - flag bits plus the open-file number, taken from the
+    device datafield.
+- name: Status
+  type: INTEGER
+  io: O
+  description: >-
+    Returned status word. Bit 0 = file open for write; bit 1 = spooling file or
+    terminal/TAD.
+- name: SintranFileNumber
+  type: INTEGER
+  io: O
+  description: >-
+    Returned SINTRAN III open-file number (or device number) corresponding to the
+    input unit. This is the number DVINST expects.
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: ''
+  cobol:
+    available: false
+    code: ''
+    notes: ''
+  fortran:
+    available: false
+    code: ''
+    notes: ''
+  planc:
+    available: false
+    code: ''
+    notes: ''
+  assembly_500:
+    available: true
+    code: |-
+      % ND-500 CALLG form (as emitted by the FraTor tools).
+      UNIT     : W BLOCK 1   % open file number or device number (input)
+      TYPRING  : W BLOCK 1   % returned TYPRING
+      STATUS   : W BLOCK 1   % returned status
+      S3OPFILN : W BLOCK 1   % returned SINTRAN III open file number / device no.
+      GTYPR    : EQU 37000000045B   % GTYPR = MON 45
+      ...
+      CALLG GTYPR,4,UNIT,TYPRING,STATUS,S3OPFILN
+      IF K GO ERROR          % on error return, W1 = error code
+    octal_definition: 37B9 + 45B
+    notes: >-
+      Equivalent to CALLG FSMTY,5,FUNCTION(=4),UNIT,TYPRING,STATUS,S3OPFILN
+      (ND-60230-5-EN K-version 16.6.4).
+  mac:
+    available: true
+    code: |-
+      LDT (4      % T = FSMTY function 4 (= GTYPR)
+      LDA UNIT    % A = open file number or device number
+      MON 327     % (or MON 45 for GTYPR directly)
+      JMP ERROR   % error return - A = error code
+      % on return: A = opposite unit id, X = TYPRING, D = status
+    mon_number: 45
+    notes: 'Register convention shown for the FSMTY function-4 equivalent.'
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: >-
+    ND-60.136.04A ND-500 Loader Monitor (45B GTYPR); ND-60230-5-EN SINTRAN III
+    Release Information K-version 16.6.4 (GTYPR = FSMTY function 4);
+    ndfs-extensions.md section 3.4
+  handler: 'FSMTY function 4 (MFFSC in 006-S3FS); see 327B FileSystemFunction'
+  page: 0
+  line: 5915
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-30'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false
+  method: ND-500 monitor manual + SINTRAN release-doc cross-reference

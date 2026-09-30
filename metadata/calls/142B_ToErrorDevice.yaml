@@ -1,0 +1,167 @@
+# SINTRAN III Monitor Call: ToErrorDevice
+# Octal: 142B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 142B
+name: ToErrorDevice
+short_names:
+- ERMON
+description: 'Outputs a user-defined, real-time error. The error message is output on the error device,
+  i.e. normally the console. The following is an example of such a message: 23.10.59 ERROR 59 AT XPROG
+  AT 134562, USER ERROR, SUBERROR 4. See appendix A.'
+notes:
+- The real-time errors numbers 50-69 can be used in this way.
+see_also:
+- WarningMessage
+- ErrorMessage
+- and OutMessage
+parameters:
+- name: ErrorNumber
+  type: INTEGER
+  io: I
+  description: Error number (50-69). This number is output following ERROR.
+- name: SubErrorNumber
+  type: INTEGER
+  io: I
+  description: Suberror number.
+examples:
+  pascal:
+    available: true
+    code: |-
+      ErrorNumber, SubErrorNumber : INTEGER2;
+      ...
+      ToErrorDevice(ErrorNumber, SubErrorNumber);
+  cobol:
+    available: true
+    code: |-
+      01 ErrorNumber COMP.
+      01 SubErrorNumber COMP.
+      ...
+      MONITOR-CALL "ToErrorDevice" USING ErrorNumber, SubErrorNumber.
+  fortran:
+    available: true
+    code: |-
+      INTEGER ErrorNumber, SubErrorNumber
+      ...
+      Monitor_Call('ToErrorDevice', ErrorNumber, SubErrorNumber)
+  planc:
+    available: true
+    code: |-
+      INTEGER : ErrorNumber, SubErrorNumber
+      ...
+      Monitor_Call('ToErrorDevice', ErrorNumber, SubErrorNumber)
+  assembly_500:
+    available: true
+    code: |-
+      ErrorNumber : W BLOCK  1                      %In ASCII characters.
+      SubErrorNumber : W BLOCK  1
+
+      ToErrorDevice : EQU 378B9 + 142B
+      ...
+      CALLG ToErrorDevice, 2, ErrorNumber, SubErrorNumber
+    octal_definition: ''
+  mac:
+    available: true
+    code: |-
+      LDA     ERRNO            %Error number.
+      LDT     SUBER            %Sub-error number.
+      MON     142              %Monitor call ToErrorDevice.
+      ...
+
+      ERRNO, ...                %Error number as two ASCII characters.
+      SUBER, ...                %Suberror number as two ASCII characters.
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+    mon_number: 142
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 543
+  line: 25014
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_142B_ToErrorDevice.c
+  last_updated: '2026-07-17'
+
+  note: >-
+    The handler formats and prints a message, then returns success - the program
+    continues, as the manual requires. But it prints to the HOST's stderr with
+    fprintf, not to an emulated SINTRAN error device, and the format is a
+    reduced version of the manual's.
+
+  parameter_notes:
+    - name: 'ErrorNumber / SubErrorNumber'
+      note: >-
+        On ND-500 both are 32-bit words (W BLOCK), read with
+        mon_read_param_word. The manual types them INTEGER for the ND-100 16-bit
+        form. Both are IN parameters; this call has no output.
+      verified: true
+    - name: ErrorNumber
+      note: >-
+        The manual restricts it to 50-69. nd500x does NOT range-check it and
+        prints whatever it is given.
+      verified: true
+
+  return_contract:
+    success: 'K flag cleared; message emitted. The program is not terminated.'
+    errors: []
+
+  verified:
+    - claim: 'MON 142B dispatches via MCTAB to the L07 worker ERRMO.'
+      evidence: >-
+        Carve L-VSX-500 142B-ToErrorDevice/README.md CORRECTED header:
+        MCTAB[142B] slot 005762B (segment 044-S3IDPIT, byte offset 2020) =
+        071776B = ERRMO. Reproduced:
+        dd if=044-S3IDPIT.bin bs=1 skip=2020 count=2 -> 73 fe.
+    - claim: 'The timestamp is routed through the pinnable MON clock.'
+      evidence: >-
+        Commit 4fa340a: "113B CLOCK and 142B error timestamps -> fixed UTC
+        instant (gmtime) when pinned". With ND500X_PIN_CLOCK the 142B header time
+        is reproducible.
+
+  unverified:
+    - >-
+      THE OUTPUT FORMAT IS NOT THE MANUAL'S. The manual's example is
+      "23.10.59 ERROR 59 AT XPROG AT 134562, USER ERROR, SUBERROR 4"; nd500x
+      prints "HH.MM.SS ERROR nnB, USER ERROR, SUBERROR mB" - it omits the
+      "AT <program> AT <address>" clause entirely and appends a "B" octal
+      suffix that the manual's example does not show. No program has been
+      observed parsing this output.
+    - >-
+      THE RADIX IS A GUESS. nd500x prints both numbers with %o (octal). The
+      manual's example shows "ERROR 59" and "SUBERROR 4" with the documented
+      range 50-69 - which reads as decimal. Nothing settles which the real error
+      device emits.
+    - >-
+      DESTINATION. nd500x writes to the host process's stderr, bypassing the
+      emulated console/device layer entirely. The manual says "the error device,
+      i.e. normally the console". A guest that had redirected its error device
+      would not see any difference.
+    - >-
+      NO WORKER BODY. The carve records no ND-100 worker body isolated for this
+      call: the row reads "to-error-device worker body | - (not isolated) | ...
+      | ERMON (ND-500 only) | body MISATTRIBUTED (name only)". Only the MCTAB
+      slot value (ERRMO=071776B) is byte-proven. The README's own body text and
+      its correction header disagree; the header is the byte-verified one.
+    - >-
+      The handler does not check arg_count and does not null-check the tm result
+      before dereferencing it.
+
+  sources:
+    - doc: 'NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/142B-ToErrorDevice/README.md'
+      note: 'MCTAB[142B] = ERRMO = 071776B (byte-proven); no worker body isolated.'
+    - doc: nd500x/src/libmon/mon_clock.c
+      note: 'The pinnable clock behind the 142B timestamp (commit 4fa340a).'

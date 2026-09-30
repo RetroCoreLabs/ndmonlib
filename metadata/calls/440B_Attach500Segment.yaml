@@ -1,0 +1,123 @@
+# SINTRAN III Monitor Call: Attach500Segment
+# Octal: 440B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 440B
+name: Attach500Segment
+short_names:
+- AT5SGM
+description: Maps a logical ND-500 data segment onto shared ND-100/ND-500(0) physical memory (multiport memory).
+notes:
+- >-
+    Version history: the L-version documents MON 440 as mapping a logical ND-500
+    data segment onto shared ND-100/ND-500 physical (multi-port) memory, and now
+    allows the target physical memory area to be defined either via the "Not
+    initialize page" table (*CHANGE-TABLE) OR to be in a LAMU area
+    (ND-860230-6-EN Sintran III - Release Information - L-Version.md:2774-2776).
+- The specified physical memory area must be defined in the "Not initialize page" table by use of the *CHANGE-TABLE command in the SINTRAN Service Program (follow this command by a warm start to put the change into effect). Note that you should not use the first pages of the multiport memory (starting at "ND-500 page 0") for this.
+see_also: []
+parameters:
+- name: Function
+  type: INTEGER
+  io: I
+  description: 'Function code. 0 = Detach (forget) a previously attached segment. 1 = Attach a segment. If a physical segment does not exist, create it and map the segment on to the physical ND-100 address area. 2 = Map an existing ND-500 logical data segment onto a physical ND-100 address area.'
+- name: SegNo0
+  type: INTEGER
+  io: I
+  description: Segment number (function code 0). Segment number in the range 0-31₁₀.
+- name: SegNo1
+  type: INTEGER
+  io: I
+  description: ND-500 logical data segment address (function code 1). If you specify 0 (zero), the first free segment will be used.
+- name: Length1
+  type: INTEGER
+  io: I
+  description: Length of segment in pages (function code 1).
+- name: N1Addr1
+  type: INTEGER
+  io: I
+  description: ND-100 physical page address (function code 1).
+- name: SegName
+  type: STRING
+  io: I
+  description: Segment name (function code 1). A maximum of 35₁₀ characters in the name, including an optional user name, and a terminating apostrophe, which must be present. The parameter is a string descriptor.
+- name: Access
+  type: INTEGER
+  io: I
+  description: Access (function code 1). 0 = read only access. 1 = read/write access.
+- name: RetSegNo
+  type: INTEGER
+  io: O
+  description: Logical segment number (function code 1).
+- name: SegNo2
+  type: INTEGER
+  io: I
+  description: Start address of ND-500 logical data segment (function code 2).
+- name: Length2
+  type: INTEGER
+  io: I
+  description: Length of the (entire) segment in pages (function code 2).
+- name: N1Addr2
+  type: INTEGER
+  io: I
+  description: Physical ND-100 page address (function code 2).
+examples:
+  pascal:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  cobol:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  fortran:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  planc:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  assembly_500:
+    available: true
+    code: |-
+      FUNCTION : W DATA 1              %function = 1
+      SEGNO : W DATA 1000000000B      %address 0 on segment no. 1
+      LENGTH : W DATA 4               %segment length = 4 pages
+      N1ADDR : W DATA 2000B           %mapped at page address 2000₈
+      SEGNAME : STRINGDATA 'ATTSEG1'  %segment name = ATTSEG1
+      ACCESS : W DATA 1               %read/write access
+      RETSEGNO : W BLOCK 1            %returned segment number
+      ...
+      CALLG 37000000440B, 7, FUNCTION, SEGNO, LENGTH, N1ADDR, SEGNAME, ACCESS, &
+          RETSEGNO                    %Mon 440 with 7 parameters
+          IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode           %on error return, W1 = error code
+    octal_definition: 37000000440B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 3331
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

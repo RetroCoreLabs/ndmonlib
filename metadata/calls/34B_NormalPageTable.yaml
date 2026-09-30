@@ -1,0 +1,69 @@
+# SINTRAN III Monitor Call: NormalPageTable
+# Octal: 34B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 34B
+name: NormalPageTable
+short_names:
+- ALTOFF
+description: Sets the alternative page table equal to the normal page table. All memory addresses are mapped through the normal page table after this monitor call.
+notes:
+- Use AltPageTable to set an alternative page table.
+see_also:
+- AltPageTable
+- '@ALTOFF'
+parameters: []
+examples:
+  pascal:
+    available: true
+    code: |-
+      NormalPageTable;
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "NormalPageTable".
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      Monitor_Call('NormalPageTable')
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      Monitor_Call('NormalPageTable')
+  assembly_500:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  mac:
+    available: true
+    code: |-
+      MON 34                  %Monitor call NormalPageTable.
+      JMP ERROR              %Error return from monitor call.
+      ...
+      ERROR, ...             %Error number in register A.
+    mon_number: 34
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 16096
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

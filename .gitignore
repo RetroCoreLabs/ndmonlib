@@ -40,3 +40,6 @@ build/
 SCRATCH/
 GUEST/
 SYSTEM/
+
+# Generated documentation site (tools/generate_mon_site.py)
+build-site/

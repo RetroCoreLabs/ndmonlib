@@ -1,0 +1,113 @@
+# Monitor Call: 7B ReadBlock
+# Extracted from: ND-860228.2 EN (SINTRAN III Monitor Calls)
+# Source page: 394-395
+
+octal: 7B
+name: ReadBlock
+short_names:
+- RPAGE
+description: |-
+  Reads randomly from a file. You read one block at a time. The file must be opened for random read access.
+
+  - The standard block size is 512 bytes. You can change this with SetBlockSize. The first block is number 0.
+see_also:
+- SetStartBlock
+- SetBlockSize
+- ReadDiskPage
+- ReadFromFile
+- WriteBlock
+parameters:
+- name: FileNumber
+  type: INTEGER2
+  io: I
+  description: File number. See OpenFile.
+- name: BlockNo
+  type: INTEGER2
+  io: I
+  description: Block number.
+- name: DataDestination
+  type: ARRAY
+  io: O
+  description: Array for data returned.
+- name: ErrCode
+  type: INTEGER2
+  io: O
+  description: Standard Error Code. See appendix A.
+examples:
+  pascal:
+    available: true
+    code: |-
+      FileNumber, BlockNo : INTEGER2;
+      DataDestination : ARRAY [0..15] OF RECORD...END;
+      ...
+      ReadBlock(FileNumber, BlockNo, DataDestination);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 FileNumber COMP.
+      01 BlockNo COMP.
+      01 DataDestination.
+         02 array COMP OCCURS 256 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "ReadBlock" USING FileNumber, BlockNo, DataDestination.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER FileNumber, BlockNo
+      INTEGER DataDestination(256)
+      ...
+      Monitor Call('ReadBlock', FileNumber, BlockNo, DataDestination(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : FileNumber, BlockNo
+      BYTES : DataDestination(0:511)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('ReadBlock', FileNumber, BlockNo, DataDestination(0))
+  assembly_500:
+    available: false
+    code: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      LDT FILN0          %File number returned from earlier open.
+      LDA BLKN0          %Block number.
+      LDX (BUFF          %Address of buffer to receive block read.
+      MON 7              %Monitor call ReadBlock.
+      JMP ERROR          %Error return from monitor call.
+      ...                %Normal return.
+      ERROR, ...         %Error number in register A.
+      ...
+
+      FILN0, ...
+      BLKN0, ...
+      BUFF, 0
+      *+400/            %Make a buffer of 256 words.
+    mon_number: 7
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 394
+  line: 17610
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true
+  ocr_notes: Extracted from source document page 394-395

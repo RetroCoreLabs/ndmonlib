@@ -1,0 +1,99 @@
+# SINTRAN III Monitor Call: ExactInterval
+# Octal: 130B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 130B
+name: ExactInterval
+short_names:
+- DINTV
+description: |-
+  Prepares an RT program for periodic execution. The interval between the executions may be from 1 to 4294967647 basic time units. A basic time unit is 1/50th of a second.
+
+  - The RT program is not started. Use, for example, StartRTProgram or @RT to start it.
+  - StopRTProgram, Disconnect, @ABORT or @DSCNT cancel this monitor call.
+  - One execution may be unfinished when it is time for the next execution. In this case, the program's restart flag is set. If the delay becomes as long as two intervals, one execution is lost.
+  - The interval replaces any earlier specified intervals.
+  - AdjustClock and @CLADJ do not affect the interval.
+see_also:
+- StartupInterval
+- '@DINTV. StartupInterval allows you to specify intervals in seconds'
+- minutes or hours
+parameters:
+- name: RTProgram
+  type: INTEGER
+  io: I
+  description: Address of an RT description. 0 means calling program. GetRtAddress gives RT description addresses.
+- name: BasicTimeUnits
+  type: INTEGER
+  io: I
+  description: Period between executions in basic time units (1/50th second).
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTProgram, BasicTimeUnits : INTEGER2;
+      ...
+      ExactInterval(RTProgram, BasicTimeUnits);
+  cobol:
+    available: true
+    code: |-
+      01 RTProgram COMP.
+      01 BasicTimeUnits COMP.
+      ...
+      MONITOR-CALL "ExactInterval" USING RTProgram, BasicTimeUnits.
+  fortran:
+    available: true
+    code: |-
+      INTEGER RTProgram, BasicTimeUnits
+      ...
+      Monitor_Call('ExactInterval', RTProgram, BasicTimeUnits)
+  planc:
+    available: true
+    code: |-
+      INTEGER : RTProgram, BasicTimeUnits
+      ...
+      Monitor_Call('ExactInterval', RTProgram, BasicTimeUnits)
+  assembly_500:
+    available: true
+    code: |-
+      RTProgram : W BLOCK 1
+      BasicTimeUnits : W BLOCK 1
+      ExactInterval : EQU 37B9 + 130B
+      ...
+      CALLG ExactInterval, 2, RTProgram, BasicTimeUnits
+    octal_definition: 37B9 + 130B
+  mac:
+    available: true
+    code: |-
+      LDA  (PAR      %Load register A with address of parameter list.
+      MON  130       %Monitor call ExactInterval.
+      ...
+      PAR, RTPRO    %Address of RT description.
+      TIME          %Time of interval between each execution.
+      ...
+      RTPRO, ...
+      TIME, ...      %A double word giving number of basic time units.
+      ...
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+    mon_number: 130
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 177
+  line: 7625
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

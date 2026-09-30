@@ -1,0 +1,82 @@
+# SINTRAN III Monitor Call: GetUserRegisters
+# Octal: 420B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 420B
+name: GetUserRegisters
+short_names:
+- GRBLK
+description: SwitchUserBreak allows you to save the registers when you terminate an ND-500 program with the ESCAPE key. You can get the contents of the registers with GetUserRegisters.
+notes:
+- 39 registers are saved.
+see_also:
+- SwitchUserBreak
+parameters:
+- name: Buffer
+  type: ARRAY
+  io: I/O
+  description: 154 bytes containing the registers in their number sequence.
+examples:
+  pascal:
+    available: true
+    code: |-
+      Buffer : ARRAY [0..4] OF RECORD...END;
+      ...
+      GetUserRegister(Buffer);
+    mon_number: null
+    notes: ''
+  cobol:
+    available: true
+    code: |-
+      01 Buffer.
+      02 array COMP OCCURS 77 TIMES.
+      ...
+      MONITOR-CALL "GetUserRegister" USING Buffer.
+    mon_number: null
+    notes: ''
+  fortran:
+    available: true
+    code: |-
+      INTEGER Buffer(77)
+      ...
+      Monitor_Call('GetUserRegister', Buffer(1))
+    mon_number: null
+    notes: ''
+  planc:
+    available: true
+    code: |-
+      BYTES : Buffer(0:153)
+      ...
+      Monitor_Call('GetUserRegister', Buffer(0))
+    mon_number: null
+    notes: ''
+  assembly_500:
+    available: true
+    code: |-
+      Buffer : W BLOCK 50B
+      GetUserRegister : EQU 37B9 + 420B
+      ...
+      CALLG GetUserRegister, 1, Buffer
+    octal_definition: 37B9 + 420B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: false
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 13518
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: true

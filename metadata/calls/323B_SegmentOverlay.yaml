@@ -1,0 +1,117 @@
+# SINTRAN III Monitor Call: SegmentOverlay
+# Octal: 323B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 323B
+name: SegmentOverlay
+short_names:
+- SPLRE
+description: Used to build multisegment programs in the ND-100. It is mainly for internal use. A new reentrant
+  segment and two address areas in this segment are specified.
+notes:
+- The building of multisegment programs is taken care of automatically by the BRF-LINKER. See the BRF-LINKER
+  USER MANUAL (ND-860196).
+see_also: []
+parameters:
+- name: SegmentNo
+  type: INTEGER
+  io: I
+  description: Segment number. The segment must be reentrant.
+- name: Page1A1
+  type: INTEGER
+  io: I
+  description: Page number of first page in address-area 1. Normally in the program bank.
+- name: NoPageA1
+  type: INTEGER
+  io: I
+  description: Number of pages in address-area 1.
+- name: Page1A2
+  type: INTEGER
+  io: I
+  description: Page number of first page in address-area 2. Normally in the data bank.
+- name: NoPageA2
+  type: INTEGER
+  io: I
+  description: Number of pages in address-area 2.
+- name: ClearFlag
+  type: INTEGER
+  io: I
+  description: Clear flag. If not 0, earlier overlay areas are cleared. Use 0 first time.
+examples:
+  pascal:
+    available: true
+    code: |-
+      SegmentNo, Page1A1, NoPageA1, Page1A2, NoPageA2, ClearFlag : INTEGER2;
+      ...
+      SegmentOverlay(SegmentNo, Page1A1, NoPageA1, Page1A2, NoPageA2, ClearFlag);
+  cobol:
+    available: true
+    code: |-
+      01 SegmentNo COMP.
+      01 Page1A1 COMP.
+      01 NoPageA1 COMP.
+      01 Page1A2 COMP.
+      01 NoPageA2 COMP.
+      01 ClearFlag COMP.
+      ...
+      MONITOR-CALL "SegmentOverlay" USING SegmentNo, Page1A1, NoPageA1,
+                                        Page1A2, NoPageA2, ClearFlag.
+  fortran:
+    available: true
+    code: |-
+      INTEGER SegmentNo, Page1A1, NoPageA1, Page1A2, NoPageA2, ClearFlag
+      ...
+      Monitor_Call('SegmentOverlay', SegmentNo, Page1A1, NoPageA1,
+                                     Page1A2, NoPageA2, ClearFlag)
+  planc:
+    available: true
+    code: |-
+      INTEGER : SegmentNo, Page1A1, NoPageA1, Page1A2, NoPageA2, Clearflag
+      ...
+      Monitor_Call('SegmentOverlay', SegmentNo, Page1A1, NoPageA1, &
+                   Page1A2, NoPageA2, Clearflag)
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: ''
+    notes: Not available
+  mac:
+    available: true
+    code: |-
+      LDA   (PAR  %Load register A with address of parameter list.
+      MON   323   %Monitor call SegmentOverlay.
+      ...
+      PAR,  SEGNO %Segment number.
+      AREA1       %First page in area 1.
+      NUM1        %Number of pages in area 1.
+      AREA2       %First page in area 2.
+      NUM2        %Number of pages in area 2.
+      CLEAR       %Clear flag.
+      ...
+      SEGNO, ...
+      AREA1, ...
+      NUM1, ...
+      AREA2, ...
+      NUM2, ...
+      CLEAR, ...
+
+
+      | ND-100   | All users      | Background programs |
+    mon_number: 323
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 429
+  line: 19476
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

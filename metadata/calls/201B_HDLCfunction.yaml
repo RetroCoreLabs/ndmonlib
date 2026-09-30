@@ -1,0 +1,113 @@
+# SINTRAN III Monitor Call: HDLCfunction
+# Octal: 201B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 201B
+name: HDLCfunction
+short_names:
+- MHDLC
+description: Performs various HDLC functions. A HDLC is a high-level data link to another computer. You
+  may send data, receive data, and control HDLC. Data is sent as Driver Control Blocks (DCB). This monitor
+  call is also used by X.21 to transfer DCBs between the user programs and the X.21 driver. The system
+  uses the Logical Device Number to distinguish between HDLC and X.21.
+notes:
+- Use MON 122, ReserveResource, and MON 123, Release Resource for exclusive access to a LDN.
+see_also: []
+parameters:
+- name: Func
+  type: INTEGER
+  io: I
+  description: 'Function code: 0=send DCB to driver, 1=receive DCB from driver'
+- name: DevNo
+  type: INTEGER
+  io: I
+  description: Logical device number. Different LDNs for input and output part.
+- name: Buffer
+  type: ARRAY
+  io: IO
+  description: Address of driver control block buffer.
+- name: USize
+  type: INTEGER
+  io: IO
+  description: Size of the used part of the driver control block in bytes.
+- name: MSize
+  type: INTEGER
+  io: I
+  description: 'For SEND: max DCB size in bytes. For RECEIVE: wait flag (1=wait, 0=continue).'
+- name: Status
+  type: INTEGER
+  io: O
+  description: 'HDLC error code returned in W1: 1=LDN not reserved, 2=illegal LDN, 3=no DCB in queue, 4=no buffer, 5=illegal DCB size, 6=illegal LDN for this call, 7=max size < used size, 10=illegal function, 11=fatal error.'
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Not available
+  cobol:
+    available: false
+    code: ''
+    notes: Not available
+  fortran:
+    available: true
+    code: |-
+      INTEGER SendRecDCB, LDN, Buffer, DCBusize, DCBmsize
+      INTEGER Buff(1024)
+      ...
+      Monitor_Call('HDLCFunction', SendRecDCB, LDN, Buffer(1),
+          C DCBusize, DCBmsizeXcoor
+
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+  planc:
+    available: false
+    code: ''
+    notes: Not available
+  assembly_500:
+    available: true
+    code: |-
+      Func   : W BLOCK 1
+      DevNo  : W BLOCK 1
+      Buffer : W BLOCK 1024 %Even byte address.
+      USize  : W BLOCK 1
+      MSize  : W BLOCK 1
+      Status : W BLOCK 1
+      HDLCfunction : EQU 37B9 + 201B
+
+
+      CALLG HDLCfunction, 5, Func, DevNo, Buffer, USize, MSize,
+      IF K GO Error
+      W1 =: Status
+
+      Error,
+    octal_definition: 37B9 + 201B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR      %Load address of parameter list into reg.A
+      MON 201       %Monitor call HDLCfunction.
+      JMP ERROR
+      JMP OK
+
+
+      ERROR, ...  %A-reg contains error code.
+      PAR, ...
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 201
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 307
+  line: 13698
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

@@ -1,0 +1,160 @@
+octal: 64B
+name: WarningMessage
+short_names:
+- ERMSG
+description: 'Outputs a file system error message. Appendix A shows the messages connected to each error
+  code. The error code is input. The program continues.
+
+
+  - The error message is output to the terminal. In batch jobs, mode jobs, and RT programs it is output
+  to the error device. The error device is normally the console.
+
+  - Error code 0 is illegal.'
+see_also:
+- GetErrorMessage
+- ErrorMessage. ErrorMessage writes out the error message
+- terminates the program
+parameters:
+- name: ErrCode
+  type: INTEGER
+  io: I
+  description: Error code number. Error code 0 is illegal. See appendix A.
+examples:
+  pascal:
+    available: true
+    code: 'ErrCode : INTEGER2;
+
+      ...
+
+      WarningMessage(ErrCode);'
+  cobol:
+    available: true
+    code: '01 ErrCode COMP.
+
+      ...
+
+      MONITOR-CALL "WarningMessage" USING ErrCode.'
+  fortran:
+    available: true
+    code: 'INTEGER ErrCode
+
+      ...
+
+      Monitor_Call(''WarningMessage'', ErrCode)'
+  planc:
+    available: true
+    code: 'INTEGER : ErrCode
+
+      ...
+
+      Monitor_Call(''WarningMessage'', ErrCode)'
+  assembly_500:
+    available: true
+    code: 'ErrCode : W BLOCK 1
+
+      WarningMessage : EQU 37B9 + 64B
+
+      ...
+
+      CALLG WarningMessage, 1, ErrCode'
+    octal_definition: 37B9 + 64B
+  mac:
+    available: true
+    code: '| Command | Parameter | Description                                  |
+
+      |---------|-----------|----------------------------------------------|
+
+      | LDA     | ERRNO     | %Error number of error message to be printed.|
+
+      | MON     | 64        | %Monitor call WarningMessage.                |
+
+      |         |           |                                              |
+
+
+      ...
+
+      ERRNO, ...
+
+
+
+      | ND-100 and ND-500 | All users | All programs |'
+    mon_number: null
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 559
+  line: 25621
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: partial
+  nd500x_handler: nd500x/src/libmon/handlers/mon_64B_WarningMessage.c
+  last_updated: '2026-07-17'
+
+  partial_behaviour: >-
+    THE MESSAGE TEXT IS NOT REAL - SAY SO. 64B ERMSG is supposed to output the
+    Appendix A message connected to the error code. nd500x has NO error-message
+    lookup table: it prints the literal placeholder "[SINTRAN ERROR <n>B]" (octal)
+    to stderr - NOT to the emulated console, and NOT the real text. The control flow
+    (always continue, never error) IS correct and carve-backed; only the text is
+    missing. TODO marked in the handler.
+
+  parameter_notes:
+    - name: ErrCode
+      note: >-
+        Read as a 32-bit word (ND-500 INTEGER = W BLOCK, not H BLOCK) and treated as
+        signed.
+      verified: true
+
+  return_contract:
+    success: >-
+      K flag cleared, ALWAYS. This call has no error return - the program continues
+      after the message is output, exactly as the manual says.
+    errors: []
+
+  verified:
+    - claim: >-
+        64B has NO error/K return path at all. "Error code 0 is illegal" is a
+        CALLER-SIDE manual note, NOT a status this call returns - so an emulator must
+        NOT fabricate an error return for code 0.
+      evidence: >-
+        The carved L07 ERMSG worker, dual entry ERMSG/QERMS @16714B, closing at
+        17020B EXIT: the body looks up the message text, writes it, and always
+        continues. No K-set path exists in the body. nd500x therefore logs a warning
+        for code 0 and continues.
+
+  unverified:
+    - >-
+      THE ERROR-MESSAGE TEXT ITSELF. No Appendix A message table is implemented, so
+      the output is a placeholder rather than the real message. Any program that
+      parses ERMSG output (rather than merely emitting it) will not work.
+    - >-
+      THE OUTPUT DESTINATION IS WRONG-ISH. The manual says the message goes to the
+      terminal, or to the error device (normally the console) in batch jobs, mode
+      jobs and RT programs. nd500x writes to the HOST's stderr via fprintf,
+      bypassing the ConsoleIO handler entirely - so the text does NOT appear in
+      mon_get_console_output() and is invisible to a queued-console harness. The
+      batch/mode/RT error-device distinction is not modelled at all.
+    - >-
+      The octal formatting of the placeholder ("%oB") is nd500x's own convention, not
+      a real SINTRAN output format.
+    - >-
+      NO OBSERVED CALLER with a checked expectation. 64B was given "provisional/
+      refined behavior for the linker and NC paths" (commit fc3ac5b) but no trace
+      proves what a caller does with the result.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML. Appendix A carries the message table - not implemented.'
+    - doc: 'Carved L07 ERMSG worker (dual entry ERMSG/QERMS @16714B .. 17020B EXIT)'
+      note: 'The proof that there is no error return path.'

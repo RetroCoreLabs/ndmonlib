@@ -1,0 +1,160 @@
+octal: 21B
+name: InUpTo8Bytes
+short_names:
+- M8INB
+description: See also In8Bytes, InByte, InString, In4x2Bytes, and Out8Bytes.
+see_also:
+- In8Bytes
+- InByte
+- InString
+- In4x2Bytes
+- and Out8Bytes
+parameters:
+- name: DeviceNumber
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B.
+- name: NoOfBytes
+  type: INTEGER2
+  io: O
+  description: Number of bytes read (output). For word-oriented devices, returns word count.
+- name: InData
+  type: BYTES[8]
+  io: O
+  description: The 8 bytes of input data (output).
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNumber, NoOfBytes : INTEGER2;
+
+      InData : RECORD...END;
+
+      ...
+
+      InUpTo8Bytes(DeviceNumber, NoOfBytes, InData);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 DeviceNumber  COMP.
+
+      01 NoOfBytes     COMP.
+
+      01 InData        PIC X(8).
+
+      01 ErrCode       COMP.
+
+      ...
+
+      MONITOR-CALL "InUpTo8Bytes" USING DeviceNumber, NoOfBytes, InData.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER  DeviceNumber, NoOfBytes
+
+      CHARACTER InData*8
+
+      ...
+
+      Monitor_Call(''InUpTo8Bytes'', DeviceNumber, NoOfBytes, InData(1:8))
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: 'INTEGER : DeviceNumber, NoOfBytes
+
+      BYTES : InData(0:7)
+
+      ...
+
+      ON ROUTINEERROR DO
+
+      &nbsp;&nbsp;&nbsp;&nbsp;IF ErrCode > 0 THEN ...
+
+      ENDON
+
+      Monitor_Call(''InUpTo8Bytes'', DeviceNumber, NoOfBytes, InData)'
+  assembly_500:
+    available: true
+    code: 'DeviceNumber : W BLOCK 1
+
+      NoOfBytes : W BLOCK 1
+
+      InData : STRING 8
+
+      ErrCode : W BLOCK 1
+
+      InUpTo8Bytes : EQU 37B9 + 21B
+
+      ...
+
+      &nbsp;&nbsp;&nbsp;&nbsp;CALLG InUpTo8Bytes, 3, DeviceNumber, NoOfBytes, InData
+
+      &nbsp;&nbsp;&nbsp;&nbsp;IF K GO ERROR
+
+      ...
+
+      ERROR : W1 =: ErrCode &nbsp;&nbsp;&nbsp;&nbsp;%ErrorCode in W1 register.'
+    octal_definition: 37B9 + 21B
+  mac:
+    available: true
+    code: 'LDT DEVNO &nbsp;&nbsp;&nbsp;&nbsp;%Logical device number.
+
+      MON 21 &nbsp;&nbsp;&nbsp;&nbsp;%Monitor call InUpTo8Bytes.
+
+      JMP ERROR &nbsp;&nbsp;&nbsp;&nbsp;%Error return from monitor call.
+
+      STD BYTES &nbsp;&nbsp;&nbsp;&nbsp;%Normal return, store first 4 bytes read.
+
+      COPY SL DA
+
+      STA BYTES+2 &nbsp;&nbsp;&nbsp;&nbsp;%Store next 2 bytes read.
+
+      STX BYTES+3 &nbsp;&nbsp;&nbsp;&nbsp;%Store last 2 bytes read.
+
+      STT COUNT &nbsp;&nbsp;&nbsp;&nbsp;%Store number of bytes (or words) read.
+
+      ...
+
+      ERROR, ... &nbsp;&nbsp;&nbsp;&nbsp;%Error number in register A.
+
+      ...
+
+      DEVNO, ...
+
+      COUNT, 0
+
+      BYTES, 0
+
+      0
+
+      0
+
+      0
+
+
+
+      | ND-100 and ND-500 | All users | All programs |
+
+      |-------------------|-----------|--------------|'
+    mon_number: 21
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 325
+  line: 14693
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

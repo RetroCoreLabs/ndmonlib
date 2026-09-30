@@ -1,0 +1,130 @@
+# SINTRAN III Monitor Call: CopyPage
+# Octal: 251B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 251B
+name: CopyPage
+short_names:
+- COPAG
+description: Copies file pages between two opened files. One of the files may be a magnetic tape or floppy disk with volume.
+notes:
+- This is a special monitor call used by the BACKUP-SYSTEM. No high level language interface exists. The use of the X and D registers is tailored for reading labels on magnetic tape.
+- Copying stops at end-of-file, a non-existent page, or if a short magnetic tape record is found.
+- CopyPage is only used for sequential copying, i.e. a sequence of CopyPage calls must start with page number zero.
+- Files should be opened for random read or write.
+- Both files must be local files.
+see_also: []
+parameters:
+- name: SourceFile
+  type: INTEGER
+  io: I
+  description: File number of source file. In the T register. Use logical device number for magnetic tape and floppy disks.
+- name: DestFile
+  type: INTEGER
+  io: I
+  description: File number of destination file. In the A register. Use logical device number for magnetic tapes and floppy disks.
+- name: FirstPage
+  type: INTEGER
+  io: I
+  description: Address of 32-bit word with page address of first page to copy. The page address is the same for the source and destination files.
+- name: DestBuffer
+  type: INTEGER
+  io: I
+  description: Address of buffer to receive short magnetic tape record. If source file is magnetic tape. Use -1 if you do not want the short record returned.
+- name: FirstPageMiss
+  type: INTEGER
+  io: O
+  description: Page number of the missing page (double skip return). In the A&D register. Unless the source is magnetic tape, a page is missing.
+- name: LastPageMiss
+  type: INTEGER
+  io: O
+  description: Last page number missing in a hole (double skip return). A set of contiguous pages can be missing. The T and X register contains the last page number missing in such a hole. This is only returned if the source is a directory.
+- name: NoOfWord
+  type: INTEGER
+  io: O
+  description: Number of 16-bit integers returned (double skip return). If a short magnetic tape record is found. Only for magnetic tape as source and the D register different from -1.
+examples:
+  pascal:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  cobol:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  fortran:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  planc:
+    available: true
+    code: |-
+      SourceFile: W BLOCK 1
+      DestFile: W BLOCK 1
+      FirstPage: W BLOCK 1
+      DestBuffer: W BLOCK 1
+      FirstPageMiss: W BLOCK 1
+      LastPageMiss: W BLOCK 1
+      NoOfWord: W BLOCK 1
+      ErrCode: W BLOCK 1
+      CopyPage: EQU 37B9 + 251B
+      ...
+      CALLG CopyPage, 7, SourceFile, DestFile, FirstPage, DestBuffer, &
+          FirstPageMiss, LastPageMiss, NoOfWords
+      IF K GO ERROR
+      ...
+      ERROR : W1 := ErrCode    %ErrorCode in W1 register (3 if end-of-file).
+    octal_definition: 37B9 + 251B
+  assembly_500:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+  mac:
+    available: true
+    code: |-
+      LDT FL1NO                %Load file number of source file.
+      LDA (BUFF                %Memory address of buffer to receive record.
+      COPY SA DD
+      LDA FL2NO                %Load file number of destination file.
+      LDX (PAGE                %Address of double word with page address.
+      MON 251                  %Monitor call CopyPage.
+      JMP ERROR                %Destination error, error number in register A.
+      JMP ERROR                %Source error, EOF if finished, error number in A.
+      STD PAGNO                %Normal return, store page number of missing page.
+      STT LAST                 %Store page number of last missing page.
+      STX LAST + 1
+      ...
+      ERROR, ...               %Error number in register A.
+      ...
+      FL1NO, ...
+      FL2NO, ...
+      PAGE, ...                %A double word.
+      BUFF, 0
+      0                        %Buffer to receive a short magtape record.
+      PAGNO, 0
+      0                        %A double word.
+      LAST, 0
+      0                        %A double word.
+    mon_number: 251
+    notes: ''
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: true
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 0
+  line: 5194
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: true
+  ocr_corrected: false

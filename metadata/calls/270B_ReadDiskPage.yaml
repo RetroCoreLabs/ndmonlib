@@ -1,0 +1,133 @@
+# SINTRAN III Monitor Call: ReadDiskPage
+# Octal: 270B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 270B
+name: ReadDiskPage
+short_names:
+- RDPAG
+description: |-
+  Reads one or more directory pages. Any page can be read.
+
+  - The directory must be reserved with ReserveDir.
+see_also:
+- WriteDiskPage
+parameters:
+- name: DirIndex
+  type: INTEGER
+  io: I
+  description: Directory index. See GetDirUserIndexes.
+- name: Buffer
+  type: ARRAY
+  io: O
+  description: Buffer to receive pages (must start on even byte address).
+- name: PageAddr
+  type: INTEGER
+  io: I
+  description: Address of the pages on the disk (double word).
+- name: NoOfPages
+  type: INTEGER
+  io: I
+  description: Number of pages to transfer. Each page is 2048 bytes.
+examples:
+  pascal:
+    available: true
+    code: |-
+      DirIndex, NoOfPages : INTEGER2;
+      PageAddr : LONGINT;
+      Buffer : ARRAY [0..63] OF RECORD...END;
+      ...
+      ReadDiskPage(DirIndex, Buffer, PageAddr, NoOfPages);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DirIndex COMP.
+      01 NoOfPages COMP.
+      01 PageAddr COMP PIC S9(10).
+      01 Buffer.
+         02 array COMP OCCURS 1024 TIMES.
+      01 ErrCode COMP.
+         ...
+      MONITOR-CALL "ReadDiskPage" USING DirIndex, Buffer, PageAddr, NoOfPages.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DirIndex, NoOfPages
+      INTEGER*4 PageAddr
+      INTEGER Buffer(1024)
+      ...
+      Monitor_Call('ReadDiskPage', DirIndex, Buffer(1), PageAddr, NoOfPages)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DirIndex, NoOfPages
+      INTEGER4 : PageAddr
+      BYTES : Buffer(0:2047)
+      ...
+      ON ROUTINEERROR DO
+        IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('ReadDiskPage', DirIndex, Buffer(0), PageAddr, NoOfPages)
+  assembly_500:
+    available: true
+    code: |-
+      DirIndex : W BLOCK 1
+      PageAddr : W BLOCK 1
+      NoOfPages : W BLOCK 1
+      Buffer : H BLOCK 1024 % Must start on an even byte address.
+      ErrCode : W BLOCK 1
+      ReadDiskPage : EQU 37B9 + 270B
+
+      ...
+      CALLG ReadDiskPage, 4,. DirIndex, Buffer, PageAddr, NoOfPages
+      IF K GO ERROR
+      ...
+
+      ERROR : W1 =: ErrCode % ErrorCode in W1 register.
+    octal_definition: 37B9 + 270B
+  mac:
+    available: true
+    code: |-
+      LDT DIRIX % Directory index.
+      LDX (BUFF % Address of buffer to receive data read.
+      LDA COUNT % Number of pages to transfer.
+      COPY SA DD
+      LDA (PAGNO % Address of double word with disk page address.
+      MON 270 % Monitor call ReadDiskPage.
+      JMP ERROR % Error return from monitor call.
+      ... % Normal return.
+      ERROR, ... % Error number in register A.
+      ...
+      DIRIX, ...
+      BUFF, 0
+      *+4000/      % Make a buffer of 2048 words.
+      PAGNO, ...  % A double word.
+      ...
+      COUNT, 2    % Read 2 pages of 1024 words.
+
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | Background programs |
+      |-------------------|-------------------------|---------------------|
+    mon_number: 270
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 397
+  line: 17950
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

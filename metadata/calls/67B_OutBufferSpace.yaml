@@ -1,0 +1,153 @@
+octal: 67B
+name: OutBufferSpace
+short_names:
+- OSIZE
+description: 'Gets the number of free bytes in the output buffer (number of bytes which can be written
+  before the program must wait). Terminals and other character devices place output in a buffer. Monitor
+  calls like OutByte writes to this buffer.
+
+
+  - Use ExecutionInfo to get the logical device number for terminals. You can specify 1 for your own terminal.
+
+  - This monitor call is not available for internal devices. Use InBufferSpace and subtract this size
+  from the inbuffer size.'
+see_also:
+- ClearOutBuffer
+- InBufferSpace
+parameters:
+- name: DeviceNumber
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B. Use 1 for your own terminal.
+- name: NoOfBytes
+  type: INTEGER2
+  io: O
+  description: Number of free bytes in output buffer (output, returned in W1).
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNumber, NoOfBytes : INTEGER2;
+
+      ...
+
+      OutBufferSpace(DeviceNumber, NoOfBytes);
+
+      IF ErrCode <> 0 THEN ...'
+  cobol:
+    available: true
+    code: '01 DeviceNumber  COMP.
+
+      01 NoOfBytes     COMP.
+
+      01 ErrCode       COMP.
+
+      ...
+
+      MONITOR-CALL "OutBufferSpace" USING DeviceNumber, NoOfBytes.
+
+      CALL "CbError" USING ErrCode.
+
+      IF ErrCode NOT = 0 GO ...'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNumber, NoOfBytes
+
+      ...
+
+      Monitor_Cal1(''OutBufferSpace'', DeviceNumber, NoOfBytes)
+
+      IF (ErrCode .NE. 0) THEN ...'
+  planc:
+    available: true
+    code: "INTEGER : DeviceNumber, NoOfBytes\n...\nON ROUTINEERROR DO\n    IF ErrCode > 0 THEN ...\nENDON\n\
+      Monitor_Call('OutBufferSpace', DeviceNumber, NoOfBytes)"
+  assembly_500:
+    available: true
+    code: "DeviceNumber : W BLOCK 1\nNoOfBytes : W BLOCK 1\nErrCode : W BLOCK 1\nOutBufferSpace : EQU\
+      \ 37B9 + 67B\n    ...\n    CALLG OutBufferSpace, 1, DeviceNumber\n    IF K GO ERROR\n    W1 =: NoOfBytes\
+      \           %Result is returned in W1 register.\n    ...\nERROR : W1 =: ErrCode        %ErrorCode\
+      \ in W1 register."
+    octal_definition: 37B9 + 67B
+  mac:
+    available: true
+    code: "    LDT DEVNO                %Logical device number.\n    MON 67                   %Monitor\
+      \ call OutBufferSpace.\n    JMP ERROR                %Error return from monitor call.\n    STA COUNT\
+      \                %Normal return, store number of bytes.\nERROR,\n    ...                      %Error\
+      \ number in register A.\nDEVNO, ...\nCOUNT, 0                     %Number of bytes free space in\
+      \ outbuffer.\n\n\n| ND-100 and ND-500 | All users | All programs |\n|-------------------|-----------|--------------|"
+    mon_number: 67
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: false
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 375
+  line: 16947
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+emulation:
+  status: stub
+  nd500x_handler: nd500x/src/libmon/handlers/mon_67B_OutBufferSpace.c
+  last_updated: '2026-07-17'
+
+  stub_behaviour: >-
+    RETURNS A CONSTANT - SAY SO. 67B OSIZE always answers 2048 free bytes
+    (DEFAULT_BUFFER_SIZE) for any legal device, regardless of how much has been
+    written. nd500x has NO output buffer at all: 2B/24B/162B/504B write straight
+    through to the console and never block, so there is no free-space figure to
+    report and nothing the answer could be measured against. A program that polls
+    67B to pace its output will see infinite space and never throttle - which is
+    harmless here precisely because writes never block.
+
+  parameter_notes:
+    - name: NoOfBytes
+      note: >-
+        Returned in W1/I1 via ctx->set_i1 AND, if a second CALLG argument is present,
+        written to it as a 32-bit word. The manual documents the I1 return; the OUT
+        parameter write is defensive.
+      verified: false
+
+  return_contract:
+    success: 'K flag cleared; NoOfBytes in I1 (always 2048).'
+    errors:
+      - code: 124
+        octal: 174B
+        meaning: 'Illegal parameter (a file number was passed)'
+      - code: 111
+        octal: 157B
+        meaning: 'Missing parameter (no CALLG args)'
+
+  verified:
+    - claim: 'File numbers are rejected.'
+      evidence: 'is_mass_storage_file(device_no) -> error 124 (174B) in mon_67B_OutBufferSpace.c.'
+
+  unverified:
+    - >-
+      THAT 2048 IS A PLAUSIBLE FIGURE. It is nd500x's own DEFAULT_BUFFER_SIZE, not a
+      real SINTRAN buffer size read from anywhere. The real per-device output buffer
+      size is not in the scanned pages.
+    - >-
+      THE CARVE WAS NOT MINED FOR THIS ENTRY. A carve folder exists at
+      NDInsight/tools/sintran-segment-carver/versions/L-VSX-500/re/mon-analysis/067B-OutBufferSpace/
+      and has NOT been read into this block. It may well carry the real buffer
+      accounting.
+    - >-
+      The manual says "This monitor call is not available for internal devices."
+      nd500x does not model internal devices and so cannot reject them; it rejects
+      only file numbers. The error code for the internal-device case is unknown.
+    - >-
+      Error 124 (174B) for the file-number case is a CHOICE, not a read value.
+    - >-
+      NO OBSERVED CALLER. No traced program issues 67B.
+
+  sources:
+    - doc: 'SINTRAN III Monitor Calls (ND-860228.2 EN)'
+      note: 'The manual body of this YAML.'

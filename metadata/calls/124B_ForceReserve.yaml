@@ -1,0 +1,128 @@
+octal: 124B
+name: ForceReserve
+short_names:
+- PRSRV
+description: 'Reserves a device for an RT program other than that which is calling. Use ForceRelease if
+  the device is already reserved.
+
+
+  - You can only release peripheral devices, such as terminals and printers, and semaphores in this way.
+
+  - Programs in a waiting queue may reserve the device between your ForceRelease and ForceReserve calls
+  if they have higher priority than your program.
+
+  - The SINTRAN III Real Time Guide (ND-860133) describes this in more detail.'
+see_also:
+- ForceRelease
+- ReserveResource
+- and @PRSRV
+parameters:
+- name: DeviceNo
+  type: INTEGER2
+  io: I
+  description: Logical device number. See appendix B.
+- name: IOFlag
+  type: INTEGER2
+  io: I
+  description: Input/output flag. 0=input part, 1=output part.
+- name: RTProgram
+  type: INTEGER2
+  io: I
+  description: RT description address of the RT program to reserve the device. Use 0 for your own program.
+examples:
+  pascal:
+    available: true
+    code: 'DeviceNo, IOflag, RTProgram, Stat : INTEGER2;
+
+      ...
+
+
+      PrivReserve(DeviceNo, IOflag, RTProgram, Stat); [Note routine name.]'
+  cobol:
+    available: true
+    code: '01 DeviceNo COMP.
+
+      01 IOFlag COMP.
+
+      01 RTProgram COMP.
+
+      01 Stat COMP.
+
+      ...
+
+      MONITOR-CALL "ForceReserve" USING DeviceNo, IOFlag, RTProgram, Stat.'
+  fortran:
+    available: true
+    code: 'INTEGER DeviceNo, IOFlag, RTProgram, Stat
+
+      ...
+
+      Monitor_Call(''ForceReserve'', DeviceNo, IOFlag, RTProgram, Stat)'
+  planc:
+    available: true
+    code: 'INTEGER : DeviceNo, IOFlag, RTProgram, Stat
+
+      ...
+
+      Monitor_Call(''ForceReserve'', DeviceNo, IOFlag, RTProgram, Stat)'
+  assembly_500:
+    available: true
+    code: 'DeviceNo : W BLOCK 1
+
+      IOFlag : W BLOCK 1
+
+      RTProgram : W BLOCK 1
+
+      ForceReserve : EQU 3789 + 124B
+
+      ...
+
+      CALLG ForceReserve, 3, DeviceNo, IOFlag, RTProgram'
+    octal_definition: 37B9 + 124B
+  mac:
+    available: true
+    code: 'LDA (PAR  %Load register A with address of parameter list.
+
+      MON 124  %Monitor call ForceReserve.
+
+      STA STAT %Store status returned.
+
+      ...
+
+      STAT, 0
+
+      PAR, DEVNO  %Logical device number.
+
+      IOF  %Input or Output flag.
+
+      RTPRO %Address of RT description.
+
+      ...
+
+      DEVNO, ...
+
+      IOF, ...
+
+      RTPRO, ...
+
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |'
+    mon_number: 124
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 211
+  line: 9072
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

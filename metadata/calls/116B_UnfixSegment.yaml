@@ -1,0 +1,88 @@
+# SINTRAN III Monitor Call: UnfixSegment
+# Octal: 116B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 116B
+name: UnfixSegment
+short_names:
+- UNFIX
+description: |-
+  Releases a fixed segment and removes it from the Page Index Table (PIT). Its pages may then be swapped from physical memory to the disk. Use FixScattered or FixContiguous to fix the segment.
+
+  - You must use UnFixSegment or @UNFIX to allow the RT-LOADER to clear the segment.
+see_also:
+- FixInMemory
+- MemoryAllocation
+- FixIOArea
+- and @UNFIX
+parameters:
+- name: SegmentNumber
+  type: INTEGER
+  io: I
+  description: Segment number to be released.
+examples:
+  pascal:
+    available: true
+    code: |-
+      SegmentNumber : INTEGER2;
+      ...
+      UnFixSegment(SegmentNumber);
+  cobol:
+    available: true
+    code: |-
+      01 SegmentNumber COMP.
+      ...
+      MONITOR-CALL "UnfixSegment" USING SegmentNumber.
+  fortran:
+    available: true
+    code: |-
+      INTEGER SegmentNumber
+      ...
+      Monitor_Call('UnfixSegment', SegmentNumber)
+  planc:
+    available: true
+    code: |-
+      INTEGER : SegmentNumber
+
+      ...
+
+      Monitor_Call('UnfixSegment', SegmentNumber)
+  assembly_500:
+    available: true
+    code: |-
+      SegmentNumber : W BLOCK 1
+      UnfixSegment : EQU 37B9 + 116B
+      ...
+
+      CALLG UnfixSegment, 1, SegmentNumber
+    octal_definition: 37B9 + 116B
+  mac:
+    available: true
+    code: |-
+      | LDA            | (PAR         | %Load register A with address of parameter list.  |
+      | MON 116        |              | %Monitor call UnfixSegment.                       |
+      | ...            |              |                                                   |
+      | PAR, SEGNO     |              | %Segment number to be unfixed.                    |
+      | ...            |              |                                                   |
+      | SEGNO, ...     |              |                                                   |
+
+
+      | ND-100 and ND-500  | User RT and user SYSTEM | RT programs |
+    mon_number: 116
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 553
+  line: 25433
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

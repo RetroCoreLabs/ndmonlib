@@ -1,0 +1,116 @@
+# SINTRAN III Monitor Call: GetRTDescr
+# Octal: 27B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 27B
+name: GetRTDescr
+short_names:
+- RTDSC
+description: |-
+  Reads an RT description. The RT description contains various information about an RT program. You specify the RT program address. See the SINTRAN III Real Time Guide (ND-860133) for further details.
+
+  - Use GetRTAddress if you only know the name of the RT program.
+  - This monitor call is only available to background programs in SINTRAN III VSX, version K.
+see_also:
+- GetOwnRTAddress
+- '@LIST-RT-DESCRIPTION'
+parameters:
+- name: RTProgram
+  type: INTEGER
+  io: I
+  description: RT description address. Use 0 for the calling RT program.
+- name: RTDescriptor
+  type: ARRAY
+  io: O
+  description: A 52 byte buffer receiving RT description.
+- name: NoOfConnDev
+  type: INTEGER
+  io: O
+  description: Number of devices connected to the RT program through StartOnInterrupt. Returns -1 on invalid RT description address.
+examples:
+  pascal:
+    available: true
+    code: |-
+      RTPogram, NoOfConnDev : INTEGER2;
+      RTDescriptor : ARRAY [0..1] OF RECORD...END;
+      ...
+      GetRTDescr(RTProgram, RTDescriptor, NoOfConnDev);
+  cobol:
+    available: true
+    code: |-
+      01  RTProgram COMP.
+      01  NoOfConnDev COMP.
+      01  RTDescriptor.
+         02  array COMP OCCURS 26 TIMES.
+      ...
+      MONITOR-CALL "GetRTDescr" USING RTProgram, RTDescriptor, NoOfConnDev.
+  fortran:
+    available: true
+    code: |-
+      INTEGER  RTProgram, NoOfConnDev
+      INTEGER  RTDescriptor(26)
+      ...
+      Monitor_Call('GetRTDescr', RTProgram, RTDescriptor(1), NoOfConnDev)
+  planc:
+    available: true
+    code: |-
+      INTEGER : RTProgram, NoOfConnDev
+      BYTES : RTDescriptor(0:51)
+      ...
+      Monitor_Call('GetRTDescr', RTProgram, RTDescriptor(0), NoOfConnDev)
+  assembly_500:
+    available: true
+    code: |-
+      RTProgram : W BLOCK 1
+      NoOfConnDev : W BLOCK 1
+      RTDescriptor : H BLOCK 32B
+      GetRTDescr : EQU 37B9 + 27B
+      ...
+      CALLG GetRTDescr, 2, RTProgram, RTDescriptor
+      IF K GO Error
+      W1 =: NoOfConnDev %Result is returned in W1 register.
+      ...
+      Error, ...
+    octal_definition: 37B9 + 27B
+  mac:
+    available: true
+    code: |-
+      LDA (PAR %Load register A with address of parameter list.
+      MON 27 %Monitor call GetRTDescr.
+      JAN ERROR %Handle error if register A is negative.
+      STA NODEV %Store number of connected devices.
+      ...
+      ERROR, ... %Handle this error, register A = -1.
+      ...
+      NODEV, 0
+      PAR, RTPRO %Address of RT description.
+      BUFF %Buffer receiving RT description.
+
+      ...
+      RTPRO, ...
+      BUFF, 0
+      *+32B/ %Make a 52 byte buffer.
+
+
+      | ND-100 and ND-500 | User RT and user SYSTEM | RT programs |
+      |-------------------|-------------------------|-------------|
+
+      Scanned by Jonny Oddene for Sintran Data © 2020
+    mon_number: 27
+compatibility:
+  nd100: true
+  nd500: true
+  user_programs: false
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 271
+  line: 11955
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

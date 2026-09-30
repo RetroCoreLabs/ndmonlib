@@ -1,0 +1,73 @@
+# SINTRAN III Monitor Call: GetSIBASMessage
+# Octal: 305B
+# Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (section 2.14).
+octal: 305B
+name: GetSIBASMessage
+short_names:
+- MSIBB
+description: >-
+  Retrieves a message from the SIBAS database system (server side of the SIBAS
+  inter-process communication via RT-common). Internal-use call (manual section
+  2.14). Contract is RE-derived from the labelled handler bodies.
+notes:
+- >-
+    Internal-use monitor call (manual section 2.14); not intended for user programs.
+- >-
+    Handlers MAPSIB / MSIBB at RP-P2-MONCALLS.NPL:1745 / :1822 - SIBAS client and
+    server entries. VERIFIED (labelled handler bodies read).
+- >-
+    Caller signature (CALLG/register contents) is not confirmed from the available
+    source.
+see_also:
+- SendSIBASMessage
+- AnswerSIBAS
+parameters: []
+examples:
+  pascal:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  cobol:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  fortran:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  planc:
+    available: false
+    code: ''
+    notes: Reverse-engineered internal call; caller signature unverified.
+  assembly_500:
+    available: false
+    code: ''
+    octal_definition: 37B9 + 305B
+    notes: Reverse-engineered internal call; caller signature unverified.
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available.
+compatibility:
+  nd100: true
+  nd500: false
+  user_programs: false
+  rt_programs: false
+  system_programs: true
+source:
+  document: >-
+    Reverse-engineered from SINTRAN III NPL source + ND-860228-2-EN manual (section 2.14)
+  handler: >-
+    RP-P2-MONCALLS.NPL:1745 (MAPSIB), :1822 (MSIBB)
+  analysis: tools/sintran-segment-carver/versions/L-VSX-500/re/TASK-05-results.md
+  page: 0
+  line: 0
+  scan_date: ''
+  scanned_by: ''
+extraction:
+  date: '2026-07-10'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
+  method: NPL source reverse-engineering (verified handler body)

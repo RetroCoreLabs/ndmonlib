@@ -1,0 +1,114 @@
+# SINTRAN III Monitor Call: TerminalStatus
+# Octal: 330B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 330B
+name: TerminalStatus
+short_names:
+- TERST
+description: |-
+  Gets information about a terminal. The user logged in, the time logged in, the CPU time used, the job being executed, and more is returned.
+
+  - You may use the monitor call for batch jobs.
+  - This call can only be used from background programs, not RT programs.
+notes:
+- >-
+    Version history: in the M-version the CPU-time returned by MON 330 (TERST) is
+    now the sum of the ND-100 CPU time and the ND-500/5000 CPU time
+    (ND-860230-7A-EN SINTRAN III - Release Information - M-Version.md:1186-1188).
+see_also:
+- '@TERMINAL-STATUS'
+parameters:
+- name: DeviceNumber
+  type: INTEGER
+  io: I
+  description: Logical device number of a terminal. Use 1 for your own terminal.
+- name: Buffer
+  type: ARRAY
+  io: O
+  description: '44 byte buffer receiving terminal info: bytes 0-15=user name, 16-17=mode (1=command, 2=program), 18-19=state (-1=not logged in, 0=idle batch, 1=active), 20-21=CPU time (min), 22-23=time logged in (min), 24-43=last command.'
+examples:
+  pascal:
+    available: true
+    code: |-
+      DeviceNumber : INTEGER2;
+      Buffer : ARRAY [0..1] OF RECORD...END;
+      ...
+      TermStatus(DeviceNumber, Buffer);   [Note routine name.]
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 DeviceNumber COMP.
+      01 Buffer.
+         02 array COMP OCCURS 22 TIMES.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "TerminalStatus" USING DeviceNumber, Buffer.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER DeviceNumber
+      INTEGER Buffer(22)
+      ...
+      Monitor_Call('TerminalStatus', DeviceNumber, Buffer(1))
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : DeviceNumber
+      BYTES : Buffer(0:43)
+      ...
+      ON ROUTINEERROR DO
+          IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('TerminalStatus', DeviceNumber, Buffer(0))
+  assembly_500:
+    available: true
+    code: |-
+      DeviceNumber : W BLOCK 1
+      Buffer : H BLOCK 25B
+      ErrCode : W BLOCK 1
+      TerminalStatus : EQU 37B9 + 330B
+      ...
+      CALLG TerminalStatus, 2, DeviceNumber, Buffer
+      IF K GO ERROR
+      ...
+      ERROR : W1 =: ErrCode
+             %ErrorCode in W1 register.
+    octal_definition: 37B9 + 330B
+  mac:
+    available: true
+    code: |-
+      LDT LDN       %Load register T with the logical device number.
+      LDA (BUF      %Load register A with address of return buffer.
+      MON 330       %Monitor call TerminalStatus.
+      STA STAT      %Returned status.
+      ...
+      LDN, 1
+      BUF, 0
+      *+26/         %Buffer of 44 bytes.
+      STAT, 0
+
+
+      | ND-100 and ND-500 | All users | All programs |
+    mon_number: 330
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 537
+  line: 24708
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false

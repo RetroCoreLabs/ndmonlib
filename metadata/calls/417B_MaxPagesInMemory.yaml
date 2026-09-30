@@ -1,0 +1,95 @@
+# SINTRAN III Monitor Call: MaxPagesInMemory
+# Octal: 417B
+# Extracted from: Monitor Calls.md (ND-860228.2 EN)
+
+octal: 417B
+name: MaxPagesInMemory
+short_names:
+- MXPISG
+description: |-
+  Sets the maximum number of pages a segment may have in physical memory at a time.
+
+  - This monitor call applies to ND-500 logical segments only.
+  - The segment must be in use.
+see_also:
+- FixInMemory
+parameters:
+- name: SegmentNo
+  type: INTEGER
+  io: I
+  description: Logical segment number in your domain. Use 0 to derive from parameter address.
+- name: SegType
+  type: INTEGER
+  io: I
+  description: 'Segment type: 0=data segments, 1=program segments.'
+- name: NoOfPages
+  type: INTEGER
+  io: I
+  description: Number of pages.
+examples:
+  pascal:
+    available: true
+    code: |-
+      SegmentNo, SegType, NoOfPages : LONGINT;
+      ...
+      MaxPagesInMemory(SegmentNo, SegType, NoOfPages);
+      IF ErrCode <> 0 THEN ...
+  cobol:
+    available: true
+    code: |-
+      01 SegmentNo COMP.
+      01 SegType COMP.
+      01 NoOfPages COMP.
+      01 ErrCode COMP.
+      ...
+      MONITOR-CALL "MaxPagesInMemory" USING SegmentNo, SegType, NoOfPages.
+      CALL "CbError" USING ErrCode.
+      IF ErrCode NOT = 0 GO ...
+  fortran:
+    available: true
+    code: |-
+      INTEGER SegmentNo, SegType, NoOfPages
+      ...
+      Monitor Call('MaxPagesInMemory', SegmentNo, SegType, NoOfPages)
+      IF (ErrCode .NE. 0) THEN ...
+  planc:
+    available: true
+    code: |-
+      INTEGER : SegmentNo, SegType, NoOfPages
+      ...
+      ON ROUTINEERROR DO
+      &nbsp;&nbsp;&nbsp;&nbsp;IF ErrCode > 0 THEN ...
+      ENDON
+      Monitor_Call('MaxPagesInMemory', SegmentNo, SegType, NoOfPages)
+  assembly_500:
+    available: true
+    code: |-
+      SegmentNo : W BLOCK 1
+      SegType : W BLOCK 1
+      NoOfPages : W BLOCK 1
+      MaxPagesInMemory : EQU 37B9 + 417B
+      ...
+      &nbsp;&nbsp;&nbsp;&nbsp;CALLG MaxPagesInMemory, 3, SegmentNo, SegType, NoOfPages
+    octal_definition: 37B9 + 417B
+  mac:
+    available: false
+    code: ''
+    mon_number: null
+    notes: Not available
+compatibility:
+  nd100: false
+  nd500: false
+  user_programs: true
+  rt_programs: true
+  system_programs: false
+source:
+  document: SINTRAN III Monitor Calls (ND-860228.2 EN)
+  page: 341
+  line: 15351
+  scan_date: '2020'
+  scanned_by: Jonny Oddene for Sintran Data
+extraction:
+  date: '2025-01-06'
+  version: '1.0'
+  validated: false
+  ocr_corrected: false
