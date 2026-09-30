@@ -1,13 +1,13 @@
 # ndmonlib — SINTRAN III MON Call Emulation Library
 
+**Documentation: [https://retrocorelabs.github.io/ndmonlib/](https://retrocorelabs.github.io/ndmonlib/)** - one page per MON call (manual text, parameters, examples, ndmonlib status and handler notes), rebuilt on every push to `main`.
+
 > Production-grade emulation of SINTRAN III MON operating system calls for Norsk Data ND-series emulators.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![MON calls](https://img.shields.io/badge/MON%20calls-234%20registered-blue)]()
 [![C11](https://img.shields.io/badge/std-C11-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-
-**Documentation site:** https://retrocorelabs.github.io/ndmonlib/ - one page per MON call (manual text, parameters, examples, ndmonlib status and handler notes), rebuilt on every push to `main`.
 
 ## Overview
 
