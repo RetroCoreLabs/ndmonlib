@@ -204,38 +204,92 @@ def title_of(key):
     return str(key).replace("_", " ").capitalize()
 
 
+def is_scalar(v):
+    return not isinstance(v, (dict, list))
+
+
+def flat_cell(v):
+    """A value as one table cell, or None if it is too deeply nested."""
+    if is_scalar(v):
+        return cell_value(v)
+    if isinstance(v, dict) and all(is_scalar(x) for x in v.values()):
+        return "<br>".join("%s: %s" % (esc(title_of(k)), cell_value(x)) for k, x in v.items())
+    if isinstance(v, list) and all(is_scalar(x) for x in v):
+        return "<br>".join(cell_value(x) for x in v)
+    return None
+
+
+def render_records(records, indent):
+    """A list of records. Short records: one table, a column per field.
+    Long records: one two-column table each, titled by the first field."""
+    keys = []
+    for r in records:
+        keys.extend(k for k in r if k not in keys)
+    cells = [{k: flat_cell(r[k]) for k in r} for r in records]
+    longest = max((len(c) for r in cells for c in r.values()), default=0)
+    out = [""]
+    if len(keys) <= 4 and longest <= 160:
+        out.append(indent + "| " + " | ".join(esc(title_of(k)) for k in keys) + " |")
+        out.append(indent + "|" + "|".join("---" for _ in keys) + "|")
+        for r in cells:
+            out.append(indent + "| " + " | ".join(r.get(k, "") for k in keys) + " |")
+        out.append("")
+        return out
+    for n, (r, c) in enumerate(zip(records, cells), 1):
+        first = next(iter(r))
+        title = c[first] if is_scalar(r[first]) else ""
+        out.append(indent + "**%d. %s**" % (n, title) if title else indent + "**%d.**" % n)
+        out.append("")
+        out.append(indent + "| Field | Value |")
+        out.append(indent + "|---|---|")
+        for k in r:
+            if title and k == first:
+                continue
+            out.append(indent + "| %s | %s |" % (esc(title_of(k)), c[k]))
+        out.append("")
+    return out
+
+
 def render_value(value, indent=""):
+    """Free-form YAML as Markdown: lists of records become tables, other
+    values become bullets with one field per line."""
     out = []
     if isinstance(value, dict):
         for k, v in value.items():
-            if isinstance(v, (dict, list)):
-                out.append("%s- **%s**" % (indent, esc(title_of(k))))
-                out.extend(render_value(v, indent + "    "))
-            else:
+            if is_scalar(v):
                 out.append("%s- **%s**: %s" % (indent, esc(title_of(k)), inline(v)))
-    elif isinstance(value, list):
-        for item in value:
-            if isinstance(item, dict):
-                first = True
-                for k, v in item.items():
-                    lead = "- " if first else "  "
-                    first = False
-                    if isinstance(v, (dict, list)):
-                        out.append("%s%s**%s**" % (indent, lead, esc(title_of(k))))
-                        out.extend(render_value(v, indent + "    "))
-                    else:
-                        out.append("%s%s**%s**: %s" % (indent, lead, esc(title_of(k)), inline(v)))
-            elif isinstance(item, list):
-                out.extend(render_value(item, indent + "    "))
             else:
-                out.append("%s- %s" % (indent, inline(item)))
+                out.append("%s- **%s**" % (indent, esc(title_of(k))))
+                out.append("")
+                out.extend(render_value(v, indent + "    "))
+    elif isinstance(value, list):
+        if value and all(isinstance(i, dict) and all(flat_cell(x) is not None for x in i.values())
+                         for i in value):
+            out.extend(render_records(value, indent))
+        else:
+            for item in value:
+                if isinstance(item, dict):
+                    out.extend(render_value(item, indent))
+                    out.append("")
+                elif isinstance(item, list):
+                    out.extend(render_value(item, indent + "    "))
+                else:
+                    out.append("%s- %s" % (indent, inline(item)))
     else:
         out.append(indent + inline(value))
     return out
 
 
+def cell_value(v):
+    if isinstance(v, bool):
+        return "Yes" if v else "No"
+    return cell(v).strip()
+
+
 def inline(v):
     """One value as Markdown text; line breaks kept."""
+    if isinstance(v, bool):
+        return "Yes" if v else "No"
     text = esc(v).strip()
     return text.replace("\n", "<br>")
 
