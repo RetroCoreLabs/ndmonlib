@@ -269,8 +269,47 @@ MonResult mon_dvinst_read(MonContext* ctx, uint32_t device_no,
     uint32_t bytes_read = 0;
     int ch;
 
+    /* LOGICAL DEVICE 0 IS THE SINTRAN COMMAND BUFFER - the invocation command line,
+     * always ending in CR - for EVERY input call, not only MON 1B INBT. Manual, 1B
+     * INBT: "Background programs may read from logical device number 0. This is the
+     * SINTRAN III command buffer. You may read parameters following the program
+     * name this way." A program started with no arguments therefore reads a lone CR
+     * from it at once, and NC reads exactly that CR on device 0 and then switches
+     * to the terminal (device 1) and prints "NC:".
+     *
+     * Before this, DVINST had no device 0 case: it fell into the terminal branch
+     * below, found the console empty and suspended, so a bare "NC" printed its
+     * banner and then waited for a CR that the shell had already moved into the
+     * command buffer where nothing read it. Both calls now take device 0 from the
+     * same function, mon_read_command_buffer_char(), so they cannot disagree.
+     *
+     * No echo: the line was echoed when it was typed. Once the buffer and its CR
+     * are consumed this reads nothing, and the call continues below exactly as it
+     * did before - what a device-0 read returns past the CR is still unproven. */
+    bool from_command_buffer = false;
+    if (device_no == 0) {
+        while (bytes_read < max_bytes) {
+            ch = mon_read_command_buffer_char();
+            if (ch == -1) {
+                break;
+            }
+            buffer[bytes_read++] = (uint8_t)ch;
+            if (is_break_char_ex((uint8_t)ch, break_strat, break_table_ptr, eight_bit_io)) {
+                break;
+            }
+        }
+        from_command_buffer = (bytes_read > 0);
+        if (from_command_buffer) {
+            mon_log(MON_LOG_DEBUG, MON_ID_503B ": Read %u bytes from the command buffer (device 0)",
+                    bytes_read);
+        }
+    }
+
     /* Route by device class */
-    if (is_character_device(device_no) || is_terminal(device_no)) {
+    if (from_command_buffer) {
+        /* already served from the command buffer above */
+    }
+    else if (is_character_device(device_no) || is_terminal(device_no)) {
         /* Character device or terminal: use console I/O */
         ConsoleIO* console = mon_file_table_get_console();
 
