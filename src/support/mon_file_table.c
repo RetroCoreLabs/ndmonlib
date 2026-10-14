@@ -1716,13 +1716,16 @@ static uint32_t unix_to_nd_date(time_t t) {
         year += 10;
     }
 
+    /* Every field is shifted as uint32_t: a year offset of 32 or more shifted 26 places
+     * as an int does not fit in the int (undefined behaviour; UBSan stops the tests at
+     * the year offset 56, 2006, which every date after 2013 folds to). */
     uint32_t nd_date = 0;
-    nd_date |= ((year - 1950) & 0x3F) << 26;   /* Year offset (6 bits) */
-    nd_date |= ((tm->tm_mon + 1) & 0x0F) << 22; /* Month 1-12 (4 bits) */
-    nd_date |= (tm->tm_mday & 0x1F) << 17;      /* Day (5 bits) */
-    nd_date |= (tm->tm_hour & 0x1F) << 12;      /* Hour (5 bits) */
-    nd_date |= (tm->tm_min & 0x3F) << 6;        /* Minute (6 bits) */
-    nd_date |= (tm->tm_sec & 0x3F);             /* Second (6 bits) */
+    nd_date |= ((uint32_t)(year - 1950) & 0x3Fu) << 26;   /* Year offset (6 bits) */
+    nd_date |= ((uint32_t)(tm->tm_mon + 1) & 0x0Fu) << 22; /* Month 1-12 (4 bits) */
+    nd_date |= ((uint32_t)tm->tm_mday & 0x1Fu) << 17;      /* Day (5 bits) */
+    nd_date |= ((uint32_t)tm->tm_hour & 0x1Fu) << 12;      /* Hour (5 bits) */
+    nd_date |= ((uint32_t)tm->tm_min & 0x3Fu) << 6;        /* Minute (6 bits) */
+    nd_date |= ((uint32_t)tm->tm_sec & 0x3Fu);             /* Second (6 bits) */
 
     return nd_date;
 }
