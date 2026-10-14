@@ -121,8 +121,17 @@ MonResult mon_1B_InByte(MonContext* ctx) {
             return MON_ERROR;
         }
 
+        /* The input has ended for good (stdin was a pipe or a file and the host
+         * read its end). The manual has no "byte 0" for this: a read past the end
+         * of input is the error return with Standard Error Code 3, end of file
+         * (ND-860228.2, InByte "Standard Error Code"; appendix A; the MAC example
+         * of section 1.7 reads a file with MON 1 and stops on that error return).
+         * Until 2026-10-14 this returned the byte 0 with no error, which a program
+         * reading a line took for data. */
         if (byte_read == EOF || byte_read < 0) {
-            byte_read = 0;  /* Return 0 on EOF */
+            mon_log(MON_LOG_DEBUG, MON_ID_1B ": End of input on device %o", device_no);
+            mon_set_error(ctx, MON_ERR_END_OF_FILE);  /* 003B End of file */
+            return MON_ERROR;
         }
 
         mon_log(MON_LOG_DEBUG, MON_ID_1B ": Read byte 0x%02X ('%c') from console",
@@ -140,8 +149,11 @@ MonResult mon_1B_InByte(MonContext* ctx) {
         if (entry->host_file) {
             byte_read = fgetc(entry->host_file);
             if (byte_read == EOF) {
-                byte_read = 0;  /* Return 0 on EOF */
+                /* A read past the end of a file is the error return with Standard
+                 * Error Code 3, end of file (manual, as above) - not the byte 0. */
                 mon_log(MON_LOG_DEBUG, MON_ID_1B ": EOF on file %o", device_no);
+                mon_set_error(ctx, MON_ERR_END_OF_FILE);  /* 003B End of file */
+                return MON_ERROR;
             } else {
                 entry->current_position++;
                 mon_log(MON_LOG_DEBUG, MON_ID_1B ": Read byte 0x%02X from file %o, pos=%o",
