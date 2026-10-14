@@ -230,6 +230,60 @@ static void test_outbt_writes_survive_close_truncation(void) {
           "the file is exactly the 5 bytes written - not 0 (length untracked) and not 500 (no truncation)");
 }
 
+/* The byte InByte puts in W1 on success; the mock CPU is only this word. */
+static int32_t last_w1;
+static void mock_set_w1(void* cpu, int32_t code) { (void)cpu; last_w1 = code; }
+
+/* Drive MON 1B INBT: read one byte from an open file number. */
+static MonResult call_inbt(MonContext* ctx, uint32_t file_no) {
+    init_ctx(ctx);
+    ctx->set_error_code = mock_set_w1;
+    mock_write_word(NULL, 0x300, file_no);
+    mock_write_word(NULL, 0x304, 0xFFFF);
+    ctx->arg_count = 2;
+    ctx->arg_addresses[0] = 0x300;
+    ctx->arg_addresses[1] = 0x304;
+    ctx->mon_number = 1;    /* 1B */
+    return mon_dispatch(ctx);
+}
+
+/* THE BUG THIS GUARDS: a read past the end of a file returned the byte 0 with no
+ * error, so a program that reads until the error return never saw one and took
+ * the 0 for data. The manual (ND-860228.2, InByte; appendix A; the MAC example of
+ * section 1.7) gives the error return with Standard Error Code 3, end of file. */
+static void test_inbt_past_the_end_reports_003B(void) {
+    MonContext ctx;
+    uint32_t fno;
+    char path[1024];
+    FILE* f;
+
+    printf("== 1B INBT past the end of a file ==\n");
+    host_path_of(path, sizeof(path), "TWOBYTES.DATA");
+    f = fopen(path, "wb");
+    if (!f) { check(0, "the test file can be made"); return; }
+    fputs("AB", f);
+    fclose(f);
+
+    if (call_open(&ctx, 0, ACCESS_SEQ_READ, "TWOBYTES", "DATA") != MON_SUCCESS) {
+        check(0, "access-1 open of the file succeeds");
+        return;
+    }
+    fno = mock_read_word(NULL, 0x100);
+
+    check(call_inbt(&ctx, fno) == MON_SUCCESS && ctx.error_flag == 0, "first byte is read");
+    check(mock_read_word(NULL, 0x304) == 'A', "it is A");
+    check(call_inbt(&ctx, fno) == MON_SUCCESS && ctx.error_flag == 0, "second byte is read");
+    check(mock_read_word(NULL, 0x304) == 'B', "it is B");
+
+    check(call_inbt(&ctx, fno) == MON_ERROR, "the third read fails");
+    check(ctx.error_flag == 1, "K flag is set");
+    check(ctx.error_code == MON_ERR_END_OF_FILE, "error is 003B End of file, NOT the byte 0");
+    check(mock_read_word(NULL, 0x304) == 0xFFFF, "no byte was written to the output parameter");
+
+    mon_file_close((int)fno);
+    unlink(path);
+}
+
 int main(void) {
     printf("MON handler integration tests\n\n");
     setup();
@@ -238,6 +292,7 @@ int main(void) {
     test_unquoted_missing_reports_056B();
     test_quoted_create_of_absent_file_succeeds();
     test_outbt_writes_survive_close_truncation();
+    test_inbt_past_the_end_reports_003B();
 
     teardown();
 
