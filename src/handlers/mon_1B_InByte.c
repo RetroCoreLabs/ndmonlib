@@ -125,9 +125,7 @@ MonResult mon_1B_InByte(MonContext* ctx) {
          * read its end). The manual has no "byte 0" for this: a read past the end
          * of input is the error return with Standard Error Code 3, end of file
          * (ND-860228.2, InByte "Standard Error Code"; appendix A; the MAC example
-         * of section 1.7 reads a file with MON 1 and stops on that error return).
-         * Until 2026-10-14 this returned the byte 0 with no error, which a program
-         * reading a line took for data. */
+         * of section 1.7 reads a file with MON 1 and stops on that error return). */
         if (byte_read == EOF || byte_read < 0) {
             mon_log(MON_LOG_DEBUG, MON_ID_1B ": End of input on device %o", device_no);
             mon_set_error(ctx, MON_ERR_END_OF_FILE);  /* 003B End of file */
