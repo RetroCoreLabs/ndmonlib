@@ -41,6 +41,26 @@ MonResult mon_2B_OutByte(MonContext* ctx) {
             device_no, byte_out,
             (byte_out >= 32 && byte_out < 127) ? byte_out : '.');
 
+    /* Character devices 3-77B (appendix B): a device the program has not reserved is
+     * error 5 "Device not reserved"; one it reserved (122B) would take the byte, and no
+     * such device exists here, so the program is stopped by name. Measured under
+     * SINTRAN III (new-planc probes DEV502, DEV503; BUGS.md H19). 0, 1 (own terminal)
+     * and 2 (error device) go to the console below. */
+    if (is_character_device(device_no) && device_no > 2) {
+        if (mon_is_device_reserved(device_no, 1)) {
+            static char why[96];
+            snprintf(why, sizeof why,
+                     "OutByte to logical device %oB: reserved, but there is no such device here",
+                     device_no);
+            mon_request_halt(ctx, why);
+            mon_set_error(ctx, MON_ERR_DEVICE_NOT_RESERVED);
+            return MON_ERROR;
+        }
+        mon_log(MON_LOG_DEBUG, MON_ID_2B ": device %o not reserved", device_no);
+        mon_set_error(ctx, MON_ERR_DEVICE_NOT_RESERVED);  /* 005B Device not reserved */
+        return MON_ERROR;
+    }
+
     /* Route by device class */
     if (is_character_device(device_no) || is_terminal(device_no)) {
         /* Character device or terminal: use console I/O */

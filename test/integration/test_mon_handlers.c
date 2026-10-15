@@ -283,6 +283,25 @@ static void test_inbt_past_the_end_reports_003B(void) {
     unlink(path);
 }
 
+/* OutByte to a character device other than 0, 1 and 2: error 5 "Device not reserved"
+ * when the program has not reserved it; reserved, it stops the program by name, as no
+ * such device exists here (SINTRAN III measurement, new-planc BUGS.md H19). */
+static void test_outbt_to_device_5(void) {
+    MonContext ctx;
+
+    printf("== 2B OUTBT to logical device 5 (line printer 1) ==\n");
+    check(call_outbt(&ctx, 5u, 'X') == MON_ERROR, "not reserved: the call fails");
+    check(ctx.error_flag == 1, "not reserved: K flag is set");
+    check(ctx.error_code == MON_ERR_DEVICE_NOT_RESERVED, "not reserved: error 005B Device not reserved");
+    check(ctx.halt_requested == 0, "not reserved: the program goes on");
+
+    check(mon_reserve_device(5u, 1u, false) >= 0, "the output part of device 5 can be reserved");
+    check(call_outbt(&ctx, 5u, 'X') == MON_ERROR, "reserved: the call fails");
+    check(ctx.halt_requested == 1, "reserved: the program is stopped");
+    check(ctx.halt_reason != NULL && strstr(ctx.halt_reason, "5B") != NULL,
+          "reserved: the message names the device");
+}
+
 int main(void) {
     printf("MON handler integration tests\n\n");
     setup();
@@ -292,6 +311,7 @@ int main(void) {
     test_quoted_create_of_absent_file_succeeds();
     test_outbt_writes_survive_close_truncation();
     test_inbt_past_the_end_reports_003B();
+    test_outbt_to_device_5();
 
     teardown();
 
