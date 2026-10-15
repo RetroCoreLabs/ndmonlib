@@ -247,10 +247,9 @@ static MonResult call_inbt(MonContext* ctx, uint32_t file_no) {
     return mon_dispatch(ctx);
 }
 
-/* THE BUG THIS GUARDS: a read past the end of a file returned the byte 0 with no
- * error, so a program that reads until the error return never saw one and took
- * the 0 for data. The manual (ND-860228.2, InByte; appendix A; the MAC example of
- * section 1.7) gives the error return with Standard Error Code 3, end of file. */
+/* A read past the end of a file is the error return with Standard Error Code 3, end of
+ * file, and writes nothing to the output parameter (ND-860228.2, InByte; appendix A;
+ * the MAC example of section 1.7). */
 static void test_inbt_past_the_end_reports_003B(void) {
     MonContext ctx;
     uint32_t fno;
