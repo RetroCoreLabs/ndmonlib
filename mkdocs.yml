@@ -12,6 +12,10 @@ edit_uri: ""
 
 theme:
   name: material
+  # Adds the RetroCore Labs logo to the header; read relative to build-site/ (see generate_mon_site.py).
+  custom_dir: ../tools/site_overrides
+  icon:
+    repo: fontawesome/brands/github
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
