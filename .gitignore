@@ -43,3 +43,6 @@ SYSTEM/
 
 # Generated documentation site (tools/generate_mon_site.py)
 build-site/
+
+# Working notes for coding agents stay on disk, never in the repository
+CLAUDE.md
