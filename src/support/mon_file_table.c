@@ -347,6 +347,18 @@ static int g_scratch_counter = 1;
 #define SINTRAN_PREFIX_MATCH 1
 #define SINTRAN_EXACT_MATCH  2
 
+/* The last folder separator of a host path, or NULL. The path translation writes '\'
+ * between the parts on Windows ('.\GUEST\H06DATA.DATA'), so there both '/' and '\'
+ * end a folder name; elsewhere only '/'. */
+static const char* host_last_separator(const char* path) {
+    const char* slash = strrchr(path, '/');
+#ifdef _WIN32
+    const char* backslash = strrchr(path, '\\');
+    if (backslash && (!slash || backslash > slash)) slash = backslash;
+#endif
+    return slash;
+}
+
 static int sintran_comps(const char* a, const char* b) {
     int i = 0, j = 0;
     for (;;) {
@@ -380,7 +392,7 @@ static int sintran_comps(const char* a, const char* b) {
 static int sintran_resolve_abbrev(const char* host_path, char* resolved, size_t resolved_size) {
     char dir[256];
     const char* base;
-    const char* slash = strrchr(host_path, '/');
+    const char* slash = host_last_separator(host_path);
     if (slash) {
         size_t dlen = (size_t)(slash - host_path);
         if (dlen >= sizeof(dir)) return -46;
@@ -794,7 +806,7 @@ int mon_file_open_ex(const char* filename, const char* filetype, uint8_t access_
             && strncmp(parsed_name, "SCRATCH-", 8) != 0) {
             const char* root = mon_config_get_sintran_root();
             if (!root || !root[0]) root = ".";
-            const char* slash = strrchr(host_path, '/');
+            const char* slash = host_last_separator(host_path);
             const char* base = slash ? slash + 1 : host_path;
             char sys_host[512];
             if ((size_t)snprintf(sys_host, sizeof(sys_host), "%s/SYSTEM/%s", root, base)
